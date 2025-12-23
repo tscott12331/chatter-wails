@@ -1,0 +1,84 @@
+.wrapper {
+    padding: 5px;
+    position: relative;
+    --img-gap: 5px;
+
+    gap: var(--img-gap);
+}
+
+.wrapper:hover {
+    background-color: var(--c-bg-2);
+}
+
+.wrapper p {
+    text-wrap: wrap;
+    /*overflow-wrap: anywhere;*/
+}
+
+.wrapper p img {
+    vertical-align: bottom;
+}
+
+.wrapper p span:not(.colon, .mention) {
+    margin: 0 2px;
+}
+
+.wrapper p span:first-child {
+    margin-left: 0;
+}
+
+.username {
+    font-weight: 500;
+    filter: contrast(300%);
+}
+
+.chatControls {
+    position: absolute;
+    right: 0;
+    top: -12.5px;
+
+    gap: var(--img-gap);
+    width: 55px;
+    padding: 5px;
+}
+
+.wrapper:hover .chatControls {
+    visibility: visible;
+}
+
+.replyWrapper {
+    width: 25px;
+    height: 25px;
+    padding: 2.5px;
+    border-radius: 2px;
+
+    background-color: color-mix(in srgb, var(--c-bg-3) 60%, transparent);
+    filter: contrast(100%);
+    backdrop-filter: blur(5px);
+}
+
+.replyWrapper:hover {
+    outline: 1px solid var(--c-outline-2);
+    filter: contrast(100%) brightness(120%);
+}
+
+.replyWrapper svg {
+    fill: var(--c-text-1);
+    filter: contrast(200%);
+}
+
+.replyWrapper, .username {
+    cursor: pointer;
+}
+
+.reply {
+    width: 100%;
+
+    font-size: .9rem;
+    color: var(--c-text-3);
+}
+
+.mention {
+    font-weight: 600;
+    cursor:pointer;
+}

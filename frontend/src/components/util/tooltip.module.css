@@ -1,0 +1,12 @@
+.popupWrapper {
+    padding: 0.2rem;
+
+    border: 1px solid var(--c-outline-1);
+    border-radius: 2px;
+
+    background-color: var(--c-bg-2);
+
+    text-wrap-mode: nowrap;
+
+    font-size: 0.8rem;
+}

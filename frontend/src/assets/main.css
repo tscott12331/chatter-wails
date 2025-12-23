@@ -1,0 +1,279 @@
+@import "tailwindcss";
+
+* {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+
+    color-scheme: light dark;
+
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+
+    overflow: hidden;
+
+    --c-red-70: #3b1927;
+    --c-red-100: #5e2331;
+    --c-red-200: #6f2534;
+    --c-red-300: #8a2740;
+    --c-red-500: #aa3344;
+    --c-red-700: #cc4334;
+    --c-red-900: #e04f3a;
+
+    --c-input-bg: #666677;
+    --c-input-bg-2: #444455;
+    --c-input-bg-3: #888899;
+    --c-input-outline: #afafaf;
+    --c-input-outline-2: #cacada;
+
+    --c-bg-08: #10101a;
+    --c-bg-09: #13132a;
+    --c-bg-1: #23232a;
+    --c-bg-2: #33333a;
+    --c-bg-3: #43434a;
+    --c-bg-5: #63637a;
+    --c-bg-6: #73738a;
+    --c-bg-7: #83839f;
+    --c-bg-8: #9393b5;
+    --c-bg-9: #a3a4ba;
+    --c-bg-10: #b3b3d6;
+    --c-bg-12: #d3d3ea;
+    --c-bg-13: #e4e4e8;
+    --c-bg-14: #f4f4f9;
+
+    --c-outline-1: #898990;
+    --c-outline-2: #9a9aa0;
+
+    --c-text-1: #efedfe;
+    --c-text-2: #dfddde;
+    --c-text-3: #a0a0b0;
+
+
+    --tab-manager-height: 35px;
+
+    background-color: var(--c-bg-1);
+    color: var(--c-text-1);
+}
+
+#root {
+    height: 100%;
+}
+
+body {
+    width: 100vw;
+    height: 100vh;
+}
+
+
+input, textarea, button, *[contenteditable="true"] {
+    outline: none;
+    border: 1px solid var(--c-input-outline);
+    background-color: var(--c-input-bg);
+    font: inherit;
+    color: var(--c-text-2);
+}
+
+textarea {
+    resize: none;
+}
+
+textarea, input, *[contenteditable="true"] {
+    padding: 5px;
+}
+
+button {
+    font-size: .8rem;
+    padding: 0.3rem;
+
+    border-radius: 5px;
+}
+
+textarea:focus, input:focus, *[contenteditable="true"]:focus {
+    background-color: var(--c-input-bg-2);
+}
+
+textarea:hover, input:hover, *[contenteditable="true"]:hover {
+    border: 1px solid var(--c-input-outline-2);
+}
+
+button:hover {
+    background-color: var(--c-input-bg-3);
+}
+
+
+button:active {
+    background-color: var(--c-input-bg-2);
+}
+
+::placeholder {
+    color: var(--c-text-3);
+}
+
+/* CLASSES */
+
+.fill {
+  width: 100%;
+  height: 100%;
+}
+
+/* flex */
+.flex, .flex-center, .flex-column,
+.flex-justify-center, .flex-align-center,
+.flex-justify-start, .flex-justify-end,
+.flex-align-start, .flex-align-end,
+.flex-justify-space-btw, .flex-wrap {
+  display: flex;
+}
+
+.flex-center {
+  justify-content: center;
+  align-items: center;
+}
+
+.flex-justify-center {
+  justify-content: center;
+}
+
+.flex-justify-start {
+  justify-content: start;
+}
+
+.flex-justify-end {
+  justify-content: end;
+}
+
+.flex-justify-space-btw {
+  justify-content: space-between;
+}
+
+.flex-align-center {
+  align-items: center;
+}
+
+.flex-align-start {
+  align-items: start;
+}
+
+.flex-align-end {
+  align-items: end;
+}
+
+.flex-column {
+  flex-direction: column;
+}
+
+.flex-wrap {
+    flex-wrap: wrap;
+}
+
+
+/* display */
+.inline {
+    display: inline;
+}
+
+
+/* position */
+.relative {
+    position: relative;
+}
+
+.absolute, .absolute-tl {
+    position: absolute;
+}
+
+.absolute-tl {
+    top: 0;
+    left: 0;
+}
+
+.fixed {
+    position: fixed;
+}
+
+
+/* z-index */
+.z-100 {
+    z-index: 100;
+}
+
+.z-200 {
+    z-index: 200;
+}
+
+.z-300 {
+    z-index: 300;
+}
+
+.z-400 {
+    z-index: 400;
+}
+
+.z-500 {
+    z-index: 500;
+}
+
+.z-600 {
+    z-index: 600;
+}
+
+.z-600 {
+    z-index: 700;
+}
+
+.z-2000 {
+    z-index: 2000;
+}
+
+
+/* text */
+
+.ellipsis {
+  overflow: hidden;
+  white-space: nowrap!important;
+  text-overflow: ellipsis;
+}
+
+
+/* profile */
+.big-pfp {
+    width: 300px;
+    height: 300px;
+
+    border-radius: 150px;
+    border: 1px solid var(--c-outline-1);
+}
+
+
+/* misc */
+.hidden {
+    visibility: hidden;
+}
+
+.no-display {
+    display: none;
+}
+
+.scroller, .scroller-y, .scroller-x {
+    scrollbar-width: thin;
+}
+
+.scroller {
+    overflow: auto;
+}
+
+.scroller-y {
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.scroller-x {
+    overflow-x: auto;
+    overflow-y: hidden;
+}

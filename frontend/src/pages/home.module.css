@@ -1,0 +1,20 @@
+.wrapper {
+  height: 100%;
+}
+
+.conToTwitch {
+  width: 50%;
+  text-align: center;
+}
+
+.userInfoWrapper {
+  padding: 10px;
+}
+
+.connectWrapper {
+    gap: 1rem;
+}
+
+.connectWrapper form input, .connectWrapper form button {
+    margin: .5rem;
+}

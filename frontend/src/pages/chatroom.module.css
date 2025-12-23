@@ -1,0 +1,101 @@
+.wrapper {
+    width: 100%;
+    height: 100%;
+
+    flex-grow: 1;
+
+    position: relative;
+
+    --bottom-row-height: 50px;
+    --input-area-padding: 4px;
+    --input-area-gap: 2px;
+    --input-wrapper-height: 150px;
+
+    --emote-popup-height: 300px;
+    --emote-popup-margin: 15px;
+}
+
+.controlSection {
+    padding: var(--input-area-padding);
+    flex-basis: max-content;
+
+    background-color: var(--c-bg-9);
+}
+
+.inputWrapper {
+    gap: var(--input-area-gap);
+    flex-wrap: wrap;
+    gap: var(--input-area-gap);
+    height: var(--input-wrapper-height);
+}
+
+.controlsWrapper {
+    gap: calc(var(--input-area-gap) * 3);
+
+    width: 100%;
+}
+
+.messageInput {
+    width: 100%;
+    height: calc(100% - var(--bottom-row-height) - var(--input-area-padding));
+
+}
+
+.inputWrapper button {
+    width: var(--bottom-row-height);
+    padding: 10px;
+}
+
+.pointsWrapper {
+    width: var(--bottom-row-height);
+    height: var(--bottom-row-height);
+    border: 1px solid var(--c-outline-1);
+}
+
+
+.emoteButton {
+    background: none;
+    border: none;
+}
+
+.emoteButton svg {
+    height: 100%;
+}
+
+.emoteButton:hover {
+    background: none;
+    filter: drop-shadow(0 0 5px var(--c-text-2));
+}
+
+.emotePopup {
+    width: calc(100% - (var(--emote-popup-margin) * 2));
+    height: var(--emote-popup-height);
+
+    border: 1px solid var(--c-outline-1);
+    border-radius: 2px;
+    margin: var(--emote-popup-margin);
+
+    left: 0;
+    bottom: 100%;
+
+    background-color: color-mix(in srgb, var(--c-bg-2) 80%, transparent);
+    backdrop-filter: blur(5px);
+
+    gap: 4px;
+    padding: 4px;
+}
+
+.emotePopup > span > div {
+    width: 40px;
+    height: 40px;
+
+    padding: 2px;
+    border-radius: 2px;
+
+    background-color: var(--c-bg-3);
+    filter: opacity(0.9);
+}
+
+.emotePopup span > div:hover {
+    background-color: var(--c-bg-5);
+}

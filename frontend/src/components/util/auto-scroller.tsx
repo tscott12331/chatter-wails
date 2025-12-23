@@ -1,0 +1,100 @@
+import styles from './auto-scroller.module.css';
+
+import React, { useEffect, useRef, useState } from 'react';
+
+export interface IJumpToRecentPopupProps extends React.HTMLAttributes<HTMLDivElement>{
+    newItems: number;
+}
+
+interface IAutoScrollerProps extends React.HTMLAttributes<HTMLDivElement> {
+    jumpToRecentPopup?: React.FC<IJumpToRecentPopupProps>;
+    scrollThresh?: number,
+    children?: React.ReactNode;
+}
+
+export default function AutoScroller({
+    jumpToRecentPopup,
+    scrollThresh=200,
+    children,
+    ...rest
+}: IAutoScrollerProps) {
+    const [shouldShowPopup, setShouldShowPopup] = useState<boolean>(false);
+    const [newItems, setNewItems] = useState<number>(0);
+
+    const scrollerRef = useRef<HTMLDivElement>(null);
+
+
+    const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
+        scrollerRef.current?.scroll({
+            behavior,
+            top: scrollerRef.current.scrollHeight
+        })
+    }
+
+    const handleItemScroll = (e: React.UIEvent<HTMLDivElement>) => {
+        if(scrollerRef.current) {
+            const scrollHeight = e.currentTarget.scrollHeight;
+            const scrollTop = e.currentTarget.scrollTop;
+            const wrapperHeight = e.currentTarget.offsetHeight;
+
+            const passedThresh = scrollHeight - (scrollTop + wrapperHeight)
+            >= scrollThresh;
+            setShouldShowPopup(passedThresh);
+            if(!shouldShowPopup) {
+                setNewItems(0);
+            }
+        }
+    }
+
+    useEffect(() => {
+        if(scrollerRef.current && Array.isArray(children)) {
+            if(scrollerRef.current && children.length > 0) {
+                const scrollHeight = scrollerRef.current.scrollHeight;
+                const scrollTop = scrollerRef.current.scrollTop;
+                const wrapperHeight = scrollerRef.current.offsetHeight;
+                const itemHeight = scrollerRef.current.children.item(children.length - 1)?.clientHeight;
+
+                if(itemHeight &&
+                   (scrollHeight - itemHeight) -
+                       (scrollTop + wrapperHeight) <
+                    scrollThresh
+                  ) {
+                      setShouldShowPopup(false);
+                      scrollToBottom('instant');
+                      setNewItems(0);
+                  } else {
+                      setShouldShowPopup(true);
+                      setNewItems((items) => items + 1);
+                  }
+            }
+        }
+
+    }, [children]);
+    return (
+        <>
+            <div
+            className='fill flex-column scroller-y z-200'
+            ref={scrollerRef}
+            onScroll={handleItemScroll}
+            {...rest}
+            >
+                {children}
+            </div>
+            {shouldShowPopup &&
+                <div className={styles.popupWrapper + ' absolute flex-center'}
+                    style={{
+                        top: `calc(${scrollerRef.current?.offsetHeight.toString().concat('px') ?? '100%'} * 0.925)`
+                    }}
+                >
+                    {jumpToRecentPopup?.({
+                        newItems,
+                        onClick: () => scrollToBottom(),
+                        style: {
+                            zIndex: 300,
+                        }
+                    }) as React.ReactNode}
+                </div>
+            }
+        </>
+    )
+}

@@ -1,0 +1,11 @@
+.wrapper {
+  height: 100%;
+  overflow: hidden;
+}
+
+.contentWrapper {
+  height: calc(100% - var(--tab-manager-height));
+
+  display: flex;
+  flex-direction: column;
+}
