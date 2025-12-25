@@ -81,7 +81,7 @@ export default function Chatroom({
         });
     }
 
-    const handleNotificationMessage = (data) => {
+    const handleNotificationMessage = (data: any) => {
         switch(data.metadata.subscription_type) {
             case 'channel.chat.message':
                 const message: TChatMessage = {
@@ -102,7 +102,7 @@ export default function Chatroom({
         }
     }
 
-    const handleEventsubMessage = (e) => {
+    const handleEventsubMessage = (e: any) => {
         const data = JSON.parse(e.data);
         const messageType = data.metadata.message_type;
         switch(messageType) {

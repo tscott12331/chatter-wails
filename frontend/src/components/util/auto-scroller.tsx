@@ -58,7 +58,7 @@ export default function AutoScroller({
                     scrollThresh
                   ) {
                       setShouldShowPopup(false);
-                      scrollToBottom('instant');
+                      scrollToBottom('auto');
                       setNewItems(0);
                   } else {
                       setShouldShowPopup(true);

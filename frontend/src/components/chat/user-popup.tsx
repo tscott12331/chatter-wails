@@ -29,10 +29,6 @@ export default function UserPopup({
     const [pos, setPos] = useState<{x: number, y: number}>(initPos);
     const [isDragging, setIsDragging] = useState<boolean>(false);
 
-    useEffect(() => {
-        setPos(initPos);
-    }, [initPos]);
-
     const handleMouseMove = (e: MouseEvent) => {
         setPos(curPos => ({
             x: curPos.x + e.movementX,

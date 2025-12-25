@@ -9,7 +9,7 @@ interface ITabProps {
     onTabSelect: (tab: TTab) => void;
     onTabRemove: (tab: TTab) => void;
     onTabMove: (tab: TTab, x: number) => void;
-    ref: React.RefObject<HTMLDivElement|null>;
+    ref?: React.RefObject<HTMLDivElement>;
 }
 
 export default function Tab({
@@ -63,7 +63,7 @@ export default function Tab({
     }, []);
 
     useEffect(() => {
-        if(ref.current) {
+        if(ref?.current) {
             setInitX(mouseX);
         }
     }, [index]);

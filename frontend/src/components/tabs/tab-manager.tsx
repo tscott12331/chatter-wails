@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import Tab from './tab';
 import HomeIcon from '../svg/home-icon';
 import PlusIcon from '../svg/plus-icon';
 import { useNavigate } from 'react-router-dom';
-import { deepEqual } from '../../util/obj'
+import { deepEqual } from '@util/obj'
 import { rotateArr } from '@util/arr';
 
 export type TTab = {
@@ -27,7 +27,6 @@ export default function TabManager({
     const [currentTab, setCurrentTab] = useState<string>('/');
     const tabsRef = useRef<Record<string, {current: HTMLDivElement|null}>>({})
 
-    const addingTabRef = useRef<HTMLInputElement>(null);
     const [isAddingTab, setIsAddingTab] = useState<boolean>(false);
     const [newTabText, setNewTabText] = useState<string>("");
 
@@ -68,7 +67,7 @@ export default function TabManager({
                    handleAddTab(newTab);
                    setIsAddingTab(false);
                    setNewTabText('');
-                   if(addingTabRef.current) addingTabRef.current.value = '';
+                   e.currentTarget.value = '';
                }
         }
     }
@@ -109,16 +108,10 @@ export default function TabManager({
         }
     }
 
-    useEffect(() => {
-        addingTabRef.current?.focus();
-    }, [isAddingTab]);
-
-    useEffect(() => {
-        navigate(currentTab);
-    }, []);
+    if(location.hash.slice(1) !== currentTab) navigate(currentTab);
 
     return (
-        <div className={'flex items-center w-full h-9 gap-1 border-b border-outline-2'}
+        <div className={'flex items-center w-full h-9 gap-1 border-b p-1 border-outline-2'}
         >
             <div className={'flex items-center justify-center w-7 h-7 border border-text-1 rounded-sm p-1 [&_svg]:fill-text-1 data-[selected=true]:bg-bg-5 hover:bg-bg-8'}
                 onClick={() => handleTabSelect(HOME_TAB)}
@@ -143,7 +136,7 @@ export default function TabManager({
                 <input
                     className="max-w-50 min-w-25 h-full bg-transparent! border-none!"
                     type='text'
-                    ref={addingTabRef}
+                    ref={(node) => node && node.focus()}
                     onKeyDown={handleAddTabKeyDown}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewTabText(e.currentTarget.value)}
                     onBlur={() => setIsAddingTab(false)}
