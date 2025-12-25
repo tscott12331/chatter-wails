@@ -1,6 +1,5 @@
 import { useParams } from 'react-router-dom';
 import ChatMessage, { TChatMessage } from '@components/chat/chat-message';
-import styles from './chatroom.module.css';
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AccessContext, IAccessContextSuccess } from '@contexts/access-context';
 import { TUser } from '@/App';
@@ -216,7 +215,7 @@ export default function Chatroom({
         const srcSet = getEmoteSrcSet(emote.id, emote.format) ?? "";
         if(!srcSet) return;
 
-        const concat = `<img srcset="${srcSet}" alt="${emote.name}"/>`;
+        const concat = `<img class="inline" srcset="${srcSet}" alt="${emote.name}"/>`;
 
         if(messageInputRef.current.innerHTML.at(-1) === ' ') {
             messageInputRef.current.innerHTML += `${concat} `;
@@ -334,7 +333,7 @@ export default function Chatroom({
 
     return (
         <div
-            className={styles.wrapper + ' flex-column'}
+            className={'flex flex-col w-full h-full grow relative'}
             onClick={() => setShouldShowEmotePopup(false)}
         >
             <AutoScroller
@@ -353,17 +352,17 @@ export default function Chatroom({
                     />
                  )}
             </AutoScroller>
-            <div className={styles.controlSection + ' flex-column relative'}>
+            <div className='flex flex-col p-1 basis-[max-content] bg-bg-9 relative'>
                 {shouldShowEmotePopup &&
                 <div
-                className={styles.emotePopup + ' absolute z-600 flex-wrap flex-justify-space-btw flex-align-center scroller-y'}
+                className='w-[calc(100%-30px)] h-75 border border-outline-1 rounded-xs m-3.5 absolute left-0 bottom-full bg-bg-2/80 backdrop-blur-xs g-1 p-1 z-600 flex flex-wrap justify-between items-center scroller-y [&>span>div]:w-10 [&>span>div]:h-10 [&>span>div]:p-0.5 [&>span>div]:rounded-xs [&>span>div]:opacity-90 [&>span>div]:hover:bg-bg-5'
                 onClick={(e: React.MouseEvent<HTMLDivElement>) => e.stopPropagation()}
                 >
                     {filteredGlobalEmotes}
                 </div>
                 }
                 {isReplying && replyingToMessage &&
-                <div className={styles.replyPopupWrapper}>
+                <div>
                     <ReplyPopup
                         onCloseClicked={handleChatReplyClose}
                         message={replyingToMessage}
@@ -372,23 +371,24 @@ export default function Chatroom({
                     />
                 </div>
                 }
-                <div className={styles.inputWrapper + ' flex flex-align-center flex-justify-space-btw'}>
+                <div className={'flex items-center justify-between flex-wrap g-0.5 h-37.5'}>
                     <div
-                    className={styles.messageInput}
+                    className='w-full h-[calc(100%-46px)]'
                     contentEditable="true"
                     onKeyDown={handleMessageInputKeydown}
                     onInput={handleMessageInput}
                     ref={messageInputRef}
                     onClick={(e: React.MouseEvent<HTMLDivElement>) => e.stopPropagation()}
                     ></div>
-                    <div className={styles.controlsWrapper + ' flex flex-align-center flex-justify-end'}>
+                    <div className='flex items-center justify-end gap-1.5 w-full'>
                         <button
-                            className={styles.emoteButton + ' relative flex-center'}
+                            className='relative flex justify-center items-center w-12.5 p-2.5 bg-none hover:drop-shadow-xs hover:drop-shadow-text-2'
                             onClick={handleEmoteButtonClick}
                         >
                                 <EmoteIcon />
                         </button>
                         <button
+                            className="h-12.5 p-2.5"
                             onClick={handleSendMessage}
                         >send</button>
                     </div>

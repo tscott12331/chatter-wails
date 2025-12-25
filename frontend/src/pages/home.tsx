@@ -1,5 +1,3 @@
-import styles from './home.module.css';
-
 import type { TUser } from '../App';
 import { useContext } from 'react';
 import { AccessContext } from '@contexts/access-context';
@@ -31,11 +29,11 @@ export default function HomePage({
         context.setAccess(accessObj);
     }
     return (
-        <div className={styles.wrapper + ' flex-center'}>
+        <div className='flex items-center justify-center h-full'>
         {
             typeof user === 'undefined' ?
-            <div className={styles.connectWrapper + ' flex-column flex-align-center'}>
-                <h1 className={styles.conToTwitch}>
+            <div className={'flex flex-col items-center gap-4'}>
+                <h1 className="w-1/2 text-center">
                     <a 
                     className="underline text-blue-200 cursor-pointer"
                     onClick={() => BrowserOpenURL(authURL)}
@@ -43,13 +41,13 @@ export default function HomePage({
                         Connect to twitch</a> to get your access token
                 </h1>
                 <form onSubmit={handleTokenSubmit}>
-                    <input placeholder='access token' id='access_token' name='access_token' />
-                    <button type='submit'>connect</button>
+                    <input className="m-2" placeholder='access token' id='access_token' name='access_token' />
+                    <button className="m-2" type='submit'>connect</button>
                 </form>
             </div>
                 :
-                    <div
-                className={styles.userInfoWrapper + ' fill flex-column flex-align-center'}
+                <div
+                className='w-full h-full flex flex-col items-center gap-1 p-2.5'
                 >
                 <img className='big-pfp' src={user.profile_image_url} />
                 <h1>{user.display_name}</h1>

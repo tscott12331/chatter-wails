@@ -1,5 +1,4 @@
 import { TTab } from './tab-manager';
-import styles from './tab.module.css';
 import PlusIcon from '../svg/plus-icon';
 import { useEffect, useState } from 'react';
 
@@ -71,7 +70,7 @@ export default function Tab({
 
     return (
         <div
-        className={(selected ? styles.selectedWrapper : styles.wrapper) + ' flex-align-center flex-justify-space-btw relative'}
+        className={`${selected ? 'bg-bg-5' : ''} max-w-50 min-w-25 border border-text-1 rounded-sm text-sm p-1 h-7 gap-1 select-none flex items-center justify-between relative hover:bg-bg-8 hover:[&_svg]:inline-block `}
         onMouseDown={handleMouseDown}
         ref={ref}
         style={{
@@ -79,9 +78,9 @@ export default function Tab({
             zIndex: isDragging ? '5000' : 'initial',
         }}
         >
-        <p className='ellipsis'>{tab.tabName}</p>
+        <p className='text-ellipsis grow-2'>{tab.tabName}</p>
         <div
-        className={styles.removeTab + ' flex-center'}
+        className={'w-3 h-3 flex justify-center items-center [&_svg]:fill-red-200 hover:[&_svg]:fill-red-300 [&_svg]:rotate-45 [&_svg]:hidden'}
         onClick={handleTabRemove}
         >
             <PlusIcon />

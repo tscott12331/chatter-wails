@@ -1,5 +1,3 @@
-import styles from './auto-scroller.module.css';
-
 import React, { useEffect, useRef, useState } from 'react';
 
 export interface IJumpToRecentPopupProps extends React.HTMLAttributes<HTMLDivElement>{
@@ -73,7 +71,7 @@ export default function AutoScroller({
     return (
         <>
             <div
-            className='fill flex-column scroller-y z-200'
+            className='w-full h-full flex flex-col scroller-y z-200'
             ref={scrollerRef}
             onScroll={handleItemScroll}
             {...rest}
@@ -81,7 +79,7 @@ export default function AutoScroller({
                 {children}
             </div>
             {shouldShowPopup &&
-                <div className={styles.popupWrapper + ' absolute flex-center'}
+                <div className='w-full absolute flex justify-center items-center'
                     style={{
                         top: `calc(${scrollerRef.current?.offsetHeight.toString().concat('px') ?? '100%'} * 0.925)`
                     }}

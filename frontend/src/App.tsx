@@ -51,11 +51,11 @@ export default function App() {
     }, [context])
 
     return (
-        <div className={styles.wrapper}>
+        <div className="h-full overflow-hidden">
             {user &&
                 <TabManager />
             }
-            <div className={styles.contentWrapper}>
+            <div className="h-[calc(100%-36px)] flex flex-col">
                 <Router
                 user={user}
                 globalBadgeSets={globalBadgeSets}

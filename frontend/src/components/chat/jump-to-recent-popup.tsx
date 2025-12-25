@@ -1,5 +1,3 @@
-import styles from './jump-to-recent-popup.module.css';
-
 import { IJumpToRecentPopupProps } from '../util/auto-scroller';
 
 export default function JumpToRecentPopup({
@@ -8,7 +6,7 @@ export default function JumpToRecentPopup({
 }: IJumpToRecentPopupProps) {
     const MAX_ITEM_DISPLAY = 10;
 
-    const generatePopupText = (numItems): string => {
+    const generatePopupText = (numItems: number): string => {
         if(numItems > MAX_ITEM_DISPLAY) {
             return String(MAX_ITEM_DISPLAY).concat('+ new messages');
         } else if(numItems > 0) {
@@ -20,7 +18,7 @@ export default function JumpToRecentPopup({
 
     return (
         <div
-        className={styles.wrapper + ' flex-center'}
+        className='flex justify-center items-center p-1.5 bg-bg-3/50 backdrop-blur-xs rounded-xs cursor-pointer'
         {...rest}
         >
             <p>{generatePopupText(newItems)}</p>

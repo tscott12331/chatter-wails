@@ -1,4 +1,3 @@
-import styles from './tooltip.module.css';
 import React, { useState } from "react";
 
 interface ITooltipProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -58,7 +57,7 @@ export default function Tooltip({
             {children}
             {shouldShow &&
             <span
-                className={styles.popupWrapper + ' absolute z-2000'}
+                className='p-0.5 absolute bg-bg-2 border border-outline-1 text-nowrap text-sm z-2000'
                 style={{
                     left: `${pos.x}px`,
                     top: `${pos.y}px`,

@@ -1,5 +1,4 @@
 import ChatMessage, { TChatMessage } from './chat-message';
-import styles from './reply-popup.module.css';
 import PlusIcon from '../svg/plus-icon';
 
 interface IReplyPopupProps {
@@ -16,14 +15,14 @@ export default function ReplyPopup({
     showUserPopup,
 }: IReplyPopupProps) {
     return (
-        <div className={styles.wrapper + ' flex-column'}>
-            <div className={styles.topBar + ' flex-justify-space-btw flex-align-center'}>
+        <div className='flex flex-col bg-bg-1 p-1.5 border border-outline-1 gap-1'>
+            <div className='flex justify-between items-center h-6 [&_svg]:h-4/5 [&_svg]:rotate-45 [&_svg]:fill-red-500 [&_svg]:hover:fill-red-700'>
                 <i>replying to:</i>
                 <PlusIcon
                     onClick={onCloseClicked}
                 />
             </div>
-            <div className={styles.messageWrapper}>
+            <div>
                 <ChatMessage
                     message={message}
                     showChatReplyButton={false}

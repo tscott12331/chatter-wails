@@ -1,5 +1,3 @@
-import styles from './chat-message.module.css';
-
 import { getEmoteSrcSet } from '@api/native-emote';
 import ReplyIcon from '@components/svg/reply-icon';
 import Tooltip from '@components/util/tooltip';
@@ -81,6 +79,7 @@ export default function ChatMessage({
                         key={index}
                         >
                             <img
+                                className="inline"
                                 srcSet={getEmoteSrcSet(
                                         fragment.emote.id,
                                         fragment.emote.format,
@@ -93,7 +92,6 @@ export default function ChatMessage({
                 if(!fragment.mention) return fragment.text;
                 return (
                     <span
-                        className={styles.mention}
                         style={{
                             color: getChatterColor(fragment.mention.user_name),
                         }}
@@ -114,7 +112,7 @@ export default function ChatMessage({
 
     const badgeToNode = (badge: IMessageBadge, index: number): React.ReactNode => {
         return <Tooltip text={badge.title} hoverTime={0} key={index}>
-                    <img srcSet={badge.srcSet} />
+                    <img className="inline mr-1" srcSet={badge.srcSet} />
                </Tooltip>
     }
 
@@ -125,19 +123,19 @@ export default function ChatMessage({
     }
 
     return (
-        <div className={styles.wrapper + ' flex-column'}>
+        <div className="p-1.5 relative hover:bg-bg-2 hover:[&_.chat-controls]:visible">
             {message.reply &&
             <Tooltip
                 hoverTime={0}
                 text={message.reply.parent_message_body}
             >
-                <p className={styles.reply + ' ellipsis'}>replying to @{message.reply.parent_user_name}: {message.reply.parent_message_body}</p>
+                <p className='w-full text-text-3 text-sm ellipsis'>replying to @{message.reply.parent_user_name}: {message.reply.parent_message_body}</p>
             </Tooltip>
             }
             <p>
                 {badgesToNodes(message.badges)}
                 <span
-                    className={styles.username}
+                    className="contrast-300 font-medium my-0 mr-0.5"
                     style={{
                         color: message.color
                     }}
@@ -145,14 +143,14 @@ export default function ChatMessage({
                 >
                     {message.username}
                 </span>
-                <span className={styles.colon}>: </span>
+                <span>: </span>
                 {defragmentMessage(message.fragments)}
             </p>
             <div
-                className={styles.chatControls + ' hidden flex flex-justify-end flex-align-center'}
+                className='chat-controls absolute top-0 -right-3 invisible flex justify-end items-center'
             >
                 {showChatReplyButton &&
-                <div className={styles.replyWrapper}
+                <div className="w-6 h-6 p-0.5 rounded-xs bg-bg-3/60 backdrop-blur-xs contrast-100 hover:outline hover:outline-outline-2 hover:contrast-200 hover:brightness-120 [&_svg]:fill-text-1 [&_svg]:contrast-200 cursor-pointer"
                     onClick={() => onChatReplyClick(message)}
                 >
                     <ReplyIcon />

@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import ChatMessage, { TChatMessage } from './chat-message';
-import styles from './user-popup.module.css';
 import PlusIcon from '../svg/plus-icon';
 
 export interface IPopupUser {
@@ -66,17 +65,17 @@ export default function UserPopup({
     }, []);
 
     return (
-        <div className={styles.wrapper + ' absolute z-2000'}
+        <div className='absolute w-75 h-100 bg-bg-08/80 backdrop-blur-xs rounded-sm z-2000'
             style={{
                 left: `${pos.x}px`,
                 top: `${pos.y}px`,
             }}
         >
             <section
-                className={styles.infoSection + ' flex-column'}
+                className={'flex flex-col h-[15%] border-b border-b-outline-2 cursor-move p-1'}
                 onMouseDown={handleMouseDown}
             >
-                <div className={styles.controls + ' flex-justify-end'}>
+                <div className={'flex justify-end h-1/4 [&_svg]:h-full [&_svg]:rotate-45 [&_svg]:fill-red-500 [&_svg]:cursor-pointer [&_svg]:hover:fill-red-700'}>
                     <PlusIcon
                         onClick={onPopupClose}
                     />
@@ -89,7 +88,7 @@ export default function UserPopup({
                     {user?.username}
                 </h3>
             </section>
-            <section className={styles.chatSection + ' flex-col scroller-y'}>
+            <section className={'flex flex-col h-[85%] scroller-y'}>
                 {
                     user && user.messages.length > 0
                     ?
@@ -104,7 +103,7 @@ export default function UserPopup({
                     />
                     )
                     :
-                    <p className={styles.noMessages}>no recent messages</p>
+                    <p className='p-1 text-center'>no recent messages</p>
                 }
             </section>
         </div>

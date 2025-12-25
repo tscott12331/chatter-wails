@@ -1,5 +1,3 @@
-import styles from './tab-manager.module.css';
-
 import { useEffect, useRef, useState } from 'react';
 import Tab from './tab';
 import HomeIcon from '../svg/home-icon';
@@ -120,9 +118,9 @@ export default function TabManager({
     }, []);
 
     return (
-        <div className={styles.wrapper + ' flex-align-center'}
+        <div className={'flex items-center w-full h-9 gap-1 border-b border-outline-2'}
         >
-            <div className={styles.homeTab + ' flex-center'}
+            <div className={'flex items-center justify-center w-7 h-7 border border-text-1 rounded-sm p-1 [&_svg]:fill-text-1 data-[selected=true]:bg-bg-5 hover:bg-bg-8'}
                 onClick={() => handleTabSelect(HOME_TAB)}
                 data-selected={currentTab === HOME_TAB.tab ? 'true' : 'false'}
             >
@@ -140,9 +138,10 @@ export default function TabManager({
                 onTabMove={handleTabMove}
             />
                      )}
-            <div className={styles.addTabPopup + (isAddingTab ? '' : ' no-display') + ' flex-justify-start flex-align-center'}
+            <div className={(isAddingTab ? '' : ' hidden') + ' flex justify-start items-center border border-text-1 rounded-sm text-sm p-1 h-7 bg-bg-09 max-w-50 min-w-25'}
             >
                 <input
+                    className="max-w-50 min-w-25 h-full bg-transparent! border-none!"
                     type='text'
                     ref={addingTabRef}
                     onKeyDown={handleAddTabKeyDown}
@@ -151,7 +150,7 @@ export default function TabManager({
                 />
             </div>
             <div
-                className={styles.addTab + ' flex-center' + (isAddingTab ? ' no-display' : '')}
+                className={'flex justify-center items-center w-7 h-7 p-2 [&_svg]:fill-text-1 [&_svg]:hover:fill-text-2 [&_svg]:hover:brightness-90 [&_svg]:hover:drop-shadow-sm [&_svg]:hover:drop-shadow-outline-1 ' + (isAddingTab ? ' hidden' : '')}
                 onClick={() => setIsAddingTab(true)}
             >
                 <PlusIcon />
