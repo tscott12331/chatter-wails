@@ -23,7 +23,7 @@ interface IGetChannelBadgesResponse {
 }
 
 export const getChannelBadges = async (
-        access: IAccessContextSuccess,
+        access_token: string,
         brdId: string,
         setBadgeSets?: React.Dispatch<React.SetStateAction<IBadgeSet[]>>,
     ): Promise<TApiResponse<IGetChannelBadgesResponse>> =>
@@ -31,7 +31,7 @@ export const getChannelBadges = async (
     let retObj: TApiResponse<IGetChannelBadgesResponse> = UnknownError();
 
     try {
-        const res = await apiGetChannelBadges(access.access_token, {
+        const res = await apiGetChannelBadges(access_token, {
             broadcaster_id: brdId,
         });
 

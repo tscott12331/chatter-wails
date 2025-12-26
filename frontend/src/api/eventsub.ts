@@ -14,18 +14,16 @@ interface ICreateSubscriptionResponse {
 
 export const connectToChatroom = async (
                     userObj: TUser,
-                    accessObj: IAccessContextSuccess,
                     brdId: string,
                     sesId: string,
                     setSubId?: React.Dispatch<React.SetStateAction<string | undefined>>,
                    ): Promise<TApiResponse<ICreateSubscriptionResponse>> =>
 {
-    return await createSubscription(userObj, accessObj, brdId, sesId, 'channel.chat.message', setSubId);
+    return await createSubscription(userObj, brdId, sesId, 'channel.chat.message', setSubId);
 }
 
 export const createSubscription = async (
                      userObj: TUser,
-                     accessObj: IAccessContextSuccess,
                      brdId: string,
                      sesId: string,
                      subType: TSubscriptionType,
@@ -35,7 +33,7 @@ export const createSubscription = async (
     let retObj: TApiResponse<ICreateSubscriptionResponse> = UnknownError();
 
     try {
-        const res = await apiPostSubscriptions(accessObj.access_token, {
+        const res = await apiPostSubscriptions(userObj.access_token, {
             type: subType,
             version: "1",
             condition: {
@@ -69,11 +67,11 @@ interface IDeleteSubscriptionResponse {
 
 }
 
-export const deleteSubscription = async (subId: string, accessObj: IAccessContextSuccess): Promise<TApiResponse<IDeleteSubscriptionResponse>> => {
+export const deleteSubscription = async (subId: string, access_token: string): Promise<TApiResponse<IDeleteSubscriptionResponse>> => {
     let retObj: TApiResponse<IDeleteSubscriptionResponse> = UnknownError();
 
     try {
-        const res = await apiDeleteSubscriptions(accessObj.access_token, {
+        const res = await apiDeleteSubscriptions(access_token, {
             id: subId
         })
 
@@ -95,16 +93,16 @@ interface IDeleteAllSubscriptionsResponse {
 }
 
 export const deleteAllSubscriptions = async (
-        access: IAccessContextSuccess,
+        access_token: string,
     ): Promise<TApiResponse<IDeleteAllSubscriptionsResponse>> =>
 {
     let retObj: TApiResponse<IDeleteAllSubscriptionsResponse> = UnknownError();
 
     try {
-        let res = await getSubscriptions(access);
+        let res = await getSubscriptions(access_token);
         if(res.success) {
             for(const subscription of res.data.subscriptions) {
-                const delRes = await deleteSubscription(subscription.id, access);
+                const delRes = await deleteSubscription(subscription.id, access_token);
 
                 if(!delRes.success) {
                     return delRes;
@@ -143,12 +141,12 @@ interface IGetSubscriptionsResponse {
 }
 
 export const getSubscriptions = async (
-    access: IAccessContextSuccess
+    access_token: string
     ): Promise<TApiResponse<IGetSubscriptionsResponse>> =>
 {
     let retObj: TApiResponse<IGetSubscriptionsResponse> = UnknownError();
     try {
-        const res = await apiGetSubscriptions(access.access_token);
+        const res = await apiGetSubscriptions(access_token);
 
         if(res.ok) {
             const resData = await res.json();
@@ -171,3 +169,41 @@ export const getSubscriptions = async (
         return retObj;
     }
 }
+
+
+interface IESSubscription {
+    
+}
+
+interface IESConnection {
+    socket: WebSocket;
+    sessionId: string|null;
+    subscriptions: IESSubscription[];
+    createSubscription: (
+                     userObj: TUser,
+                     brdId: string,
+                     sesId: string,
+                     subType: TSubscriptionType,
+                     setSubId?: React.Dispatch<React.SetStateAction<string | undefined>>,
+                     ) => Promise<TApiResponse<ICreateSubscriptionResponse>>
+}
+
+export const ESSocket = new WebSocket("wss://eventsub.wss.twitch.tv/ws");
+
+export const ESCon: IESConnection = {
+    socket: ESSocket,
+    sessionId: null,
+    subscriptions: [],
+    createSubscription: createSubscription,
+}
+
+
+ESSocket.addEventListener('message', (e) => {
+        const data = JSON.parse(e.data);
+        const messageType = data.metadata.message_type;
+        switch(messageType) {
+            case 'session_welcome':
+                ESCon.sessionId = data.payload.session.id;
+                break;
+        }
+});

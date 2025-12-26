@@ -1,10 +1,9 @@
 import { useParams } from 'react-router-dom';
 import ChatMessage, { TChatMessage } from '@components/chat/chat-message';
-import { useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { AccessContext, IAccessContextSuccess } from '@contexts/access-context';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { TUser } from '@/App';
 import { DebugLogger } from '@util/debug';
-import { connectToChatroom, deleteSubscription } from '@api/eventsub';
+import { connectToChatroom, deleteSubscription, ESCon } from '@api/eventsub';
 import { getUser } from '@api/user-info';
 import AutoScroller from '@components/util/auto-scroller';
 import JumpToRecentPopup from '@components/chat/jump-to-recent-popup';
@@ -31,6 +30,8 @@ export default function Chatroom({
     globalBadgeSets,
     globalEmotes,
 }: IChatroomProps) {
+    if(!user) return <></>;
+    
     const MAX_MESSAGES = 200;
 
     const { channel } = useParams();
@@ -53,8 +54,6 @@ export default function Chatroom({
     const [initUserPopupPos, setInitUserPopupPos] = useState<{x:number, y:number}>({x: 0, y: 0});
 
     const messageInputRef = useRef<HTMLDivElement>(null);
-
-    const context = useContext(AccessContext);
 
     const appendChatMessage = (message: TChatMessage) => {
         setChatMessages(curMessages => {
@@ -117,8 +116,8 @@ export default function Chatroom({
         }
     }
 
-    const getBroadcasterId = async (channelName: string, accessObj: IAccessContextSuccess) => {
-        const res = await getUser(accessObj, channelName);
+    const getBroadcasterId = async (channelName: string, access_token: string) => {
+        const res = await getUser(access_token, channelName);
         if(res.success) {
             setBroadcasterId(res.data.user.id);
         } else {
@@ -149,11 +148,8 @@ export default function Chatroom({
 
         const message = inputNodesToText(messageInputRef.current.childNodes);
         const trimmedMsg = message.trim();
-           if(trimmedMsg.length === 0 ||
-              !user || !broadcasterId ||
-              !context || !context.access ||
-            !('access_token' in context.access)) return;
-        const res = await sendMessage(user, context.access, broadcasterId, trimmedMsg, replyingToMessage?.id);
+           if(trimmedMsg.length === 0 || !broadcasterId) return;
+        const res = await sendMessage(user, user.access_token, broadcasterId, trimmedMsg, replyingToMessage?.id);
         if(res.success) {
             messageInputRef.current.innerHTML = '';
             handleChatReplyClose();
@@ -234,9 +230,7 @@ export default function Chatroom({
     }
 
     const showUserPopup = async (username: string|undefined, mouseX: number, mouseY: number) => {
-        if(!username ||
-           !context || !context.access ||
-           !('access_token' in context.access)) return;
+        if(!username) return;
 
         const recentMessages = chatMessages.filter(m => m.username === username);
         setCurrentPopupUser({
@@ -286,30 +280,25 @@ export default function Chatroom({
     }, [globalEmotes]);
 
     useEffect(() => {
-        if(!channel || !context ||
-           !context.access ||
-           !('access_token' in context.access)) return;
+        if(!channel) return;
 
         setChatMessages([]);
-        getBroadcasterId(channel, context.access);
-    }, [channel, context]);
+        getBroadcasterId(channel, user.access_token);
+    }, [channel, user]);
 
     useEffect(() => {
-        if(!sessionId || !broadcasterId || !user ||
-           !context || !context.access ||
-            !('access_token' in context.access)) return;
+        if(!sessionId || !broadcasterId) return;
 
-        connectToChatroom(user, context.access, broadcasterId, sessionId, setChatSubId);
-    }, [sessionId, broadcasterId, context, user])
+        connectToChatroom(user, broadcasterId, sessionId, setChatSubId);
+    }, [sessionId, broadcasterId, user])
 
     useEffect(() => {
         return () => {
-            if(!chatSubId || !context || !context.access ||
-                !('access_token' in context.access)) return;
+            if(!chatSubId) return;
 
-            deleteSubscription(chatSubId, context.access);
+            deleteSubscription(chatSubId, user.access_token);
         }
-    }, [chatSubId, context]);
+    }, [chatSubId, user]);
 
     useEffect(() => {
         setBadgeSets(combineChannelGlobalSets(channelBadgeSets, globalBadgeSets));
@@ -317,19 +306,17 @@ export default function Chatroom({
 
     useEffect(() => {
         if(badgeSets.length === 0) return;
-        const ws = new WebSocket("wss://eventsub.wss.twitch.tv/ws");
-        ws.onmessage = handleEventsubMessage;
+        ESCon.socket.addEventListener('message', handleEventsubMessage);
+        setSessionId(ESCon.sessionId);
 
-        return () => ws.close();
+        return () => ESCon.socket.removeEventListener('message', handleEventsubMessage);
     }, [badgeSets]);
 
     useEffect(() => {
-        if(!broadcasterId ||
-           !context || !context.access ||
-            !('access_token' in context.access)) return;
+        if(!broadcasterId) return;
 
-        getChannelBadges(context.access, broadcasterId, setChannelBadgeSets);
-    }, [context, broadcasterId]);
+        getChannelBadges(user.access_token, broadcasterId, setChannelBadgeSets);
+    }, [user, broadcasterId]);
 
     return (
         <div

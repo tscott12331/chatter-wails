@@ -9,7 +9,7 @@ interface IGetUserResponse {
 }
 
 export const getUser = async (
-        access: IAccessContextSuccess,
+        access_token: string,
         channelName?: string,
     ): Promise<TApiResponse<IGetUserResponse>> =>
 {
@@ -22,7 +22,7 @@ export const getUser = async (
         : undefined;
 
     try {
-        const res = await apiGetUsers(access.access_token, params)
+        const res = await apiGetUsers(access_token, params)
 
         if(res.ok) {
             const resUser: TUser|undefined = (await res.json())?.data?.at(0);

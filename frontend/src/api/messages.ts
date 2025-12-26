@@ -1,5 +1,4 @@
 import { TUser } from "@/App";
-import { IAccessContextSuccess } from "@contexts/access-context";
 import { TApiResponse, TMessageResponse } from "./api";
 import { apiPostMessages } from "./api-fetch";
 import { FailedApiRequest, ServerError, Success, UnknownError } from "./api-response";
@@ -11,7 +10,7 @@ interface ISendMessageResponse  {
 
 export const sendMessage = async (
         userObj: TUser,
-        access: IAccessContextSuccess,
+        access_token: string,
         brdId: string,
         message: string,
         replyId?: string,
@@ -20,7 +19,7 @@ export const sendMessage = async (
     let retObj: TApiResponse<ISendMessageResponse> = UnknownError();
 
     try {
-        const res = await apiPostMessages(access.access_token, {
+        const res = await apiPostMessages(access_token, {
             sender_id: userObj.id,
             broadcaster_id: brdId,
             message,

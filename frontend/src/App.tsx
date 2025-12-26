@@ -28,7 +28,7 @@ export default function App() {
     const [user, setUser] = useState<TUser|undefined>(undefined);
 
     const initData = async (access: IAccessContextSuccess) => {
-        const userRes = await getUser(access);
+        const userRes = await getUser(access.access_token);
         if(!userRes.success) {
             console.error(userRes.error);
             return;
@@ -38,7 +38,7 @@ export default function App() {
 
         getGlobalEmotes(access, setGlobalEmotes);
 
-        const delRes = await deleteAllSubscriptions(access);
+        const delRes = await deleteAllSubscriptions(access.access_token);
         if(!delRes.success) {
             console.error(delRes.error);
         }
