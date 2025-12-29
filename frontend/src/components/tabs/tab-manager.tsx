@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Tab from './tab';
 import HomeIcon from '../svg/home-icon';
 import PlusIcon from '../svg/plus-icon';
@@ -108,7 +108,9 @@ export default function TabManager({
         }
     }
 
-    if(location.hash.slice(1) !== currentTab) navigate(currentTab);
+    useEffect(() => {
+        if(location.hash.slice(1) !== currentTab) navigate(currentTab);
+    }, []);
 
     return (
         <div className={'flex items-center w-full h-9 gap-1 border-b p-1 border-outline-2'}

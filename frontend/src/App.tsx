@@ -3,9 +3,9 @@ import { AccessContext, type IAccessContextSuccess } from './contexts/access-con
 import TabManager from './components/tabs/tab-manager';
 import Router from './router';
 import { getUser } from './api/user-info';
-import { deleteAllSubscriptions } from './api/eventsub';
 import { getGlobalBadges, IBadgeSet } from './api/badges';
 import { getGlobalEmotes, IGlobalEmote } from './api/native-emote';
+import { ESCon, _deleteAllSubscriptions } from './api/eventsub';
 
 export type TUser = {
     id: string;
@@ -38,10 +38,7 @@ export default function App() {
 
         getGlobalEmotes(access, setGlobalEmotes);
 
-        const delRes = await deleteAllSubscriptions(access.access_token);
-        if(!delRes.success) {
-            console.error(delRes.error);
-        }
+        await _deleteAllSubscriptions(access.access_token);
     }
 
     if(context && context.access && 'access_token' in context.access

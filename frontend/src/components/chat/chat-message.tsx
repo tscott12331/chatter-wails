@@ -3,7 +3,7 @@ import ReplyIcon from '@components/svg/reply-icon';
 import Tooltip from '@components/util/tooltip';
 import React from 'react';
 
-interface IChatMessageFragment {
+export interface IChatMessageFragment {
     type: 'text'|'cheermote'|'emote'|'mention';
     text: string;
     cheermote: {

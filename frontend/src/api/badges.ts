@@ -89,7 +89,7 @@ export const getGlobalBadges = async (
 }
 
 
-interface IESBadge {
+export interface IESBadge {
     set_id: string;
     id: string;
     info: string;
