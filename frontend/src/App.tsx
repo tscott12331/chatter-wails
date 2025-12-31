@@ -5,7 +5,10 @@ import Router from './router';
 import { getUser } from './api/user-info';
 import { getGlobalBadges, IBadgeSet } from './api/badges';
 import { getGlobalEmotes, IGlobalEmote } from './api/native-emote';
-import { ESCon, _deleteAllSubscriptions } from './api/eventsub';
+import { ESCon, ESSubscription, TSubscriptionType, _deleteAllSubscriptions } from './api/eventsub';
+
+import { services } from '@wailsjs/go/models'
+import { CreateSubscription } from "@wailsjs/go/services/EventSubService"
 
 export type TUser = {
     id: string;
@@ -46,18 +49,32 @@ export default function App() {
         initData(context.access);
     }
 
+    if(user) {
+        let serviceUser = new services.User(user);
+        CreateSubscription(serviceUser, {
+            'broadcaster_user_id': "191948845",
+            'user_id': user.id.toString(),
+        },
+        "channel.chat.message"
+          ).then(r => {
+              const sub = new ESSubscription(r.subId, r.subType as TSubscriptionType);
+              ESCon.deleteSubscription(sub, user.access_token);
+          })
+    }
+
     return (
-        <div className="h-full overflow-hidden">
-            {user &&
-                <TabManager />
-            }
-            <div className="h-[calc(100%-36px)] flex flex-col">
-                <Router
-                user={user}
-                globalBadgeSets={globalBadgeSets}
-                globalEmotes={globalEmotes}
-                />
-            </div>
-        </div>
+        <></>
+        // <div className="h-full overflow-hidden">
+        //     {user &&
+        //         <TabManager />
+        //     }
+        //     <div className="h-[calc(100%-36px)] flex flex-col">
+        //         <Router
+        //         user={user}
+        //         globalBadgeSets={globalBadgeSets}
+        //         globalEmotes={globalEmotes}
+        //         />
+        //     </div>
+        // </div>
     )
 }
