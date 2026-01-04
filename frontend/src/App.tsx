@@ -50,16 +50,21 @@ export default function App() {
     }
 
     if(user) {
-        let serviceUser = new services.User(user);
-        CreateSubscription(serviceUser, {
-            'broadcaster_user_id': "191948845",
-            'user_id': user.id.toString(),
-        },
-        "channel.chat.message"
-          ).then(r => {
-              const sub = new ESSubscription(r.subId, r.subType as TSubscriptionType);
-              ESCon.deleteSubscription(sub, user.access_token);
-          })
+        getUser(user.access_token, 'yugi2x').then(ur => {
+            if(!ur.success) return;
+
+            let serviceUser = new services.User(user);
+
+            CreateSubscription(serviceUser, {
+                'broadcaster_user_id': ur.data.user.id,
+                'user_id': user.id.toString(),
+            },
+            "channel.chat.message"
+              ).then(r => {
+                  const sub = new ESSubscription(r.subId, r.subType as TSubscriptionType);
+                  ESCon.deleteSubscription(sub, user.access_token);
+              }).catch(e => console.error(e));
+        });
     }
 
     return (
