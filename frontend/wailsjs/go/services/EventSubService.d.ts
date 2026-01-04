@@ -4,4 +4,4 @@ import {services} from '../models';
 
 export function Connect():Promise<void>;
 
-export function CreateSubscription(arg1:services.User,arg2:services.ESSubscriptionCondition,arg3:string):Promise<services.ESSubscription>;
+export function CreateSubscription(arg1:services.User,arg2:services.ESSubscriptionCondition,arg3:string):Promise<any>;

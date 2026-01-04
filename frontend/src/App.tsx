@@ -8,6 +8,7 @@ import { getGlobalEmotes, IGlobalEmote } from './api/native-emote';
 import { ESCon, ESSubscription, TSubscriptionType, _deleteAllSubscriptions } from './api/eventsub';
 
 import { services } from '@wailsjs/go/models'
+import { Test } from '@wailsjs/go/main/app'
 import { CreateSubscription } from "@wailsjs/go/services/EventSubService"
 
 export type TUser = {
@@ -61,7 +62,7 @@ export default function App() {
             },
             "channel.chat.message"
               ).then(r => {
-                  const sub = new ESSubscription(r.subId, r.subType as TSubscriptionType);
+                  const sub = new ESSubscription(r, "channel.chat.message");
                   ESCon.deleteSubscription(sub, user.access_token);
               }).catch(e => console.error(e));
         });

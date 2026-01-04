@@ -5,14 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
-	"net/http"
 	"net/url"
-	"os"
 	"time"
 
 	"github.com/gorilla/websocket"
+	
+	"chatter-wails/internal/api"
 )
 
 const (
@@ -204,11 +203,6 @@ type ESMessage map[string]map[string]any
 
 
 type ESSubscriptionHandler func(message string)
-
-type ESSubscription struct {
-	SubId string				`json:"subId"`
-	SubType string				`json:"subType"`
-}
 
 type Client struct {
 	conn *websocket.Conn
@@ -471,12 +465,16 @@ type CreateSubscriptionRes struct{
 	Max_total_cost int			`json:"max_total_cost"`
 }
 
-type StatusError struct {
-	Res *http.Response
+type CastError struct {}
+func (ce *CastError) Error() string {
+	return "An error occurred casting data types"
 }
 
+type StatusError struct {
+	Res *api.APIResponse
+}
 func (se *StatusError) Error() string {
-	return fmt.Sprintf("%s, %v", se.Res.StatusCode, se.Res)
+	return fmt.Sprintf("%v, %v", se.Res.Status, se.Res)
 }
 
 type ESNoConnError struct {}
@@ -489,7 +487,7 @@ func (esrt *ESSessionReqTimeout) Error() string {
 	return "The request for a session ID timed out"
 }
 
-func (es *EventSubService) CreateSubscription(user User, condition ESSubscriptionCondition, subType string) (*ESSubscription, error) {
+func (es *EventSubService) CreateSubscription(user User, condition ESSubscriptionCondition, subType string) (*string, error) {
 	if !es.Client.connected {
 		log.Printf("[CreateSubscription]: Client not yet connected, signal ready to connect\n\n")
 		es.Client.ready <- true // signal ready to connect
@@ -522,76 +520,32 @@ func (es *EventSubService) CreateSubscription(user User, condition ESSubscriptio
 		log.Printf("[CreateSubscription]: EventSub Service has connected\n\n")
 	}
 
-	// log.Printf("condition: %v\n\n", condition)
-	sub_url := url.URL{
-		Scheme: twitchApiURL.Scheme,
-		Host: twitchApiURL.Host,
-		Path: twitchApiURL.Path + "/eventsub/subscriptions",
-	}
 
-	req_body := struct {
-		Sub_type string				`json:"type"`
-		Version string				`json:"version"`
-		Condition map[string]string	`json:"condition"`
-		Transport struct {
-			Method string			`json:"method"`
-			Session_id string		`json:"session_id"`
-		}							`json:"transport"`
-	}{
+	req_body := api.ApiPostSubscriptionsBody{
 		Sub_type: subType,
 		Version: "1",
 		Condition: condition,
-		Transport: struct{Method string `json:"method"`; Session_id string `json:"session_id"`}{
+		Transport: api.ApiPostSubscriptionsBodyTransport{
 			Method: "websocket",
 			Session_id: sessionId,
 		},
 	}
 
-	req_body_json, err := json.Marshal(req_body)
+	res, err := api.ApiPostSubscriptions(user.Access_token, req_body, map[string][]string{})
 	if err != nil {
-		log.Printf("[CreateSubscription]: An error occurred marshaling the request body, aborting\n\n")
+		log.Printf("[CreateSubscription]: An error occurred while making request, aborting\n\n")
 		return nil, err
 	}
-
-	req, err := http.NewRequest("POST", sub_url.String(), bytes.NewBuffer(req_body_json))
-	if err != nil {
-		log.Printf("[CreateSubscription]: An error occurred creating the request, aborting\n\n")
-		return nil, err
-	}
-	req.Header.Set("Authorization", "Bearer " + user.Access_token)
-	clientId := os.Getenv("VITE_CLIENT_ID")
-	req.Header.Set("Client-Id", clientId)
-	req.Header.Set("Content-Type", "application/json")
-
-	httpClient := &http.Client{Timeout: time.Second * 10}
-
-	log.Printf("POST %s\n\n", sub_url.String())
 	
-	res, err := httpClient.Do(req)
-	if err != nil {
-		log.Printf("[CreateSubscription]: Failed to make subscription\n\n")
-		return nil, err
-	}
-	defer res.Body.Close()
-
-	log.Printf("[CreateSubscription]: res %v", res)
-
-	if res.StatusCode != 202 {
+	if res.Status != 202 {
 		log.Printf("[CreateSubscription]: Failed to make subscription\n\n")
 		return nil, &StatusError{Res: res}
 	}
 
-	res_body, err := io.ReadAll(res.Body)
-	if err != nil {
-		log.Printf("[CreateSubscription]: An error occurred reading the response body, aborting\n\n")
-		return nil, err
-	}
-
-	var res_body_obj CreateSubscriptionRes
-	err = json.Unmarshal(res_body, &res_body_obj)
-	if err != nil {
-		log.Printf("[CreateSubscription]: An error occurred parsing the response body, aborting\n\n")
-		return nil, err
+	var res_body_obj, ok = res.Body.(CreateSubscriptionRes)
+	if !ok {
+		log.Printf("[CreateSubscription]: An error occurred casting the response body, aborting\n\n")
+		return nil, &CastError{}
 	}
 
 	if len(res_body_obj.Data) == 0 {
@@ -609,9 +563,6 @@ func (es *EventSubService) CreateSubscription(user User, condition ESSubscriptio
 		subList = []string{subId}
 	}
 
-	return &ESSubscription{
-		SubId: subId,
-		SubType: subType,
-	}, nil
+	return &subId, nil
 	
 }

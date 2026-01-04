@@ -1,19 +1,5 @@
 export namespace services {
 	
-	export class ESSubscription {
-	    subId: string;
-	    subType: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new ESSubscription(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.subId = source["subId"];
-	        this.subType = source["subType"];
-	    }
-	}
 	export class User {
 	    id: string;
 	    login: string;

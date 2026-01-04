@@ -1,9 +1,8 @@
 package main
 
 import (
-	"context"
 	"chatter-wails/services"
-	"github.com/joho/godotenv"
+	"context"
 )
 
 // App struct
@@ -22,8 +21,6 @@ func NewApp() *App {
 // startup is called when the app starts. The context is saved
 // so we can call the runtime methods
 func (a *App) startup(ctx context.Context) {
-	godotenv.Load()
-
 	a.ctx = ctx
 	a.esService.Ctx = ctx
 
