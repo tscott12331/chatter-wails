@@ -6,10 +6,7 @@ import { getUser } from './api/user-info';
 import { getGlobalBadges, IBadgeSet } from './api/badges';
 import { getGlobalEmotes, IGlobalEmote } from './api/native-emote';
 import { ESCon, ESSubscription, TSubscriptionType, _deleteAllSubscriptions } from './api/eventsub';
-
-import { services } from '@wailsjs/go/models'
-import { Test } from '@wailsjs/go/main/app'
-import { CreateSubscription } from "@wailsjs/go/services/EventSubService"
+import { DeleteAllSubscriptions } from '@wailsjs/go/services/EventSubService';
 
 export type TUser = {
     id: string;
@@ -42,7 +39,7 @@ export default function App() {
 
         getGlobalEmotes(access, setGlobalEmotes);
 
-        await _deleteAllSubscriptions(access.access_token);
+        await DeleteAllSubscriptions(access.access_token);
     }
 
     if(context && context.access && 'access_token' in context.access
@@ -50,37 +47,18 @@ export default function App() {
         initData(context.access);
     }
 
-    if(user) {
-        getUser(user.access_token, 'yugi2x').then(ur => {
-            if(!ur.success) return;
-
-            let serviceUser = new services.User(user);
-
-            CreateSubscription(serviceUser, {
-                'broadcaster_user_id': ur.data.user.id,
-                'user_id': user.id.toString(),
-            },
-            "channel.chat.message"
-              ).then(r => {
-                  const sub = new ESSubscription(r, "channel.chat.message");
-                  ESCon.deleteSubscription(sub, user.access_token);
-              }).catch(e => console.error(e));
-        });
-    }
-
     return (
-        <></>
-        // <div className="h-full overflow-hidden">
-        //     {user &&
-        //         <TabManager />
-        //     }
-        //     <div className="h-[calc(100%-36px)] flex flex-col">
-        //         <Router
-        //         user={user}
-        //         globalBadgeSets={globalBadgeSets}
-        //         globalEmotes={globalEmotes}
-        //         />
-        //     </div>
-        // </div>
+        <div className="h-full overflow-hidden">
+            {user &&
+                <TabManager />
+            }
+            <div className="h-[calc(100%-36px)] flex flex-col">
+                <Router
+                user={user}
+                globalBadgeSets={globalBadgeSets}
+                globalEmotes={globalEmotes}
+                />
+            </div>
+        </div>
     )
 }

@@ -444,36 +444,16 @@ func (c *Client) writePump(ctx context.Context) {
 	}
 }
 
-type CreateSubscriptionRes struct{
-	Data []struct{
-		Id string 				`json:"id"`
-		Status string			`json:"status"`
-		Sub_type string			`json:"type"`
-		Version string			`json:"version"`
-		Condition struct{}		`json:"condition"`
-		Created_at string		`json:"created_at"`
-		Transport struct{
-			Method string 		`json:"method"`
-			Session_id string 	`json:"session_id"`
-			Connected_at string	`json:"connected_at"`
-		}						`json:"transport"`
-		Cost int				`json:"cost"`
-
-	}							`json:"data"`
-	Total int					`json:"total"`
-	Total_cost int				`json:"total_cost"`
-	Max_total_cost int			`json:"max_total_cost"`
-}
 
 type CastError struct {}
 func (ce *CastError) Error() string {
 	return "An error occurred casting data types"
 }
 
-type StatusError struct {
-	Res *api.APIResponse
+type StatusError[T any] struct {
+	Res *api.APIResponse[T]
 }
-func (se *StatusError) Error() string {
+func (se *StatusError[any]) Error() string {
 	return fmt.Sprintf("%v, %v", se.Res.Status, se.Res)
 }
 
@@ -487,7 +467,25 @@ func (esrt *ESSessionReqTimeout) Error() string {
 	return "The request for a session ID timed out"
 }
 
-func (es *EventSubService) CreateSubscription(user User, condition ESSubscriptionCondition, subType string) (*string, error) {
+func (es *EventSubService) GetSubscriptions(accessToken string) ([]api.APISubscription, error) {
+	log.Printf("[GetSubscriptions]: Getting subscriptions\n\n")
+	res, err := api.ApiGetSubscriptions(accessToken, map[string][]string{})
+	if err != nil {
+		log.Printf("[GetSubscriptions]: An error occurred trying to get subscriptions, aborting\n\n")
+		return nil, err
+	}
+
+	if res.Status != 200 {
+		log.Printf("[GetSubscriptions]: Failed to get subscriptions, aborting\n\n")
+		return nil, &StatusError[api.GetSubscriptionsRes]{Res: res}
+	}
+
+	log.Printf("[GetSubscriptions]: res %+v\n\n", res)
+
+	return res.Body.Data, nil
+}
+
+func (es *EventSubService) CreateSubscription(accessToken string, condition ESSubscriptionCondition, subType string) (*string, error) {
 	if !es.Client.connected {
 		log.Printf("[CreateSubscription]: Client not yet connected, signal ready to connect\n\n")
 		es.Client.ready <- true // signal ready to connect
@@ -531,7 +529,7 @@ func (es *EventSubService) CreateSubscription(user User, condition ESSubscriptio
 		},
 	}
 
-	res, err := api.ApiPostSubscriptions(user.Access_token, req_body, map[string][]string{})
+	res, err := api.ApiPostSubscriptions(accessToken, req_body, map[string][]string{})
 	if err != nil {
 		log.Printf("[CreateSubscription]: An error occurred while making request, aborting\n\n")
 		return nil, err
@@ -539,20 +537,14 @@ func (es *EventSubService) CreateSubscription(user User, condition ESSubscriptio
 	
 	if res.Status != 202 {
 		log.Printf("[CreateSubscription]: Failed to make subscription\n\n")
-		return nil, &StatusError{Res: res}
+		return nil, &StatusError[api.ApiPostSubscriptionsRes]{Res: res}
 	}
 
-	var res_body_obj, ok = res.Body.(CreateSubscriptionRes)
-	if !ok {
-		log.Printf("[CreateSubscription]: An error occurred casting the response body, aborting\n\n")
-		return nil, &CastError{}
-	}
-
-	if len(res_body_obj.Data) == 0 {
+	if len(res.Body.Data) == 0 {
 		log.Panic("[CreateSubscription]: Twitch API and chatter data types are out of sync\n\n")
 	}
 
-	subId := res_body_obj.Data[0].Id
+	subId := res.Body.Data[0].Id
 	log.Printf("[CreateSubscription]: Recieved subscription ID %v\n\n", subId)
 
 	subList, ok := es.Client.subscriptions[subType]
@@ -565,4 +557,39 @@ func (es *EventSubService) CreateSubscription(user User, condition ESSubscriptio
 
 	return &subId, nil
 	
+}
+
+func (es *EventSubService) DeleteSubscription(accessToken string, subId string) (error) {
+	res, err := api.ApiDeleteSubscriptions(accessToken, map[string][]string{
+		"id": {subId},
+	})
+
+	if err != nil {
+		log.Printf("[DeleteSubscription]: An error occurred trying to delete a subscription, aborting\n\n")
+		return err
+	}
+
+	if res.Status != 204 {
+		log.Printf("[DeleteSubscription]: Failed to delete subscription\n\n")
+		return &StatusError[any]{Res: res}
+	}
+
+	return nil
+}
+
+func (es *EventSubService) DeleteAllSubscriptions(accessToken string) error {
+	res, err := es.GetSubscriptions(accessToken)
+	if err != nil {
+		log.Printf("[DeleteAllSubscriptions]: An error occurred getting the current subscriptions, aborting\n\n")
+		return err
+	}
+
+	for _, v := range res {
+		err := es.DeleteSubscription(accessToken, v.Id)
+		if err != nil {
+			log.Printf("[DeleteAllSubscriptions]: An error occured deleting subscription %v", v.Id)
+		}
+	}
+
+	return err
 }

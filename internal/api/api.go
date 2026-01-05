@@ -28,9 +28,9 @@ func (esrt *APISessionReqTimeout) Error() string {
 }
 
 
-type APIResponse struct{
+type APIResponse[T any] struct{
 	Status int
-	Body any
+	Body T
 }
 
 
@@ -124,13 +124,13 @@ func init() {
 }
 
 
-func ApiFetch(
+func ApiFetch[T any](
 	method string,
     endpoint url.URL,
     headers *http.Header,
 	body any,
     params map[string][]string,
-	) (*APIResponse, error) {
+	) (*APIResponse[T], error) {
 		var req_body *bytes.Buffer = nil
 
 		var hasBody = body != nil
@@ -151,7 +151,15 @@ func ApiFetch(
 		endpoint.RawQuery = encParams.Encode()
 		
 
-		req, err := http.NewRequest(method, endpoint.String(), req_body)
+		var req *http.Request
+		var err error
+
+		if req_body != nil {
+			req, err = http.NewRequest(method, endpoint.String(), req_body)
+		} else {
+			req, err = http.NewRequest(method, endpoint.String(), nil)
+		}
+
 		if err != nil {
 			log.Printf("[ApiFetch]: An error occurred creating the request, aborting\n\n")
 			return nil, err
@@ -180,52 +188,51 @@ func ApiFetch(
 			return nil, err
 		}
 
-		var res_body_obj any
+		var res_body_obj T
 		err = json.Unmarshal(res_body, &res_body_obj)
 		if err != nil {
 			log.Printf("[ApiFetch]: An error occurred parsing the response body, aborting\n\n")
 			return nil, err
 		}
-
 		
-		return &APIResponse{
+		return &APIResponse[T]{
 			Status: res.StatusCode,
 			Body: res_body_obj,
 		}, nil
 }
 
 
-func ApiDelete(
+func ApiDelete[T any](
     endpoint url.URL,
     headers *http.Header,
     params map[string][]string,
-    ) (*APIResponse, error) {
-		return ApiFetch("DELETE", endpoint, headers, nil, params)
+    ) (*APIResponse[T], error) {
+		return ApiFetch[T]("DELETE", endpoint, headers, nil, params)
 }
 
-func ApiGet(
+func ApiGet[T any](
     endpoint url.URL,
     headers *http.Header,
     params map[string][]string,
-    ) (*APIResponse, error) {
-		return ApiFetch("GET", endpoint, headers, nil, params)
+    ) (*APIResponse[T], error) {
+		return ApiFetch[T]("GET", endpoint, headers, nil, params)
 }
 
-func ApiPost(
+func ApiPost[T any](
     endpoint url.URL,
     headers *http.Header,
 	body any,
     params map[string][]string,
-    ) (*APIResponse, error) {
-		return ApiFetch("POST", endpoint, headers, body, params)
+    ) (*APIResponse[T], error) {
+		return ApiFetch[T]("POST", endpoint, headers, body, params)
 }
 
 
 
 func ApiGetValidate(
         access_token string,
-    ) (*APIResponse, error) {
-    return ApiGet(
+    ) (*APIResponse[any], error) {
+    return ApiGet[any](
 		VALIDATE_ENDPOINT,
 		apiValidateHeaders(access_token),
 		map[string][]string{},
@@ -233,17 +240,67 @@ func ApiGetValidate(
 }
 
 
+
+type APISubscription struct{
+	Id string					`json:"id"`
+	Status string				`json:"status"`
+	Sub_type string				`json:"type"`
+	Version string				`json:"version"`
+	Condition struct{}			`json:"condition"`
+	Created_at string			`json:"created_at"`
+    Transport struct{
+		Method string			`json:"method"`
+		Callback string			`json:"callback"`
+		Session_id string		`json:"session_id"`
+	}							`json:"transport"`
+	Cost int					`json:"cost"`
+}
+
+type GetSubscriptionsRes struct {
+	Data []APISubscription		`json:"data"`
+	Connected_at string			`json:"connected_at"`
+	Disconnected_at string		`json:"disconnected_at"`
+	Total int					`json:"total"`
+	Total_cost int				`json:"total_cost"`
+	Max_total_cost int			`json:"max_total_cost"`
+	Pagination struct{
+		Cursor string			`json:"cursor"`
+	}							`json:"pagination"`
+}
+
 func ApiGetSubscriptions(
     access_token string,
     params map[string][]string,
-	) (*APIResponse, error) {
-    return ApiGet(
+	) (*APIResponse[GetSubscriptionsRes], error) {
+    return ApiGet[GetSubscriptionsRes](
 			SUBSCRIPTIONS_ENDPOINT,
 			apiSubscriptionHeaders(access_token),
 			params,
     )
 }
 
+
+
+type ApiPostSubscriptionsRes struct{
+	Data []struct{
+		Id string 				`json:"id"`
+		Status string			`json:"status"`
+		Sub_type string			`json:"type"`
+		Version string			`json:"version"`
+		Condition struct{}		`json:"condition"`
+		Created_at string		`json:"created_at"`
+		Transport struct{
+			Method string 		`json:"method"`
+			Session_id string 	`json:"session_id"`
+			Connected_at string	`json:"connected_at"`
+		}						`json:"transport"`
+		Cost int				`json:"cost"`
+
+	}							`json:"data"`
+	Total int					`json:"total"`
+	Total_cost int				`json:"total_cost"`
+	Max_total_cost int			`json:"max_total_cost"`
+}
 
 type ApiPostSubscriptionsBody struct {
 	Sub_type string								`json:"type"`
@@ -261,8 +318,8 @@ func ApiPostSubscriptions(
     access_token string,
     body ApiPostSubscriptionsBody,
     params map[string][]string,
-    ) (*APIResponse, error) {
-    return ApiPost(
+    ) (*APIResponse[ApiPostSubscriptionsRes], error) {
+    return ApiPost[ApiPostSubscriptionsRes](
         SUBSCRIPTIONS_ENDPOINT,
         apiSubscriptionHeaders(access_token),
         body,
@@ -273,8 +330,8 @@ func ApiPostSubscriptions(
 func ApiDeleteSubscriptions(
     access_token string,
     params map[string][]string,
-    ) (*APIResponse, error) {
-    return ApiDelete(
+    ) (*APIResponse[any], error) {
+    return ApiDelete[any](
         SUBSCRIPTIONS_ENDPOINT,
         apiSubscriptionHeaders(access_token),
         params,
@@ -285,8 +342,8 @@ func ApiDeleteSubscriptions(
 func ApiGetUsers(
     access_token string,
     params map[string][]string,
-    ) (*APIResponse, error) {
-    return ApiGet(
+    ) (*APIResponse[any], error) {
+    return ApiGet[any](
         USERS_ENDPOINT,
         apiUsersHeaders(access_token),
         params,
@@ -297,8 +354,8 @@ func ApiPostUsers(
     access_token string,
     body any,
     params map[string][]string,
-    ) (*APIResponse, error) {
-    return ApiPost(
+    ) (*APIResponse[any], error) {
+    return ApiPost[any](
         USERS_ENDPOINT,
         apiUsersHeaders(access_token),
         body,
@@ -318,8 +375,8 @@ func ApiPostMessages(
     access_token string,
     body PostMessagesBody,
     params map[string][]string,
-    ) (*APIResponse, error) {
-    return ApiPost(
+    ) (*APIResponse[any], error) {
+    return ApiPost[any](
         MESSAGES_ENDPOINT,
         apiMessagesHeaders(access_token),
         body,
@@ -331,8 +388,8 @@ func ApiPostMessages(
 func ApiGetChannelBadges(
     access_token string,
     params map[string][]string,
-    ) (*APIResponse, error) {
-    return ApiGet(
+    ) (*APIResponse[any], error) {
+    return ApiGet[any](
         BADGES_ENDPOINT,
         apiBadgesHeaders(access_token),
         params,
@@ -341,8 +398,8 @@ func ApiGetChannelBadges(
 
 func ApiGetGlobalBadges(
     access_token string,
-    ) (*APIResponse, error) {
-    return ApiGet(
+    ) (*APIResponse[any], error) {
+    return ApiGet[any](
         GLOBAL_BADGES_ENDPOINT,
         apiBadgesHeaders(access_token),
 		map[string][]string{},
@@ -353,8 +410,8 @@ func ApiGetGlobalBadges(
 func ApiGetUserEmotes(
     access_token string,
     params map[string][]string,
-    ) (*APIResponse, error) {
-    return ApiGet(
+    ) (*APIResponse[any], error) {
+    return ApiGet[any](
 		USER_EMOTES_ENDPOINT,
 		apiEmotesHeaders(access_token),
 		params,
@@ -365,8 +422,8 @@ func ApiGetUserEmotes(
 func ApiGetGlobalEmotes(
     access_token string,
     params map[string][]string,
-    ) (*APIResponse, error) {
-    return ApiGet(
+    ) (*APIResponse[any], error) {
+    return ApiGet[any](
 		GLOBAL_EMOTES_ENDPOINT,
 		apiEmotesHeaders(access_token),
 		params,

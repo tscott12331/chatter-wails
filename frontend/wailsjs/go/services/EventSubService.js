@@ -9,3 +9,15 @@ export function Connect() {
 export function CreateSubscription(arg1, arg2, arg3) {
   return window['go']['services']['EventSubService']['CreateSubscription'](arg1, arg2, arg3);
 }
+
+export function DeleteAllSubscriptions(arg1) {
+  return window['go']['services']['EventSubService']['DeleteAllSubscriptions'](arg1);
+}
+
+export function DeleteSubscription(arg1, arg2) {
+  return window['go']['services']['EventSubService']['DeleteSubscription'](arg1, arg2);
+}
+
+export function GetSubscriptions(arg1) {
+  return window['go']['services']['EventSubService']['GetSubscriptions'](arg1);
+}

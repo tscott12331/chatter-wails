@@ -1,36 +1,31 @@
-export namespace services {
+export namespace api {
 	
-	export class User {
+	export class APISubscription {
 	    id: string;
-	    login: string;
-	    display_name: string;
+	    status: string;
 	    type: string;
-	    broadcaster_type: string;
-	    description: string;
-	    profile_image_url: string;
-	    offline_image_url: string;
-	    view_count: number;
-	    // Go type: time
-	    created_at: any;
-	    access_token: string;
+	    version: string;
+	    // Go type: struct {}
+	    condition: any;
+	    created_at: string;
+	    // Go type: struct { Method string "json:\"method\""; Callback string "json:\"callback\""; Session_id string "json:\"session_id\"" }
+	    transport: any;
+	    cost: number;
 	
 	    static createFrom(source: any = {}) {
-	        return new User(source);
+	        return new APISubscription(source);
 	    }
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.id = source["id"];
-	        this.login = source["login"];
-	        this.display_name = source["display_name"];
+	        this.status = source["status"];
 	        this.type = source["type"];
-	        this.broadcaster_type = source["broadcaster_type"];
-	        this.description = source["description"];
-	        this.profile_image_url = source["profile_image_url"];
-	        this.offline_image_url = source["offline_image_url"];
-	        this.view_count = source["view_count"];
-	        this.created_at = this.convertValues(source["created_at"], null);
-	        this.access_token = source["access_token"];
+	        this.version = source["version"];
+	        this.condition = this.convertValues(source["condition"], Object);
+	        this.created_at = source["created_at"];
+	        this.transport = this.convertValues(source["transport"], Object);
+	        this.cost = source["cost"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
