@@ -24,5 +24,5 @@ func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	a.esService.Ctx = ctx
 
-	a.esService.Connect()
+	go a.esService.Connect()
 }

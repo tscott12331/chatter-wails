@@ -8,6 +8,7 @@ import { TChatMessage } from "@/components/chat/chat-message";
 import { IPopupUser } from "@/components/chat/user-popup";
 
 import { CreateSubscription, DeleteSubscription } from "@wailsjs/go/services/EventSubService"
+import { EventsOn, EventsOff } from "@wailsjs/runtime/runtime";
 
 import { useEffect, useState } from "react";
 
@@ -104,7 +105,10 @@ export default function useChat({ channel, user, globalBadgeSets, maxMessages = 
         // subscription.addEventListener('message', handleNotificationMessage);
         setChatMessages([]);
 
+        EventsOn('chat-message', (m) => handleNotificationMessage(m));
+        
         return () => {
+            EventsOff('chat-message')
             DeleteSubscription(user.access_token, subscription);
             // subscription.removeEventListener('message', handleNotificationMessage);
             // ESCon.deleteSubscription(subscription, user.access_token);

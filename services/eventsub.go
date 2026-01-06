@@ -10,7 +10,8 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	
+	"github.com/wailsapp/wails/v2/pkg/runtime"
+
 	"chatter-wails/internal/api"
 )
 
@@ -80,39 +81,58 @@ type ESBadge struct {
 	Info string				`json:"info"`
 }
 
-type ESChatMessageFragment struct {
-	Message_type string			`json:"type"`
-	Text string					`json:"text"`
-	Cheermote struct {
-		Prefix string			`json:"prefix"`
-		Bits int				`json:"bits"`
-		Tier int				`json:"tier"`
-	}							`json:"cheermote,omitempty"`
-	Emote *struct{
-		Id string						`json:"id"`
-		Emote_set_id string				`json:"emote_set_id"`
-		Owner_id string					`json:"owner_id"`
-		Format []string					`json:"format"`
-	}									`json:"emote,omitempty"`
-	Mention *struct{
-		User_id string			`json:"user_id"`
-		User_name string		`json:"user_name"`
-		User_login string		`json:"user_login"`
-	}							`json:"mention,omitempty"`
 
+type ESChatMessageFragment struct{
+	Fragment_type string							`json:"type"`
+	Text string										`json:"text"`
+    Cheermote *struct{
+		Prefix string								`json:"prefix"`
+		Bits int									`json:"bits"`
+		Tier int									`json:"tier"`
+	}												`json:"cheermote,omitempty"`
+    Emote *struct{
+		Id string									`json:"id"`
+		Emote_set_id string							`json:"emote_set_id"`
+		Owner_id string								`json:"owner_id"`
+		Format []string								`json:"format"`
+	}												`json:"emote,omitempty"`
+    Mention *struct{
+		User_id string								`json:"user_id"`
+		User_name string							`json:"user_name"`
+		User_login string							`json:"user_login"`
+	}												`json:"mention,omitempty"`
 }
 
-type ESMessageReply struct {
-	Parent_message_body string		`json:"parent_message_body"`
-	Parent_message_id string		`json:"parent_message_id"`
-	Parent_user_id string			`json:"parent_user_id"`
-	Parent_user_login string		`json:"parent_user_login"`
-	Parent_user_name string			`json:"parent_user_name"`
-	Thread_message_id string		`json:"thread_message_id"`
-	Thread_user_id string			`json:"thread_user_id"`
-	Thread_user_login string		`json:"thread_user_login"`
-	Thread_user_name string			`json:"thread_user_name"`
+type ESMessageBadge struct{
+	SrcSet string									`json:"srcSet"`
+	Info string										`json:"info"`
+	Title string									`json:"title"`
 }
+
+type ESMessageReply struct{
+	Parent_message_body string						`json:"parent_message_body"`
+	Parent_message_id string						`json:"parent_message_id"`
+	Parent_user_id string							`json:"parent_user_id"`
+	Parent_user_login string						`json:"parent_user_login"`
+	Parent_user_name string							`json:"parent_user_name"`
+	Thread_message_id string						`json:"thread_message_id"`
+	Thread_user_id string							`json:"thread_user_id"`
+	Thread_user_login string						`json:"thread_user_login"`
+	Thread_user_name string							`json:"thread_user_name"`
+}
+
+type ESChatMessage struct{
+    id string
+    username string
+    text string
+    fragments []ESChatMessageFragment
+    color string
+    badges []ESMessageBadge
+    reply *ESMessageReply
+}
+
+
+
 
 type ESEvent struct {
 	Broadcaster_user_id string				`json:"broadcaster_user_id"`
@@ -124,7 +144,7 @@ type ESEvent struct {
 	Message_id string						`json:"message_id"`
 	Message struct {
 		Text string							`json:"text"`
-		Fragments ESChatMessageFragment		`json:"fragments"`
+		Fragments []ESChatMessageFragment	`json:"fragments"`
 	}										`json:"message"`
 	Color string							`json:"color"`
 	Badges []ESBadge						`json:"badges"`
@@ -143,68 +163,118 @@ type ESEvent struct {
 
 }
 
-type ESMessage map[string]map[string]any
-
-// type ESNotification struct {
-// 	Metadata struct {
-// 		Message_id string			`json:"message_id"`
-// 		Message_type string			`json:"message_type"`
-// 		Message_timestamp string	`json:"message_timestamp"`
-// 		Subscription_type string	`json:"subscription_type"`
-// 		Subscription_version string `json:"subscription_version"`
-// 	}								`json:"metadata"`
-// 	Payload struct {
-// 		Subscription struct {
-// 			Id string					`json:"id"`
-// 			Status string				`json:"status"`
-// 			Sub_type string				`json:"type"`
-// 			Version string				`json:"version"`
-// 			Cost int					`json:"cost"`
-// 			Condition map[string]string `json:"condition"`
-// 			Transport struct {
-// 				Method string			`json:"method"`
-// 				Session_id string		`json:"session_id"`
-// 			}							`json:"transport"`
-// 			Created_at string			`json:"created_at"`
-// 		}								`json:"subscription"`
-// 		Event ESEvent					`json:"event"`
-// 	}
-// }
-
-// type ESWelcomeMessage struct {
-// 	Metadata map[string]string			`json:"metadata"`
-// 	Payload struct {
-// 		Session struct {
-// 			Id string							`json:"id"`
-// 			Status string						`json:"status"`
-// 			Keepalive_timeout_seconds string	`json:"keepalive_timeout_seconds"`
-// 			Reconnect_url string 				`json:"reconnect_url"`
-// 			Connected_at string 				`json:"connected_at"`
-// 		}										`json:"session"`
-// 	}											`json:"payload"`
-// }
-
-// type ESWelcomeMessage struct {
-// 	Metadata struct {
-// 		Message_id string			`json:"message_id"`
-// 		Message_type string			`json:"message_type"`
-// 		Message_timestamp string 	`json:"message_timestamp"`
-// 	}								`json:"metadata"`
-// 	Payload struct {
-// 		Session struct {
-// 			Id string							`json:"id"`
-// 			Status string						`json:"status"`
-// 			Keepalive_timeout_seconds string	`json:"keepalive_timeout_seconds"`
-// 			Reconnect_url string 				`json:"reconnect_url"`
-// 			Connected_at string 				`json:"connected_at"`
-// 		}										`json:"session"`
-// 	}											`json:"payload"`
-// }
+type ESChatMessageEvent = ESEvent
 
 
-type ESSubscriptionHandler func(message string)
+
+
+type ESWelcomeMetadata struct {
+	Message_id string			`json:"message_id"`
+	Message_type string			`json:"message_type"`
+	Message_timestamp string 	`json:"message_timestamp"`
+}
+
+type ESWelcomePayloadSession struct {
+	Id string							`json:"id"`
+	Status string						`json:"status"`
+	Keepalive_timeout_seconds int		`json:"keepalive_timeout_seconds"`
+	Reconnect_url string 				`json:"reconnect_url"`
+	Connected_at string 				`json:"connected_at"`
+}
+
+type ESWelcomePayload struct {
+	Session ESWelcomePayloadSession 	`json:"session"`
+}
+
+type ESWelcome struct {
+	Metadata ESWelcomeMetadata					`json:"metadata"`
+	Payload ESWelcomePayload					`json:"payload"`
+}
+
+
+
+type ESNotificationMetadata = ESMessageMetadata
+
+type ESNotificationPayloadSubscription = ESMessagePayloadSubscription
+
+type ESNotificationPayload struct {
+	Subscription ESNotificationPayloadSubscription 	`json:"subscription"`
+	Event *ESEvent									`json:"event,omitempty"`
+}
+
+type ESNotification struct {
+	Metadata ESNotificationMetadata		`json:"metadata"`
+	Payload ESNotificationPayload		`json:"payload"`
+}
+
+
+
+type ESMessageMetadata struct {
+	Message_id string			`json:"message_id"`
+	Message_type string			`json:"message_type"`
+	Message_timestamp string	`json:"message_timestamp"`
+	Subscription_type string	`json:"subscription_type"`
+	Subscription_version string `json:"subscription_version"`
+}
+
+type ESMessagePayloadSubscriptionTransport struct {
+	Method string			`json:"method"`
+	Session_id string		`json:"session_id"`
+}
+
+type ESMessagePayloadSubscription struct {
+	Id string												`json:"id"`
+	Status string											`json:"status"`
+	Sub_type string											`json:"type"`
+	Version string											`json:"version"`
+	Cost int												`json:"cost"`
+	Condition map[string]string								`json:"condition"`
+	Transport ESMessagePayloadSubscriptionTransport			`json:"transport"`
+	Created_at string										`json:"created_at"`
+}
+
+type ESMessagePayload struct {
+	Subscription ESMessagePayloadSubscription 	`json:"subscription"`
+	Event *ESEvent					`json:"event,omitempty"`
+	Session ESWelcomePayloadSession				`json:"session"`
+}
+
+// type ESMessage map[string]map[string]any
+type ESMessage struct {
+	Metadata ESMessageMetadata 			`json:"metadata"`
+	Payload ESMessagePayload			`json:"payload"`
+}
+
+
+
+func esMessageToESNotification(message *ESMessage) *ESNotification {
+	return &ESNotification{
+		Metadata: message.Metadata,
+		Payload: ESNotificationPayload{
+			Subscription: message.Payload.Subscription,
+			Event: message.Payload.Event,
+		},
+	}
+}
+
+func esMessageToESWelcome(message *ESMessage) *ESWelcome {
+	return &ESWelcome{
+		Metadata: ESWelcomeMetadata{
+			Message_id: message.Metadata.Message_id,
+			Message_type: message.Metadata.Message_type,
+			Message_timestamp: message.Metadata.Message_timestamp,
+		},
+		Payload: ESWelcomePayload{
+			Session: message.Payload.Session,
+		},
+	}
+}
+
+
 
 type Client struct {
+	ctx context.Context
+
 	conn *websocket.Conn
 	connected bool
 
@@ -245,6 +315,8 @@ func NewEventSubService() *EventSubService {
 func (es *EventSubService) Connect() {
 	ready := es.Client.ready
 
+	es.Client.ctx = es.Ctx
+
 	esCtx, cancel := context.WithCancel(es.Ctx)
 	defer cancel()
 	
@@ -274,8 +346,7 @@ func (es *EventSubService) Connect() {
 					go es.Client.writePump(esCtx)
 				}
 			} else {
-				log.Printf("[Connect]: Ready is false, cancelling read and write goroutines\n\n")
-				cancel()
+				log.Printf("[Connect]: Ready is false, setting connected to false\n\n")
 				es.Client.connected = false
 			}
 
@@ -297,21 +368,32 @@ func (es *EventSubService) Connect() {
 
 func (c *Client) handleESNotification(message ESMessage) {
 	log.Printf("[handleESNotification]: %v\n\n", message)
+
+	notification := esMessageToESNotification(&message)
+	if notification == nil {
+		log.Printf("[handleESNotification]: Converted welcome message is nil, aborting\n\n")
+		return
+	}
+
+	sub_type := notification.Metadata.Subscription_type
+
+	switch sub_type {
+	case "channel.chat.message":
+		runtime.EventsEmit(c.ctx, "chat-message", notification)
+	}
 }
 
 func (c *Client) handleESWelcome(message ESMessage) {
-	if s, ok := message["payload"]["session"].(map[string]any); ok {
-		id := s["id"]
-		if id, ok := id.(string); ok {
-			log.Printf("[handleESWelcome]: Setting session ID to %v\n\n", id)
-			c.sessionId = &id
-			c.newSessionIdChan <- c.sessionId
-		} else {
-			log.Printf("[handleESWelcome]: session_welcome message has incorrect type for id, aborting\n\n")
-		}
-	} else {
-		log.Printf("[handleESWelcome]: session_welcome message does not contain session map, aborting\n\n")
+	welcome := esMessageToESWelcome(&message)
+	if welcome == nil {
+		log.Printf("[handleESWelcome]: Converted welcome message is nil, aborting\n\n")
+		return
 	}
+
+	id := welcome.Payload.Session.Id
+	log.Printf("[handleESWelcome]: Setting session ID to %v\n\n", id)
+	c.sessionId = &id
+	c.newSessionIdChan <- c.sessionId
 }
 
 
@@ -319,15 +401,15 @@ func (c *Client) handleESMessage(message []byte) {
 	var message_obj ESMessage
 	err := json.Unmarshal(message, &message_obj)
 	if err != nil {
-		log.Printf("[handleESMessage]: An error occurred parsing the eventsub message, aborting\n\n")
+		log.Printf("[handleESMessage]: An error occurred parsing the eventsub message, aborting\n%v\n\n", err)
 		return
 	}
-	if message_obj["metadata"] == nil || message_obj["payload"] == nil || message_obj["metadata"]["message_type"] == nil {
-		log.Printf("[handleESMessage]: Unmarshalled object does not contain metadata, payload, or message_type fields, aborting\n\n")
-		return
-	}
+	// if message_obj["metadata"] == nil || message_obj["payload"] == nil || message_obj["metadata"]["message_type"] == nil {
+	// 	log.Printf("[handleESMessage]: Unmarshalled object does not contain metadata, payload, or message_type fields, aborting\n\n")
+	// 	return
+	// }
 
-	mType := message_obj["metadata"]["message_type"]
+	mType := message_obj.Metadata.Message_type
 
 	switch mType {
 	case "session_welcome":
@@ -350,8 +432,8 @@ func (c *Client) handleESMessage(message []byte) {
 func (c *Client) readPump(ctx context.Context) {
 	log.Printf("[readPump]: Started read goroutine for eventsub\n\n")
 	defer func() {
-		log.Printf("[readPump]: Notifying done channel\n\n")
-		c.done <- struct{}{}
+		log.Printf("[readPump]: Setting ready to false\n\n")
+		c.ready <- false
 	}()
 
 	// c.conn.SetReadLimit(maxMessageSize)
@@ -394,6 +476,7 @@ func (c *Client) writePump(ctx context.Context) {
 		c.conn.Close()
 	}()
 	
+	ready := c.ready
 	for {
 		select {
 		case message, ok := <-c.send:
@@ -437,6 +520,11 @@ func (c *Client) writePump(ctx context.Context) {
 		case <-c.done:
 			log.Printf("[writePump]: Connection has been closed, closing\n\n")
 			return
+		case r := <-ready:
+			if !r {
+				log.Printf("[writePump]: Ready is false, closing\n\n")
+				return
+			}
 		case <-ctx.Done():
 			log.Printf("[writePump]: Context canceled, closing\n\n")
 			return

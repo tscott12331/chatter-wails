@@ -189,10 +189,12 @@ func ApiFetch[T any](
 		}
 
 		var res_body_obj T
-		err = json.Unmarshal(res_body, &res_body_obj)
-		if err != nil {
-			log.Printf("[ApiFetch]: An error occurred parsing the response body, aborting\n\n")
-			return nil, err
+		if len(res_body) > 0 {
+			err = json.Unmarshal(res_body, &res_body_obj)
+			if err != nil {
+				log.Printf("[ApiFetch]: An error occurred parsing the response body, aborting\n\n")
+				return nil, err
+			}
 		}
 		
 		return &APIResponse[T]{
