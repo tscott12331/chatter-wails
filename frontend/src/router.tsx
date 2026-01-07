@@ -4,12 +4,12 @@ import HomePage from "./pages/home";
 import type { TUser } from "./App";
 import { IBadgeSet } from "./api/badges";
 import NotFoundPage from "./pages/not-found";
-import { IGlobalEmote } from "./api/native-emote";
+import { IAppEmote } from "./api/native-emote";
 
 interface IRouterProps {
     user: TUser|undefined;
     globalBadgeSets: IBadgeSet[];
-    globalEmotes: IGlobalEmote[];
+    globalEmotes: IAppEmote[];
 }
 
 export default function Router({

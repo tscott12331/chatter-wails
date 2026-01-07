@@ -1,6 +1,6 @@
 import { FailedApiRequest } from "@/api/api-response";
 import { combineChannelGlobalSets, esBadgesToMessageBadges, getChannelBadges, IBadgeSet } from "@/api/badges";
-import { ESCon, ESSubscription, IESNotification, TESMessage } from "@/api/eventsub";
+import { IESNotification, TESMessage } from "@/api/eventsub";
 import { sendMessage } from "@/api/messages";
 import { getUser } from "@/api/user-info";
 import { TUser } from "@/App";
@@ -39,23 +39,19 @@ export default function useChat({ channel, user, globalBadgeSets, maxMessages = 
         })
     }
 
-    const handleNotificationMessage = (message: TESMessage) => {
+    const handleChatMessage = (message: TESMessage) => {
         const data = message as IESNotification;
-        switch(data.metadata.subscription_type) {
-            case 'channel.chat.message':
-                const message: TChatMessage = {
-                id: data.payload.event.message_id,
-                username: data.payload.event.chatter_user_name,
-                text: data.payload.event.message.text,
-                fragments: data.payload.event.message.fragments,
-                color: data.payload.event.color,
-                badges: esBadgesToMessageBadges(data.payload.event.badges, badgeSets),
-                reply: data.payload.event.reply,
-            }
 
-            appendChatMessage(message);
-            break;
+        const chatMessage: TChatMessage = {
+            id: data.payload.event.message_id,
+            username: data.payload.event.chatter_user_name,
+            text: data.payload.event.message.text,
+            fragments: data.payload.event.message.fragments,
+            color: data.payload.event.color,
+            badges: esBadgesToMessageBadges(data.payload.event.badges, badgeSets),
+            reply: data.payload.event.reply,
         }
+        appendChatMessage(chatMessage);
     }
 
     const getBroadcasterId = async (channelName: string, access_token: string) => {
@@ -105,10 +101,10 @@ export default function useChat({ channel, user, globalBadgeSets, maxMessages = 
         // subscription.addEventListener('message', handleNotificationMessage);
         setChatMessages([]);
 
-        EventsOn('chat-message', (m) => handleNotificationMessage(m));
+        EventsOn(subscription, (m) => handleChatMessage(m));
         
         return () => {
-            EventsOff('chat-message')
+            EventsOff(subscription);
             DeleteSubscription(user.access_token, subscription);
             // subscription.removeEventListener('message', handleNotificationMessage);
             // ESCon.deleteSubscription(subscription, user.access_token);

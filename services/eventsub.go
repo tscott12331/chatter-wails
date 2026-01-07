@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/url"
 	"time"
@@ -82,6 +81,23 @@ type ESBadge struct {
 }
 
 
+
+type AppChatMessageFragment struct{
+	Fragment_type string							`json:"type"`
+	Text string										`json:"text"`
+    Cheermote *struct{
+		Prefix string								`json:"prefix"`
+		Bits int									`json:"bits"`
+		Tier int									`json:"tier"`
+	}												`json:"cheermote,omitempty"`
+	Emote *AppEmote									`json:"emote"`
+    Mention *struct{
+		User_id string								`json:"user_id"`
+		User_name string							`json:"user_name"`
+		User_login string							`json:"user_login"`
+	}												`json:"mention,omitempty"`
+}
+
 type ESChatMessageFragment struct{
 	Fragment_type string							`json:"type"`
 	Text string										`json:"text"`
@@ -102,6 +118,30 @@ type ESChatMessageFragment struct{
 		User_login string							`json:"user_login"`
 	}												`json:"mention,omitempty"`
 }
+
+var esDarkTheme = "dark"
+var esLightTheme = "light"
+func esChatMessageFragmentToAppMessageFragment(cmf *ESChatMessageFragment) *AppChatMessageFragment {
+	var appEmote *AppEmote = nil
+	if cmf.Emote != nil {
+		appEmote = &AppEmote{
+			Id: cmf.Emote.Id,
+			Name: cmf.Text,
+			LightSrcSet: GetEmoteSrcSet(cmf.Emote.Id, cmf.Emote.Format, &esLightTheme, nil),
+			DarkSrcSet: GetEmoteSrcSet(cmf.Emote.Id, cmf.Emote.Format, &esDarkTheme, nil),
+		}
+	}
+
+	return &AppChatMessageFragment{
+		Fragment_type: cmf.Fragment_type,
+		Text: cmf.Text,
+		Cheermote: cmf.Cheermote,
+		Emote: appEmote,
+		Mention: cmf.Mention,
+	}
+}
+
+
 
 type ESMessageBadge struct{
 	SrcSet string									`json:"srcSet"`
@@ -133,6 +173,7 @@ type ESChatMessage struct{
 
 
 
+/* EVENTSUB EVENT TYPES */
 
 type ESEvent struct {
 	Broadcaster_user_id string				`json:"broadcaster_user_id"`
@@ -163,10 +204,38 @@ type ESEvent struct {
 
 }
 
-type ESChatMessageEvent = ESEvent
+type ESChatMessageEventMessage struct{
+	Text string							`json:"text"`
+	Fragments []AppChatMessageFragment	`json:"fragments"`
+}
+type ESChatMessageEvent = struct{
+	Broadcaster_user_id string				`json:"broadcaster_user_id"`
+	Broadcaster_user_login string			`json:"broadcaster_user_login"`
+	Broadcaster_user_name string			`json:"broadcaster_user_name"`
+	Chatter_user_id string					`json:"chatter_user_id"`
+	Chatter_user_login string				`json:"chatter_user_login"`
+	Chatter_user_name string				`json:"chatter_user_name"`
+	Message_id string						`json:"message_id"`
+	Message ESChatMessageEventMessage		`json:"message"`
+	Color string							`json:"color"`
+	Badges []ESBadge						`json:"badges"`
+	Message_type string						`json:"message_type"`
+	Cheer *struct {
+		Bits int							`json:"bits"`
+	}										`json:"cheer,omitempty"`
+	Reply *ESMessageReply							`json:"reply,omitempty"`
+	Channel_points_custom_reward_id *string			`json:"channel_points_custom_reward_id,omitempty"`
+	Source_broadcaster_user_id *string				`json:"source_broadcaster_user_id,omitempty"`
+	Source_broadcaster_user_name *string			`json:"source_broadcaster_user_name,omitempty"`
+	Source_braodcaster_user_login *string			`json:"source_broadcaster_user_login,omitempty"`
+	Source_message_id *string						`json:"source_message_id,omitempty"`
+	Source_badges *[]ESBadge						`json:"source_badges,omitempty"`
+	Is_source_only *bool							`json:"is_source_only,omitempty"`
+}
 
 
 
+/* WELCOME MESSAGE TYPES */
 
 type ESWelcomeMetadata struct {
 	Message_id string			`json:"message_id"`
@@ -193,6 +262,8 @@ type ESWelcome struct {
 
 
 
+/* NOTIFICATION TYPES */
+
 type ESNotificationMetadata = ESMessageMetadata
 
 type ESNotificationPayloadSubscription = ESMessagePayloadSubscription
@@ -208,6 +279,20 @@ type ESNotification struct {
 }
 
 
+
+type ESChatMessageNotificationPayload struct {
+	Subscription ESNotificationPayloadSubscription 	`json:"subscription"`
+	Event *ESChatMessageEvent						`json:"event,omitempty"`
+}
+
+type ESChatMessageNotification struct {
+	Metadata ESNotificationMetadata				`json:"metadata"`
+	Payload ESChatMessageNotificationPayload	`json:"payload"`
+}
+
+
+
+/* EVENTSUB MESSAGE TYPES */
 
 type ESMessageMetadata struct {
 	Message_id string			`json:"message_id"`
@@ -257,6 +342,46 @@ func esMessageToESNotification(message *ESMessage) *ESNotification {
 	}
 }
 
+func esNotificationToEsChatMessageNotification(notification *ESNotification) *ESChatMessageNotification {
+	var fragments = []AppChatMessageFragment{}
+	for _, fragment := range notification.Payload.Event.Message.Fragments {
+		fragments = append(fragments, *esChatMessageFragmentToAppMessageFragment(&fragment))
+	}
+
+	return &ESChatMessageNotification{
+		Metadata: notification.Metadata,
+		Payload: ESChatMessageNotificationPayload{
+			Subscription: notification.Payload.Subscription,
+			Event: &ESChatMessageEvent{
+				Broadcaster_user_id: notification.Payload.Event.Broadcaster_user_id,
+				Broadcaster_user_login: notification.Payload.Event.Broadcaster_user_login,
+				Broadcaster_user_name: notification.Payload.Event.Broadcaster_user_name,
+				Chatter_user_id: notification.Payload.Event.Chatter_user_id,
+				Chatter_user_login: notification.Payload.Event.Chatter_user_login,
+				Chatter_user_name: notification.Payload.Event.Chatter_user_name,
+				Message_id: notification.Payload.Event.Message_id,
+				Message: ESChatMessageEventMessage{
+					Text: notification.Payload.Event.Message.Text,
+					Fragments: fragments,
+				},
+				Color: notification.Payload.Event.Color,
+				Badges: notification.Payload.Event.Badges,
+				Message_type: notification.Payload.Event.Message_type,
+				Cheer: notification.Payload.Event.Cheer,
+				Reply: notification.Payload.Event.Reply,
+				Channel_points_custom_reward_id: notification.Payload.Event.Channel_points_custom_reward_id,
+				Source_broadcaster_user_id: notification.Payload.Event.Source_broadcaster_user_id,
+				Source_broadcaster_user_name: notification.Payload.Event.Source_broadcaster_user_name,
+				Source_braodcaster_user_login: notification.Payload.Event.Source_braodcaster_user_login,
+				Source_message_id: notification.Payload.Event.Source_message_id,
+				Source_badges: notification.Payload.Event.Source_badges,
+				Is_source_only: notification.Payload.Event.Is_source_only,
+				
+			},
+		},
+	}
+}
+
 func esMessageToESWelcome(message *ESMessage) *ESWelcome {
 	return &ESWelcome{
 		Metadata: ESWelcomeMetadata{
@@ -272,6 +397,19 @@ func esMessageToESWelcome(message *ESMessage) *ESWelcome {
 
 
 
+
+type ESChatSubscriptionData struct{
+	channel string
+	channelBadgeSets []api.ApiBadgeSet
+}
+type ESSubscription[T any] struct{
+	subType string
+	subId string
+	data T
+}
+
+type ESSubscriptionMap[T any] map[string][]ESSubscription[T]
+
 type Client struct {
 	ctx context.Context
 
@@ -279,7 +417,7 @@ type Client struct {
 	connected bool
 
 	sessionId *string
-	subscriptions map[string][]string
+	chatSubscriptions ESSubscriptionMap[ESChatSubscriptionData]
 
 	waitingClient chan struct{}
 	sessionIdChan chan *string
@@ -367,8 +505,6 @@ func (es *EventSubService) Connect() {
 }
 
 func (c *Client) handleESNotification(message ESMessage) {
-	log.Printf("[handleESNotification]: %v\n\n", message)
-
 	notification := esMessageToESNotification(&message)
 	if notification == nil {
 		log.Printf("[handleESNotification]: Converted welcome message is nil, aborting\n\n")
@@ -379,7 +515,8 @@ func (c *Client) handleESNotification(message ESMessage) {
 
 	switch sub_type {
 	case "channel.chat.message":
-		runtime.EventsEmit(c.ctx, "chat-message", notification)
+		chatMessage := esNotificationToEsChatMessageNotification(notification)
+		runtime.EventsEmit(c.ctx, notification.Payload.Subscription.Id, chatMessage)
 	}
 }
 
@@ -455,7 +592,6 @@ func (c *Client) readPump(ctx context.Context) {
 				return
 			}
 			message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
-			log.Printf("[readPump]: RECIEVED MESSAGE\n\n")
 
 			c.handleESMessage(message)
 		}
@@ -538,13 +674,6 @@ func (ce *CastError) Error() string {
 	return "An error occurred casting data types"
 }
 
-type StatusError[T any] struct {
-	Res *api.APIResponse[T]
-}
-func (se *StatusError[any]) Error() string {
-	return fmt.Sprintf("%v, %v", se.Res.Status, se.Res)
-}
-
 type ESNoConnError struct {}
 func (ese *ESNoConnError) Error() string {
 	return "A connection to the websocket server has not yet been established"
@@ -555,8 +684,7 @@ func (esrt *ESSessionReqTimeout) Error() string {
 	return "The request for a session ID timed out"
 }
 
-func (es *EventSubService) GetSubscriptions(accessToken string) ([]api.APISubscription, error) {
-	log.Printf("[GetSubscriptions]: Getting subscriptions\n\n")
+func (es *EventSubService) GetSubscriptions(accessToken string) ([]api.ApiSubscription, error) {
 	res, err := api.ApiGetSubscriptions(accessToken, map[string][]string{})
 	if err != nil {
 		log.Printf("[GetSubscriptions]: An error occurred trying to get subscriptions, aborting\n\n")
@@ -565,15 +693,13 @@ func (es *EventSubService) GetSubscriptions(accessToken string) ([]api.APISubscr
 
 	if res.Status != 200 {
 		log.Printf("[GetSubscriptions]: Failed to get subscriptions, aborting\n\n")
-		return nil, &StatusError[api.GetSubscriptionsRes]{Res: res}
+		return nil, &api.StatusError[api.ApiGetSubscriptionsRes]{Res: res}
 	}
-
-	log.Printf("[GetSubscriptions]: res %+v\n\n", res)
 
 	return res.Body.Data, nil
 }
 
-func (es *EventSubService) CreateSubscription(accessToken string, condition ESSubscriptionCondition, subType string) (*string, error) {
+func (es *EventSubService) CreateSubscription(accessToken string, condition ESSubscriptionCondition, subType string) (string, error) {
 	if !es.Client.connected {
 		log.Printf("[CreateSubscription]: Client not yet connected, signal ready to connect\n\n")
 		es.Client.ready <- true // signal ready to connect
@@ -594,13 +720,13 @@ func (es *EventSubService) CreateSubscription(accessToken string, condition ESSu
 		select {
 		case idPtr = <-es.Client.sessionIdChan:
 			if idPtr == nil {
-				return nil, &ESNoConnError{}
+				return "", &ESNoConnError{}
 			}
 
 			sessionId = *idPtr
 		case <-time.After(5 * time.Second):
 			log.Printf("[CreateSubscription]: Request for sessionId timed out, aborting\n\n")
-			return nil, &ESSessionReqTimeout{}
+			return "", &ESSessionReqTimeout{}
 		}
 
 		log.Printf("[CreateSubscription]: EventSub Service has connected\n\n")
@@ -620,12 +746,12 @@ func (es *EventSubService) CreateSubscription(accessToken string, condition ESSu
 	res, err := api.ApiPostSubscriptions(accessToken, req_body, map[string][]string{})
 	if err != nil {
 		log.Printf("[CreateSubscription]: An error occurred while making request, aborting\n\n")
-		return nil, err
+		return "", err
 	}
 	
 	if res.Status != 202 {
 		log.Printf("[CreateSubscription]: Failed to make subscription\n\n")
-		return nil, &StatusError[api.ApiPostSubscriptionsRes]{Res: res}
+		return "", &api.StatusError[api.ApiPostSubscriptionsRes]{Res: res}
 	}
 
 	if len(res.Body.Data) == 0 {
@@ -635,15 +761,24 @@ func (es *EventSubService) CreateSubscription(accessToken string, condition ESSu
 	subId := res.Body.Data[0].Id
 	log.Printf("[CreateSubscription]: Recieved subscription ID %v\n\n", subId)
 
-	subList, ok := es.Client.subscriptions[subType]
-	if ok {
-		// list for this subscription type already exists, append
-		subList = append(subList, subId)
-	} else {
-		subList = []string{subId}
+	newSub := ESSubscription[ESChatSubscriptionData]{
+		subType: subType,
+		subId: subId,
+		data: ESChatSubscriptionData{
+			channelBadgeSets: []api.ApiBadgeSet{},
+		},
 	}
 
-	return &subId, nil
+	
+	if subList, ok := es.Client.chatSubscriptions[subType]; ok {
+		// list for this subscription type already exists, append
+		subList = append(subList, newSub)
+
+	} else {
+		subList = []ESSubscription[ESChatSubscriptionData]{newSub}
+	}
+
+	return subId, nil
 	
 }
 
@@ -659,7 +794,7 @@ func (es *EventSubService) DeleteSubscription(accessToken string, subId string) 
 
 	if res.Status != 204 {
 		log.Printf("[DeleteSubscription]: Failed to delete subscription\n\n")
-		return &StatusError[any]{Res: res}
+		return &api.StatusError[any]{Res: res}
 	}
 
 	return nil

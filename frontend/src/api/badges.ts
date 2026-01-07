@@ -141,7 +141,7 @@ export const esBadgesToMessageBadges = (
         const urls = [version.image_url_1x, version.image_url_2x, version.image_url_4x];
         urls.forEach((url, i) => {
             srcSet = srcSet.concat(url)
-                .concat(` ${Math.pow(2, i)}x${i < urls.length ? ', ' : ''}`);
+                .concat(` ${Math.pow(2, i)}x${i < urls.length - 1 ? ', ' : ''}`);
         })
 
         messageBadges.push({ srcSet, info: badge.info, title: version.title });

@@ -9,12 +9,16 @@ import (
 type App struct {
 	ctx context.Context
 	esService *services.EventSubService
+	emoteService *services.EmoteService
+	badgeService *services.BadgeService
 }
 
 // NewApp creates a new App application struct
 func NewApp() *App {
 	return &App{
 		esService: services.NewEventSubService(),
+		emoteService: services.NewEmoteService(),
+		badgeService: services.NewBadgeService(),
 	}
 }
 
@@ -23,6 +27,8 @@ func NewApp() *App {
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	a.esService.Ctx = ctx
+	a.emoteService.Ctx = ctx
+	a.badgeService.Ctx = ctx
 
 	go a.esService.Connect()
 }

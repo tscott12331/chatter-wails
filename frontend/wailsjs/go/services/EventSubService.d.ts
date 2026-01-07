@@ -5,10 +5,10 @@ import {api} from '../models';
 
 export function Connect():Promise<void>;
 
-export function CreateSubscription(arg1:string,arg2:services.ESSubscriptionCondition,arg3:string):Promise<any>;
+export function CreateSubscription(arg1:string,arg2:services.ESSubscriptionCondition,arg3:string):Promise<string>;
 
 export function DeleteAllSubscriptions(arg1:string):Promise<void>;
 
 export function DeleteSubscription(arg1:string,arg2:string):Promise<void>;
 
-export function GetSubscriptions(arg1:string):Promise<Array<api.APISubscription>>;
+export function GetSubscriptions(arg1:string):Promise<Array<api.ApiSubscription>>;

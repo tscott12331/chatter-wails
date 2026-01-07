@@ -12,7 +12,7 @@ import { sendMessage } from '@api/messages';
 import ReplyPopup from '@components/chat/reply-popup';
 import { combineChannelGlobalSets, esBadgesToMessageBadges, getChannelBadges, IBadgeSet } from '@api/badges';
 import EmoteIcon from '@components/svg/emote-icon';
-import { getEmoteSrcSet, IGlobalEmote } from '@api/native-emote';
+import { getEmoteSrcSet, IAppEmote, IGlobalEmote } from '@api/native-emote';
 import Tooltip from '@components/util/tooltip';
 import { preload } from 'react-dom';
 import { moveCursorToEnd } from '@util/rte';
@@ -22,7 +22,7 @@ import useChat from '@/hooks/chat';
 interface IChatroomProps {
     user: TUser|undefined;
     globalBadgeSets: IBadgeSet[],
-    globalEmotes: IGlobalEmote[],
+    globalEmotes: IAppEmote[],
 }
 
 const dbLog = new DebugLogger();
@@ -147,10 +147,10 @@ export default function Chatroom({
         setShouldShowEmotePopup(cur => !cur);
     }
 
-    const handleEmoteSelect = (emote: IGlobalEmote) => {
+    const handleEmoteSelect = (emote: IAppEmote) => {
         if(!messageInputRef.current) return;
-        const srcSet = getEmoteSrcSet(emote.id, emote.format) ?? "";
-        if(!srcSet) return;
+
+        const srcSet = emote.darkSrcSet.length > 0 ? emote.darkSrcSet : emote.lightSrcSet;
 
         const concat = `<img class="inline" srcset="${srcSet}" alt="${emote.name}"/>`;
 
@@ -186,7 +186,7 @@ export default function Chatroom({
     const filteredGlobalEmotes = useMemo<React.ReactNode>(() => {
         const idHash: Record<string, string> = {};
 
-        const filteredArr: IGlobalEmote[] = [];
+        const filteredArr: IAppEmote[] = [];
 
         for(let i = 0; i < globalEmotes.length; i++) {
             const emote = globalEmotes[i];
@@ -197,8 +197,8 @@ export default function Chatroom({
         }
 
         return filteredArr.map(emote => {
-                const srcSet = getEmoteSrcSet(emote.id, emote.format);
-                for(const image in emote.images) {
+                const srcSet = emote.darkSrcSet.length > 0 ? emote.darkSrcSet : emote.lightSrcSet;
+                for(const image in srcSet.split(', ')) {
                     preload(image, { as: "image", imageSrcSet: srcSet });
                 }
 

@@ -66,6 +66,13 @@ export const getUserEmotes = async (
 }
 
 
+export interface IAppEmote {
+	id: string
+	name: string
+	lightSrcSet: string
+	darkSrcSet: string
+}
+
 export interface IGlobalEmote {
     id: string;
     name: string;

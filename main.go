@@ -28,6 +28,8 @@ func main() {
 		Bind: []interface{}{
 			app,
 			app.esService,
+			app.emoteService,
+			app.badgeService,
 		},
 	})
 

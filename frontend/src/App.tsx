@@ -4,9 +4,11 @@ import TabManager from './components/tabs/tab-manager';
 import Router from './router';
 import { getUser } from './api/user-info';
 import { getGlobalBadges, IBadgeSet } from './api/badges';
-import { getGlobalEmotes, IGlobalEmote } from './api/native-emote';
+import { getGlobalEmotes, IAppEmote, IGlobalEmote } from './api/native-emote';
 import { ESCon, ESSubscription, TSubscriptionType, _deleteAllSubscriptions } from './api/eventsub';
 import { DeleteAllSubscriptions } from '@wailsjs/go/services/EventSubService';
+import { GetGlobalEmotes } from '@wailsjs/go/services/EmoteService';
+import { GetGlobalBadgeSets } from '@wailsjs/go/services/BadgeService';
 
 export type TUser = {
     id: string;
@@ -24,7 +26,7 @@ export type TUser = {
 
 export default function App() {
     const [globalBadgeSets, setGlobalBadgeSets] = useState<IBadgeSet[]>([]);
-    const [globalEmotes, setGlobalEmotes] = useState<IGlobalEmote[]>([]);
+    const [globalEmotes, setGlobalEmotes] = useState<IAppEmote[]>([]);
     const context = useContext(AccessContext);
     const [user, setUser] = useState<TUser|undefined>(undefined);
 
@@ -35,9 +37,14 @@ export default function App() {
             return;
         }
         setUser({...userRes.data.user, access_token: access.access_token});
-        getGlobalBadges(access, setGlobalBadgeSets);
 
-        getGlobalEmotes(access, setGlobalEmotes);
+        GetGlobalBadgeSets(access.access_token)
+            .then(s => setGlobalBadgeSets(s))
+            .catch(e => console.error(e));
+
+        GetGlobalEmotes(access.access_token)
+            .then(e => setGlobalEmotes(e))
+            .catch(e => console.error(e));
 
         await DeleteAllSubscriptions(access.access_token);
     }

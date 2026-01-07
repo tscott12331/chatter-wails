@@ -14,21 +14,21 @@ import (
 	"github.com/joho/godotenv"
 )
 
-type StatusError struct {
-	Res *http.Response
+type StatusError[T any] struct {
+	Res *ApiResponse[T]
+}
+func (se *StatusError[any]) Error() string {
+	return fmt.Sprintf("%v, %v", se.Res.Status, se.Res)
 }
 
-func (se *StatusError) Error() string {
-	return fmt.Sprintf("%s, %v", se.Res.Status, se.Res)
-}
 
-type APISessionReqTimeout struct{}
-func (esrt *APISessionReqTimeout) Error() string {
+type ApiSessionReqTimeout struct{}
+func (esrt *ApiSessionReqTimeout) Error() string {
 	return "The request for a session ID timed out"
 }
 
 
-type APIResponse[T any] struct{
+type ApiResponse[T any] struct{
 	Status int
 	Body T
 }
@@ -130,7 +130,7 @@ func ApiFetch[T any](
     headers *http.Header,
 	body any,
     params map[string][]string,
-	) (*APIResponse[T], error) {
+	) (*ApiResponse[T], error) {
 		var req_body *bytes.Buffer = nil
 
 		var hasBody = body != nil
@@ -196,8 +196,8 @@ func ApiFetch[T any](
 				return nil, err
 			}
 		}
-		
-		return &APIResponse[T]{
+
+		return &ApiResponse[T]{
 			Status: res.StatusCode,
 			Body: res_body_obj,
 		}, nil
@@ -208,7 +208,7 @@ func ApiDelete[T any](
     endpoint url.URL,
     headers *http.Header,
     params map[string][]string,
-    ) (*APIResponse[T], error) {
+    ) (*ApiResponse[T], error) {
 		return ApiFetch[T]("DELETE", endpoint, headers, nil, params)
 }
 
@@ -216,7 +216,7 @@ func ApiGet[T any](
     endpoint url.URL,
     headers *http.Header,
     params map[string][]string,
-    ) (*APIResponse[T], error) {
+    ) (*ApiResponse[T], error) {
 		return ApiFetch[T]("GET", endpoint, headers, nil, params)
 }
 
@@ -225,7 +225,7 @@ func ApiPost[T any](
     headers *http.Header,
 	body any,
     params map[string][]string,
-    ) (*APIResponse[T], error) {
+    ) (*ApiResponse[T], error) {
 		return ApiFetch[T]("POST", endpoint, headers, body, params)
 }
 
@@ -233,7 +233,7 @@ func ApiPost[T any](
 
 func ApiGetValidate(
         access_token string,
-    ) (*APIResponse[any], error) {
+    ) (*ApiResponse[any], error) {
     return ApiGet[any](
 		VALIDATE_ENDPOINT,
 		apiValidateHeaders(access_token),
@@ -243,38 +243,43 @@ func ApiGetValidate(
 
 
 
-type APISubscription struct{
-	Id string					`json:"id"`
-	Status string				`json:"status"`
-	Sub_type string				`json:"type"`
-	Version string				`json:"version"`
-	Condition struct{}			`json:"condition"`
-	Created_at string			`json:"created_at"`
-    Transport struct{
-		Method string			`json:"method"`
-		Callback string			`json:"callback"`
-		Session_id string		`json:"session_id"`
-	}							`json:"transport"`
-	Cost int					`json:"cost"`
+type ApiSubscriptionTransport struct{
+	Method string			`json:"method"`
+	Callback string			`json:"callback"`
+	Session_id string		`json:"session_id"`
 }
 
-type GetSubscriptionsRes struct {
-	Data []APISubscription		`json:"data"`
+type ApiSubscription struct{
+	Id string							`json:"id"`
+	Status string						`json:"status"`
+	Sub_type string						`json:"type"`
+	Version string						`json:"version"`
+	Condition map[string]any			`json:"condition"`
+	Created_at string					`json:"created_at"`
+    Transport ApiSubscriptionTransport	`json:"transport"`
+	Cost int							`json:"cost"`
+}
+
+
+type ApiPagination struct{
+	Cursor string			`json:"cursor"`
+}
+
+type ApiGetSubscriptionsRes struct{
+	Data []ApiSubscription		`json:"data"`
 	Connected_at string			`json:"connected_at"`
 	Disconnected_at string		`json:"disconnected_at"`
 	Total int					`json:"total"`
 	Total_cost int				`json:"total_cost"`
 	Max_total_cost int			`json:"max_total_cost"`
-	Pagination struct{
-		Cursor string			`json:"cursor"`
-	}							`json:"pagination"`
+	Pagination ApiPagination 	`json:"pagination"`
 }
 
 func ApiGetSubscriptions(
     access_token string,
     params map[string][]string,
-	) (*APIResponse[GetSubscriptionsRes], error) {
-    return ApiGet[GetSubscriptionsRes](
+	) (*ApiResponse[ApiGetSubscriptionsRes], error) {
+    return ApiGet[ApiGetSubscriptionsRes](
 			SUBSCRIPTIONS_ENDPOINT,
 			apiSubscriptionHeaders(access_token),
 			params,
@@ -320,7 +325,7 @@ func ApiPostSubscriptions(
     access_token string,
     body ApiPostSubscriptionsBody,
     params map[string][]string,
-    ) (*APIResponse[ApiPostSubscriptionsRes], error) {
+    ) (*ApiResponse[ApiPostSubscriptionsRes], error) {
     return ApiPost[ApiPostSubscriptionsRes](
         SUBSCRIPTIONS_ENDPOINT,
         apiSubscriptionHeaders(access_token),
@@ -332,7 +337,7 @@ func ApiPostSubscriptions(
 func ApiDeleteSubscriptions(
     access_token string,
     params map[string][]string,
-    ) (*APIResponse[any], error) {
+    ) (*ApiResponse[any], error) {
     return ApiDelete[any](
         SUBSCRIPTIONS_ENDPOINT,
         apiSubscriptionHeaders(access_token),
@@ -344,7 +349,7 @@ func ApiDeleteSubscriptions(
 func ApiGetUsers(
     access_token string,
     params map[string][]string,
-    ) (*APIResponse[any], error) {
+    ) (*ApiResponse[any], error) {
     return ApiGet[any](
         USERS_ENDPOINT,
         apiUsersHeaders(access_token),
@@ -356,7 +361,7 @@ func ApiPostUsers(
     access_token string,
     body any,
     params map[string][]string,
-    ) (*APIResponse[any], error) {
+    ) (*ApiResponse[any], error) {
     return ApiPost[any](
         USERS_ENDPOINT,
         apiUsersHeaders(access_token),
@@ -377,7 +382,7 @@ func ApiPostMessages(
     access_token string,
     body PostMessagesBody,
     params map[string][]string,
-    ) (*APIResponse[any], error) {
+    ) (*ApiResponse[any], error) {
     return ApiPost[any](
         MESSAGES_ENDPOINT,
         apiMessagesHeaders(access_token),
@@ -390,7 +395,7 @@ func ApiPostMessages(
 func ApiGetChannelBadges(
     access_token string,
     params map[string][]string,
-    ) (*APIResponse[any], error) {
+    ) (*ApiResponse[any], error) {
     return ApiGet[any](
         BADGES_ENDPOINT,
         apiBadgesHeaders(access_token),
@@ -398,10 +403,30 @@ func ApiGetChannelBadges(
     )
 }
 
+
+type ApiBadgeSetVersions struct{
+	Id string				`json:"id"`
+	Image_url_1x string		`json:"image_url_1x"`
+	Image_url_2x string		`json:"image_url_2x"`
+	Image_url_4x string		`json:"image_url_4x"`
+	Title string			`json:"title"`
+	Description string		`json:"description"`
+	Click_action *string	`json:"click_action,omitempty"`
+	Click_url *string		`json:"click_url,omitempty"`
+}
+type ApiBadgeSet struct{
+	Set_id string						`json:"set_id"`
+    Versions []ApiBadgeSetVersions		`json:"versions"`
+}
+
+type ApiGetGlobalBadgesRes struct{
+	Data []ApiBadgeSet
+}
+
 func ApiGetGlobalBadges(
     access_token string,
-    ) (*APIResponse[any], error) {
-    return ApiGet[any](
+    ) (*ApiResponse[ApiGetGlobalBadgesRes], error) {
+    return ApiGet[ApiGetGlobalBadgesRes](
         GLOBAL_BADGES_ENDPOINT,
         apiBadgesHeaders(access_token),
 		map[string][]string{},
@@ -412,7 +437,7 @@ func ApiGetGlobalBadges(
 func ApiGetUserEmotes(
     access_token string,
     params map[string][]string,
-    ) (*APIResponse[any], error) {
+    ) (*ApiResponse[any], error) {
     return ApiGet[any](
 		USER_EMOTES_ENDPOINT,
 		apiEmotesHeaders(access_token),
@@ -421,11 +446,33 @@ func ApiGetUserEmotes(
 }
 
 
+
+
+type ApiGlobalEmoteImages struct{
+	Url_1x string		`json:"url_1x"`
+	Url_2x string		`json:"url_2x"`
+	Url_4x string		`json:"url_4x"`
+}
+
+type ApiGlobalEmote struct{
+	Id string					`json:"id"`
+	Name string					`json:"name"`
+    Images ApiGlobalEmoteImages	`json:"images"`
+	Format []string				`json:"format"`
+	Scale []string				`json:"scale"`
+	Theme_mode []string			`json:"theme_mode"`
+}
+
+type ApiGetGlobalEmotesRes struct{
+	Data []ApiGlobalEmote 	`json:"data"`
+	Template string			`json:"template"`
+}
+
 func ApiGetGlobalEmotes(
     access_token string,
     params map[string][]string,
-    ) (*APIResponse[any], error) {
-    return ApiGet[any](
+    ) (*ApiResponse[ApiGetGlobalEmotesRes], error) {
+    return ApiGet[ApiGetGlobalEmotesRes](
 		GLOBAL_EMOTES_ENDPOINT,
 		apiEmotesHeaders(access_token),
 		params,
