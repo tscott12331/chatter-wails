@@ -2,6 +2,7 @@ import { apiGetChannelBadges, apiGetGlobalBadges } from "./api-fetch";
 import { TApiResponse } from "./api";
 import { FailedApiRequest, ServerError, Success, UnknownError } from "./api-response";
 import { IMessageBadge } from "@components/chat/chat-message";
+import { api } from "@wailsjs/go/models";
 
 export interface IBadgeSet {
     set_id: string;
@@ -124,7 +125,7 @@ export const combineBadgeSets = (
 
 export const esBadgesToMessageBadges = (
     esBadges: IESBadge[],
-    badgeSets: IBadgeSet[],
+    badgeSets: api.ApiBadgeSet[],
     ): IMessageBadge[] =>
 {
     const messageBadges: IMessageBadge[] = [];

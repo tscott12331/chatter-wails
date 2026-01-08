@@ -21,7 +21,7 @@ const dbLog = new DebugLogger();
 
 export default function Chatroom({
 }: IChatroomProps) {
-    const { user, globalBadgeSets, globalEmotes } = useContext(GlobalContext);
+    const { user, globalEmotes } = useContext(GlobalContext);
     const navigate = useNavigate()
 
     if(!user) {
@@ -32,7 +32,7 @@ export default function Chatroom({
     const { channel } = useParams();
 
     const MAX_MESSAGES = 200;
-    const { chatMessages, sendChatMessage } = useChat({channel, user, globalBadgeSets, maxMessages: MAX_MESSAGES});
+    const { chatMessages, sendChatMessage } = useChat({channel, user, maxMessages: MAX_MESSAGES});
 
     const [isReplying, setIsReplying] = useState<boolean>(false);
     const [replyingToMessage, setReplyingToMessage] = useState<TChatMessage|undefined>();

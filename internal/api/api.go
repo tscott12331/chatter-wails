@@ -412,11 +412,13 @@ func ApiPostMessages(
 }
 
 
+type ApiGetChannelBadgesRes = ApiGetGlobalBadgesRes
+
 func ApiGetChannelBadges(
     access_token string,
     params map[string][]string,
-    ) (*ApiResponse[any], error) {
-    return ApiGet[any](
+    ) (*ApiResponse[ApiGetChannelBadgesRes], error) {
+    return ApiGet[ApiGetChannelBadgesRes](
         BADGES_ENDPOINT,
         apiBadgesHeaders(access_token),
         params,
