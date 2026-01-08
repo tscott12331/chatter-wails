@@ -1,38 +1,33 @@
-import { ESCon, ESSubscription, IESNotification, TESMessage } from '@/api/eventsub';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import ChatMessage, { TChatMessage } from '@components/chat/chat-message';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { TUser } from '@/App';
+import { useContext, useMemo, useRef, useState } from 'react';
 import { DebugLogger } from '@util/debug';
-// import { connectToChatroom, deleteSubscription, ESCon } from '@api/eventsub';
-import { getUser } from '@api/user-info';
 import AutoScroller from '@components/util/auto-scroller';
 import JumpToRecentPopup from '@components/chat/jump-to-recent-popup';
-import { sendMessage } from '@api/messages';
 import ReplyPopup from '@components/chat/reply-popup';
-import { combineChannelGlobalSets, esBadgesToMessageBadges, getChannelBadges, IBadgeSet } from '@api/badges';
 import EmoteIcon from '@components/svg/emote-icon';
-import { getEmoteSrcSet, IAppEmote, IGlobalEmote } from '@api/native-emote';
+import { IAppEmote } from '@api/native-emote';
 import Tooltip from '@components/util/tooltip';
 import { preload } from 'react-dom';
 import { moveCursorToEnd } from '@util/rte';
 import UserPopup, { IPopupUser } from '@components/chat/user-popup';
 import useChat from '@/hooks/chat';
+import { GlobalContext } from '@/contexts/global-context';
 
 interface IChatroomProps {
-    user: TUser|undefined;
-    globalBadgeSets: IBadgeSet[],
-    globalEmotes: IAppEmote[],
 }
 
 const dbLog = new DebugLogger();
 
 export default function Chatroom({
-    user,
-    globalBadgeSets,
-    globalEmotes,
 }: IChatroomProps) {
-    if(!user) return <></>;
+    const { user, globalBadgeSets, globalEmotes } = useContext(GlobalContext);
+    const navigate = useNavigate()
+
+    if(!user) {
+        navigate('/');
+        return <></>;
+    }
     
     const { channel } = useParams();
 

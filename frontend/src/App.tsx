@@ -1,14 +1,7 @@
-import { useContext, useState } from 'react'
-import { AccessContext, type IAccessContextSuccess } from './contexts/access-context'
+import { useContext } from 'react'
+import { GlobalContext } from './contexts/global-context'
 import TabManager from './components/tabs/tab-manager';
 import Router from './router';
-import { getUser } from './api/user-info';
-import { getGlobalBadges, IBadgeSet } from './api/badges';
-import { getGlobalEmotes, IAppEmote, IGlobalEmote } from './api/native-emote';
-import { ESCon, ESSubscription, TSubscriptionType, _deleteAllSubscriptions } from './api/eventsub';
-import { DeleteAllSubscriptions } from '@wailsjs/go/services/EventSubService';
-import { GetGlobalEmotes } from '@wailsjs/go/services/EmoteService';
-import { GetGlobalBadgeSets } from '@wailsjs/go/services/BadgeService';
 
 export type TUser = {
     id: string;
@@ -25,34 +18,7 @@ export type TUser = {
 }
 
 export default function App() {
-    const [globalBadgeSets, setGlobalBadgeSets] = useState<IBadgeSet[]>([]);
-    const [globalEmotes, setGlobalEmotes] = useState<IAppEmote[]>([]);
-    const context = useContext(AccessContext);
-    const [user, setUser] = useState<TUser|undefined>(undefined);
-
-    const initData = async (access: IAccessContextSuccess) => {
-        const userRes = await getUser(access.access_token);
-        if(!userRes.success) {
-            console.error(userRes.error);
-            return;
-        }
-        setUser({...userRes.data.user, access_token: access.access_token});
-
-        GetGlobalBadgeSets(access.access_token)
-            .then(s => setGlobalBadgeSets(s))
-            .catch(e => console.error(e));
-
-        GetGlobalEmotes(access.access_token)
-            .then(e => setGlobalEmotes(e))
-            .catch(e => console.error(e));
-
-        await DeleteAllSubscriptions(access.access_token);
-    }
-
-    if(context && context.access && 'access_token' in context.access
-      && user?.access_token !== context.access.access_token) {
-        initData(context.access);
-    }
+    const { user } = useContext(GlobalContext);
 
     return (
         <div className="h-full overflow-hidden">
@@ -60,11 +26,7 @@ export default function App() {
                 <TabManager />
             }
             <div className="h-[calc(100%-36px)] flex flex-col">
-                <Router
-                user={user}
-                globalBadgeSets={globalBadgeSets}
-                globalEmotes={globalEmotes}
-                />
+                <Router/>
             </div>
         </div>
     )

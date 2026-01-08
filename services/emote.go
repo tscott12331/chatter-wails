@@ -32,8 +32,6 @@ func (es *EmoteService) GetGlobalEmotes(access_token string) (*[]AppEmote, error
 		return nil, &api.StatusError[api.ApiGetGlobalEmotesRes]{ Res: res }
 	}
 
-	log.Printf("[GetGlobalEmotes]: %v\n\n", res.Body.Template)
-
 
 	emotes := []AppEmote{}
 	tmpl := res.Body.Template

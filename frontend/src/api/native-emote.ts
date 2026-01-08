@@ -1,5 +1,5 @@
 import { TUser } from "@/App";
-import { IAccessContextSuccess } from "@contexts/access-context";
+// import { IAccessContextSuccess } from "@/contexts/global-context";
 import { TApiResponse } from "./api";
 import { FailedApiRequest, ServerError, Success, UnknownError } from "./api-response";
 import { apiGetGlobalEmotes, apiGetUserEmotes } from "./api-fetch";
@@ -29,41 +29,41 @@ interface IGetUserEmotesResponse {
     }
 }
 
-export const getUserEmotes = async (
-    userObj: TUser,
-    accessObj: IAccessContextSuccess,
-    setUserEmotes?: React.Dispatch<React.SetStateAction<IUserEmote[]>>,
-): Promise<TApiResponse<IGetUserEmotesResponse>> => {
-    let retObj: TApiResponse<IGetUserEmotesResponse> = UnknownError();
-
-    try {
-        const res = await apiGetUserEmotes(accessObj.access_token, {
-            user_id: userObj.id,
-        })
-
-        if(res.ok) {
-            const resData = await res.json();
-            if('data' in resData && Array.isArray(resData.data)
-              && 'template' in resData) {
-                retObj = Success({
-                        emotes: resData.data,
-                        template: resData.template,
-                        pagination: resData.pagination,
-                    })
-              } else {
-                  retObj = FailedApiRequest();
-              }
-        } else {
-            retObj = FailedApiRequest();
-        }
-    } catch(err) {
-        console.error(err);
-        retObj = ServerError();
-    } finally {
-        setUserEmotes?.(retObj.success ? retObj.data.emotes : []);
-        return retObj;
-    }
-}
+// export const getUserEmotes = async (
+//     userObj: TUser,
+//     accessObj: IAccessContextSuccess,
+//     setUserEmotes?: React.Dispatch<React.SetStateAction<IUserEmote[]>>,
+// ): Promise<TApiResponse<IGetUserEmotesResponse>> => {
+//     let retObj: TApiResponse<IGetUserEmotesResponse> = UnknownError();
+//
+//     try {
+//         const res = await apiGetUserEmotes(accessObj.access_token, {
+//             user_id: userObj.id,
+//         })
+//
+//         if(res.ok) {
+//             const resData = await res.json();
+//             if('data' in resData && Array.isArray(resData.data)
+//               && 'template' in resData) {
+//                 retObj = Success({
+//                         emotes: resData.data,
+//                         template: resData.template,
+//                         pagination: resData.pagination,
+//                     })
+//               } else {
+//                   retObj = FailedApiRequest();
+//               }
+//         } else {
+//             retObj = FailedApiRequest();
+//         }
+//     } catch(err) {
+//         console.error(err);
+//         retObj = ServerError();
+//     } finally {
+//         setUserEmotes?.(retObj.success ? retObj.data.emotes : []);
+//         return retObj;
+//     }
+// }
 
 
 export interface IAppEmote {
@@ -91,37 +91,37 @@ interface IGetGlobalEmotesResponse {
     template: string;
 }
 
-export const getGlobalEmotes = async (
-    accessObj: IAccessContextSuccess,
-    setGlobalEmotes?: React.Dispatch<React.SetStateAction<IGlobalEmote[]>>,
-): Promise<TApiResponse<IGetGlobalEmotesResponse>> => {
-    let retObj: TApiResponse<IGetGlobalEmotesResponse> = UnknownError();
-
-    try {
-        const res = await apiGetGlobalEmotes(accessObj.access_token);
-
-        if(res.ok) {
-            const resData = await res.json();
-            if('data' in resData && Array.isArray(resData.data)
-              && 'template' in resData) {
-                retObj = Success({
-                        emotes: resData.data,
-                        template: resData.template,
-                    })
-              } else {
-                  retObj = FailedApiRequest();
-              }
-        } else {
-            retObj = FailedApiRequest();
-        }
-    } catch(err) {
-        console.error(err);
-        retObj = ServerError();
-    } finally {
-        setGlobalEmotes?.(retObj.success ? retObj.data.emotes : []);
-        return retObj;
-    }
-}
+// export const getGlobalEmotes = async (
+//     accessObj: IAccessContextSuccess,
+//     setGlobalEmotes?: React.Dispatch<React.SetStateAction<IGlobalEmote[]>>,
+// ): Promise<TApiResponse<IGetGlobalEmotesResponse>> => {
+//     let retObj: TApiResponse<IGetGlobalEmotesResponse> = UnknownError();
+//
+//     try {
+//         const res = await apiGetGlobalEmotes(accessObj.access_token);
+//
+//         if(res.ok) {
+//             const resData = await res.json();
+//             if('data' in resData && Array.isArray(resData.data)
+//               && 'template' in resData) {
+//                 retObj = Success({
+//                         emotes: resData.data,
+//                         template: resData.template,
+//                     })
+//               } else {
+//                   retObj = FailedApiRequest();
+//               }
+//         } else {
+//             retObj = FailedApiRequest();
+//         }
+//     } catch(err) {
+//         console.error(err);
+//         retObj = ServerError();
+//     } finally {
+//         setGlobalEmotes?.(retObj.success ? retObj.data.emotes : []);
+//         return retObj;
+//     }
+// }
 
 
 export const getEmoteSrcSet = (

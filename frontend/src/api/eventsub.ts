@@ -1,5 +1,4 @@
 //import { DebugLogger } from "@renderer/util/debug";
-import { IAccessContextSuccess } from "@contexts/access-context";
 import { TUser } from "@/App";
 import { TApiResponse } from "./api";
 import { FailedApiRequest, ServerError, Success, UnknownError } from "./api-response";

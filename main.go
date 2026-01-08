@@ -30,6 +30,7 @@ func main() {
 			app.esService,
 			app.emoteService,
 			app.badgeService,
+			app.authService,
 		},
 	})
 

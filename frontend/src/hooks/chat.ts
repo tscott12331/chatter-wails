@@ -106,8 +106,6 @@ export default function useChat({ channel, user, globalBadgeSets, maxMessages = 
         return () => {
             EventsOff(subscription);
             DeleteSubscription(user.access_token, subscription);
-            // subscription.removeEventListener('message', handleNotificationMessage);
-            // ESCon.deleteSubscription(subscription, user.access_token);
         }
     }, [subscription]);
 

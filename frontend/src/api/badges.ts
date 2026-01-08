@@ -1,4 +1,3 @@
-import { IAccessContextSuccess } from "@contexts/access-context";
 import { apiGetChannelBadges, apiGetGlobalBadges } from "./api-fetch";
 import { TApiResponse } from "./api";
 import { FailedApiRequest, ServerError, Success, UnknownError } from "./api-response";
@@ -59,35 +58,35 @@ interface IGetGlobalBadgesResponse {
     sets: IBadgeSet[];
 }
 
-export const getGlobalBadges = async (
-        access: IAccessContextSuccess,
-        setBadgeSets?: React.Dispatch<React.SetStateAction<IBadgeSet[]>>,
-    ): Promise<TApiResponse<IGetGlobalBadgesResponse>> =>
-{
-    let retObj: TApiResponse<IGetGlobalBadgesResponse> = UnknownError();
-
-    try {
-        const res = await apiGetGlobalBadges(access.access_token);
-
-        if(res.ok) {
-            const resData = await res.json();
-            if(resData?.data) {
-                retObj = Success({ sets: resData.data });
-            } else {
-                retObj = FailedApiRequest();
-            }
-        } else {
-            retObj = FailedApiRequest();
-        }
-    } catch(err) {
-        console.error(err);
-        retObj = ServerError();
-    } finally {
-        setBadgeSets?.(retObj.success ? retObj.data.sets : []);
-        return retObj;
-    }
-}
-
+// export const getGlobalBadges = async (
+//         access: IAccessContextSuccess,
+//         setBadgeSets?: React.Dispatch<React.SetStateAction<IBadgeSet[]>>,
+//     ): Promise<TApiResponse<IGetGlobalBadgesResponse>> =>
+// {
+//     let retObj: TApiResponse<IGetGlobalBadgesResponse> = UnknownError();
+//
+//     try {
+//         const res = await apiGetGlobalBadges(access.access_token);
+//
+//         if(res.ok) {
+//             const resData = await res.json();
+//             if(resData?.data) {
+//                 retObj = Success({ sets: resData.data });
+//             } else {
+//                 retObj = FailedApiRequest();
+//             }
+//         } else {
+//             retObj = FailedApiRequest();
+//         }
+//     } catch(err) {
+//         console.error(err);
+//         retObj = ServerError();
+//     } finally {
+//         setBadgeSets?.(retObj.success ? retObj.data.sets : []);
+//         return retObj;
+//     }
+// }
+//
 
 export interface IESBadge {
     set_id: string;

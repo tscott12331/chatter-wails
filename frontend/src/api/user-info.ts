@@ -1,4 +1,3 @@
-import { IAccessContextSuccess } from "@contexts/access-context";
 import { TApiResponse } from "./api";
 import { TUser } from "@/App";
 import { FailedApiRequest, ServerError, Success, UnknownError } from "./api-response";
