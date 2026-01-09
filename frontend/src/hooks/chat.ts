@@ -1,6 +1,4 @@
 import { FailedApiRequest } from "@/api/api-response";
-import { esBadgesToMessageBadges, IBadgeSet } from "@/api/badges";
-import { IESNotification, TESMessage } from "@/api/eventsub";
 import { sendMessage } from "@/api/messages";
 import { TUser } from "@/App";
 import { TChatMessage } from "@/components/chat/chat-message";
