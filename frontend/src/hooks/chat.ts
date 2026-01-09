@@ -44,21 +44,6 @@ export default function useChat({ channel, user, maxMessages = 200 }: {
         })
     }
 
-    const handleChatMessage = (message: TESMessage) => {
-        const data = message as IESNotification;
-
-        const chatMessage: TChatMessage = {
-            id: data.payload.event.message_id,
-            username: data.payload.event.chatter_user_name,
-            text: data.payload.event.message.text,
-            fragments: data.payload.event.message.fragments,
-            color: data.payload.event.color,
-            badges: esBadgesToMessageBadges(data.payload.event.badges, chatroomData.badgeSets),
-            reply: data.payload.event.reply,
-        }
-        appendChatMessage(chatMessage);
-    }
-
     const sendChatMessage = async (message: string, replyId?: string) => {
         const trimmed = message.trim();
         if(trimmed.length === 0 || !chatroomData.broadcasterId) return FailedApiRequest();
@@ -81,7 +66,7 @@ export default function useChat({ channel, user, maxMessages = 200 }: {
         // subscription.addEventListener('message', handleNotificationMessage);
         setChatMessages([]);
 
-        EventsOn(subId, (m) => handleChatMessage(m));
+        EventsOn(subId, appendChatMessage);
         
         return () => {
             EventsOff(subId);

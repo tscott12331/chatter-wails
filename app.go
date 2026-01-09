@@ -75,15 +75,28 @@ func (a *App) ConnectToChatroom(channelName string) (*ChatroomData, error) {
 		close(badgeSetsErr)
 	}()
 
-	go func() {
+	bsCtx, bsCancel := context.WithCancel(a.ctx)
+	defer bsCancel()
+
+	go func(ctx context.Context) {
 		badgeSets, err := a.badgeService.GetChannelBadgeSets(accessToken, broadcaster.Id)
 		if err != nil {
-			badgeSetsErr <- err
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				badgeSetsErr <- err
+			}
 			return
 		}
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			badgeSetsDone<- badgeSets
+		}
 
-		badgeSetsDone<- badgeSets
-	}()
+	}(bsCtx)
 
 	condition := map[string]string{
 		"broadcaster_user_id": broadcaster.Id,
@@ -92,6 +105,7 @@ func (a *App) ConnectToChatroom(channelName string) (*ChatroomData, error) {
 	subId, err := a.esService.CreateSubscription(accessToken, condition, CHAT_SUB_TYPE)
 	if err != nil {
 		log.Printf("[ConnectToChatroom]: An error occurred creating the chat subscription, aborting\n\n")
+		bsCancel()
 		return nil, err
 	}
 
@@ -107,6 +121,15 @@ func (a *App) ConnectToChatroom(channelName string) (*ChatroomData, error) {
 	case err := <-badgeSetsErr:
 		log.Printf("[ConnectToChatroom]: Failed to get channel badge sets\n%+v\n\n", err)
 	}
+
+	newSub := services.ESSubscription[services.ESChatSubscriptionData]{
+		SubType: CHAT_SUB_TYPE,
+		Data: services.ESChatSubscriptionData{
+			ChannelBadgeSets: chatroomData.BadgeSets,
+		},
+	}
+	a.esService.Client.ChatSubscriptions[subId] = newSub
+	
 
 	return chatroomData, nil
 

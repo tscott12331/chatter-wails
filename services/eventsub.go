@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/url"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -148,13 +151,13 @@ type ESMessageReply struct{
 }
 
 type ESChatMessage struct{
-    id string
-    username string
-    text string
-    fragments []ESChatMessageFragment
-    color string
-    badges []ESMessageBadge
-    reply *ESMessageReply
+	Id string							`json:"id"`
+	Username string						`json:"username"`
+	Text string							`json:"text"`
+	Fragments []AppChatMessageFragment	`json:"fragments"`
+	Color string						`json:"color"`
+	Badges []ESMessageBadge				`json:"badges"`
+	Reply *ESMessageReply				`json:"reply,omitempty"`
 }
 
 
@@ -328,6 +331,79 @@ func esMessageToESNotification(message *ESMessage) *ESNotification {
 	}
 }
 
+
+
+
+func esBadgesToMessageBadges(esBadges []ESBadge, badgeSets []api.ApiBadgeSet) []ESMessageBadge {
+    var messageBadges = []ESMessageBadge{}
+
+	for _, badge := range esBadges {
+		setIndex := slices.IndexFunc(badgeSets, func(bs api.ApiBadgeSet) bool {
+			return bs.Set_id == badge.Set_id
+		})
+        if(setIndex == -1) {
+			continue
+		}
+
+		var set = badgeSets[setIndex]
+
+
+		versionIndex := slices.IndexFunc(set.Versions, func(v api.ApiBadgeSetVersions) bool {
+			return v.Id == badge.Id
+		})
+        if(versionIndex == -1) {
+			continue
+		}
+
+        var version = set.Versions[versionIndex]
+
+        var urls = []string{version.Image_url_1x, version.Image_url_2x, version.Image_url_4x};
+
+		
+        var srcSet strings.Builder
+		srcSet.Grow(252)
+
+		for i, url := range urls {
+			var scale int
+			if i == 0 {
+				scale = 1
+			} else {
+				scale = 2 << i
+			}
+
+			fmt.Fprintf(&srcSet, "%s %dx", url, scale)
+			if i < 2 {
+				fmt.Fprint(&srcSet, ", ")
+			}
+		}
+
+		messageBadges = append(messageBadges, ESMessageBadge{
+			SrcSet: srcSet.String(),
+			Info: badge.Info,
+			Title: version.Title,
+		})
+    }
+
+    return messageBadges;
+}
+
+func esNotificationToEsChatMessage(notification *ESNotification, channelBadges []api.ApiBadgeSet) *ESChatMessage {
+	var fragments = []AppChatMessageFragment{}
+	for _, fragment := range notification.Payload.Event.Message.Fragments {
+		fragments = append(fragments, *esChatMessageFragmentToAppMessageFragment(&fragment))
+	}
+
+	return &ESChatMessage{
+		Id: notification.Payload.Event.Message_id,
+		Username: notification.Payload.Event.Chatter_user_name,
+		Text: notification.Payload.Event.Message.Text,
+		Fragments: fragments,
+		Color: notification.Payload.Event.Color,
+		Badges: esBadgesToMessageBadges(notification.Payload.Event.Badges, channelBadges),
+		Reply: notification.Payload.Event.Reply,
+	}
+}
+
 func esNotificationToEsChatMessageNotification(notification *ESNotification) *ESChatMessageNotification {
 	var fragments = []AppChatMessageFragment{}
 	for _, fragment := range notification.Payload.Event.Message.Fragments {
@@ -385,16 +461,15 @@ func esMessageToESWelcome(message *ESMessage) *ESWelcome {
 
 
 type ESChatSubscriptionData struct{
-	channel string
-	channelBadgeSets []api.ApiBadgeSet
+	Channel string
+	ChannelBadgeSets []api.ApiBadgeSet
 }
 type ESSubscription[T any] struct{
-	subType string
-	subId string
-	data T
+	SubType string
+	Data T
 }
 
-type ESSubscriptionMap[T any] map[string][]ESSubscription[T]
+type ESSubscriptionMap[T any] map[string]ESSubscription[T]
 
 type Client struct {
 	ctx context.Context
@@ -403,7 +478,7 @@ type Client struct {
 	connected bool
 
 	sessionId *string
-	chatSubscriptions ESSubscriptionMap[ESChatSubscriptionData]
+	ChatSubscriptions ESSubscriptionMap[ESChatSubscriptionData]
 
 	waitingClient chan struct{}
 	sessionIdChan chan *string
@@ -423,6 +498,8 @@ type EventSubService struct {
 func NewEventSubService() *EventSubService {
 	es := &EventSubService{}
 	es.Client = Client{
+		ChatSubscriptions: make(ESSubscriptionMap[ESChatSubscriptionData]),
+
 		waitingClient: make(chan struct{}),
 		sessionIdChan: make(chan *string),
 		newSessionIdChan: make(chan *string),
@@ -454,16 +531,12 @@ func (es *EventSubService) Connect() {
 			if r {
 				if !es.Client.connected {
 					log.Printf("[Connect]: Connecting to eventsub web server\n\n")
-					log.Printf("[Connect]: Initializing eventsub client\n\n")
 					client, _, err := websocket.DefaultDialer.Dial(twitchESURL.String(), nil)
 					if err != nil {
 						log.Fatal(err.Error())
 					}
 					es.Client.conn = client
 					es.Client.connected = true
-
-					log.Printf("[Connect]: Set client connection\n\n")
-					log.Printf("[Connect]: Cancelled read and write goroutines\n\n")
 
 					log.Printf("[Connect]: Starting read and write goroutines\n\n")
 					go es.Client.readPump(esCtx)
@@ -501,7 +574,13 @@ func (c *Client) handleESNotification(message ESMessage) {
 
 	switch sub_type {
 	case "channel.chat.message":
-		chatMessage := esNotificationToEsChatMessageNotification(notification)
+		subId := notification.Payload.Subscription.Id
+		var channelBadges = []api.ApiBadgeSet{}
+		if sub, ok := c.ChatSubscriptions[subId]; ok {
+			channelBadges = sub.Data.ChannelBadgeSets
+		}
+
+		chatMessage := esNotificationToEsChatMessage(notification, channelBadges)
 		runtime.EventsEmit(c.ctx, notification.Payload.Subscription.Id, chatMessage)
 	}
 }
@@ -746,23 +825,6 @@ func (es *EventSubService) CreateSubscription(accessToken string, condition ESSu
 
 	subId := res.Body.Data[0].Id
 	log.Printf("[CreateSubscription]: Recieved subscription ID %v\n\n", subId)
-
-	newSub := ESSubscription[ESChatSubscriptionData]{
-		subType: subType,
-		subId: subId,
-		data: ESChatSubscriptionData{
-			channelBadgeSets: []api.ApiBadgeSet{},
-		},
-	}
-
-	
-	if subList, ok := es.Client.chatSubscriptions[subType]; ok {
-		// list for this subscription type already exists, append
-		subList = append(subList, newSub)
-
-	} else {
-		subList = []ESSubscription[ESChatSubscriptionData]{newSub}
-	}
 
 	return subId, nil
 	
