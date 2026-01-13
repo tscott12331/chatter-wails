@@ -43,9 +43,9 @@ export default function useChat({ channel, user, maxMessages = 200 }: {
     }
 
     const sendChatMessage = async (message: string, replyId?: string) => {
-        if(!chatroomData.subId) return
+        if(!chatroomData.subId) return false;
         const trimmed = message.trim();
-        if(trimmed.length === 0 || !chatroomData.broadcasterId) return FailedApiRequest();
+        if(trimmed.length === 0 || !chatroomData.broadcasterId) return false;
 
         try {
             await SendChatMessage(chatroomData.subId, trimmed, replyId);
