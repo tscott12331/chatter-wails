@@ -1,11 +1,7 @@
-import { useContext, useState } from 'react'
-import { AccessContext, type IAccessContextSuccess } from './contexts/access-context'
+import { useContext } from 'react'
+import { GlobalContext } from './contexts/global-context'
 import TabManager from './components/tabs/tab-manager';
 import Router from './router';
-import { getUser } from './api/user-info';
-import { deleteAllSubscriptions } from './api/eventsub';
-import { getGlobalBadges, IBadgeSet } from './api/badges';
-import { getGlobalEmotes, IGlobalEmote } from './api/native-emote';
 
 export type TUser = {
     id: string;
@@ -22,32 +18,7 @@ export type TUser = {
 }
 
 export default function App() {
-    const [globalBadgeSets, setGlobalBadgeSets] = useState<IBadgeSet[]>([]);
-    const [globalEmotes, setGlobalEmotes] = useState<IGlobalEmote[]>([]);
-    const context = useContext(AccessContext);
-    const [user, setUser] = useState<TUser|undefined>(undefined);
-
-    const initData = async (access: IAccessContextSuccess) => {
-        const userRes = await getUser(access);
-        if(!userRes.success) {
-            console.error(userRes.error);
-            return;
-        }
-        setUser({...userRes.data.user, access_token: access.access_token});
-        getGlobalBadges(access, setGlobalBadgeSets);
-
-        getGlobalEmotes(access, setGlobalEmotes);
-
-        const delRes = await deleteAllSubscriptions(access);
-        if(!delRes.success) {
-            console.error(delRes.error);
-        }
-    }
-
-    if(context && context.access && 'access_token' in context.access
-      && user?.access_token !== context.access.access_token) {
-        initData(context.access);
-    }
+    const { user } = useContext(GlobalContext);
 
     return (
         <div className="h-full overflow-hidden">
@@ -55,11 +26,7 @@ export default function App() {
                 <TabManager />
             }
             <div className="h-[calc(100%-36px)] flex flex-col">
-                <Router
-                user={user}
-                globalBadgeSets={globalBadgeSets}
-                globalEmotes={globalEmotes}
-                />
+                <Router/>
             </div>
         </div>
     )

@@ -27,6 +27,10 @@ func main() {
 		OnStartup:        app.startup,
 		Bind: []interface{}{
 			app,
+			app.esService,
+			app.emoteService,
+			app.badgeService,
+			app.authService,
 		},
 	})
 

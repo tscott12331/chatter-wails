@@ -1,131 +1,68 @@
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import ChatMessage, { TChatMessage } from '@components/chat/chat-message';
-import { useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { AccessContext, IAccessContextSuccess } from '@contexts/access-context';
-import { TUser } from '@/App';
+import { useContext, useMemo, useRef, useState } from 'react';
 import { DebugLogger } from '@util/debug';
-import { connectToChatroom, deleteSubscription } from '@api/eventsub';
-import { getUser } from '@api/user-info';
 import AutoScroller from '@components/util/auto-scroller';
 import JumpToRecentPopup from '@components/chat/jump-to-recent-popup';
-import { sendMessage } from '@api/messages';
 import ReplyPopup from '@components/chat/reply-popup';
-import { combineChannelGlobalSets, esBadgesToMessageBadges, getChannelBadges, IBadgeSet } from '@api/badges';
 import EmoteIcon from '@components/svg/emote-icon';
-import { getEmoteSrcSet, IGlobalEmote } from '@api/native-emote';
+import { IAppEmote } from '@api/native-emote';
 import Tooltip from '@components/util/tooltip';
 import { preload } from 'react-dom';
 import { moveCursorToEnd } from '@util/rte';
 import UserPopup, { IPopupUser } from '@components/chat/user-popup';
+import useChat from '@/hooks/chat';
+import { GlobalContext } from '@/contexts/global-context';
 
 interface IChatroomProps {
-    user: TUser|undefined;
-    globalBadgeSets: IBadgeSet[],
-    globalEmotes: IGlobalEmote[],
 }
 
 const dbLog = new DebugLogger();
 
 export default function Chatroom({
-    user,
-    globalBadgeSets,
-    globalEmotes,
 }: IChatroomProps) {
-    const MAX_MESSAGES = 200;
+    const { user, globalEmotes } = useContext(GlobalContext);
+    const navigate = useNavigate()
 
+    if(!user) {
+        navigate('/');
+        return <></>;
+    }
+    
     const { channel } = useParams();
-    const [sessionId, setSessionId] = useState<string|undefined>();
-    const [broadcasterId, setBroadcasterId] = useState<string|undefined>();
-    const [chatSubId, setChatSubId] = useState<string|undefined>();
+
+    const MAX_MESSAGES = 200;
+    const { chatMessages, sendChatMessage } = useChat({channel, user, maxMessages: MAX_MESSAGES});
 
     const [isReplying, setIsReplying] = useState<boolean>(false);
     const [replyingToMessage, setReplyingToMessage] = useState<TChatMessage|undefined>();
 
-    const [chatMessages, setChatMessages] = useState<TChatMessage[]>([]);
-
-    const [channelBadgeSets, setChannelBadgeSets] = useState<IBadgeSet[]>([]);
-    const [badgeSets, setBadgeSets] = useState<IBadgeSet[]>([]);
 
     const [shouldShowEmotePopup, setShouldShowEmotePopup] = useState<boolean>(false);
 
     const [shouldShowUserPopup, setShouldShowUserPopup] = useState<boolean>(false);
-    const [currentPopupUser, setCurrentPopupUser] = useState<IPopupUser>();
+    const [curPopupUser, setCurPopupUser] = useState<IPopupUser>();
     const [initUserPopupPos, setInitUserPopupPos] = useState<{x:number, y:number}>({x: 0, y: 0});
 
     const messageInputRef = useRef<HTMLDivElement>(null);
 
-    const context = useContext(AccessContext);
 
-    const appendChatMessage = (message: TChatMessage) => {
-        setChatMessages(curMessages => {
-            const numExtraMessages = curMessages.length - MAX_MESSAGES;
-            if(numExtraMessages >= 0) {
-                return [...curMessages.slice(numExtraMessages + 1), message];
-            } else {
-                return [...curMessages, message];
+    const lastMessage = chatMessages.at(-1);
+    const lastPopupMessage = curPopupUser?.messages.at(-1);
+    if(curPopupUser && lastMessage
+       && curPopupUser.username === lastMessage.username
+      && (lastMessage.id !== lastPopupMessage?.id)) {
+        setCurPopupUser(cur => {
+            if(!cur) return cur;
+            const numExtraMessages = curPopupUser.messages.length - MAX_MESSAGES;
+            return {
+                username: cur.username,
+                messages: numExtraMessages >= 0
+                    ? [...cur.messages.slice(numExtraMessages + 1), lastMessage]
+                    : [...cur.messages, lastMessage],
             }
         })
-
-        setCurrentPopupUser(cur => {
-            if(cur && cur.username === message.username) {
-                const numExtraMessages = cur.messages.length - MAX_MESSAGES;
-                return {
-                    username: cur.username,
-                    messages: numExtraMessages >= 0
-                            ? [...cur.messages.slice(numExtraMessages + 1), message]
-                            : [...cur.messages, message],
-                }
-            } else {
-                return cur;
-            }
-        });
     }
-
-    const handleNotificationMessage = (data: any) => {
-        switch(data.metadata.subscription_type) {
-            case 'channel.chat.message':
-                const message: TChatMessage = {
-                    id: data.payload.event.message_id,
-                    username: data.payload.event.chatter_user_name,
-                    text: data.payload.event.message.text,
-                    fragments: data.payload.event.message.fragments,
-                    color: data.payload.event.color,
-                    badges: esBadgesToMessageBadges(data.payload.event.badges, badgeSets),
-                    reply: data.payload.event.reply,
-                }
-
-                appendChatMessage(message);
-
-                break;
-            default:
-                dbLog.funcLog(handleNotificationMessage, `not handling this subscription type`);
-        }
-    }
-
-    const handleEventsubMessage = (e: any) => {
-        const data = JSON.parse(e.data);
-        const messageType = data.metadata.message_type;
-        switch(messageType) {
-            case 'session_welcome':
-                setSessionId(data.payload.session.id);
-                break;
-            case 'notification':
-                handleNotificationMessage(data);
-                break;
-            default:
-                dbLog.funcLog(handleEventsubMessage, `uncaught message type ${messageType}`);
-        }
-    }
-
-    const getBroadcasterId = async (channelName: string, accessObj: IAccessContextSuccess) => {
-        const res = await getUser(accessObj, channelName);
-        if(res.success) {
-            setBroadcasterId(res.data.user.id);
-        } else {
-            setBroadcasterId(undefined);
-        }
-    }
-
     const inputNodesToText = (nodes: NodeListOf<ChildNode>|undefined) => {
         if(!nodes) return "";
 
@@ -148,17 +85,10 @@ export default function Chatroom({
         if(!messageInputRef.current) return;
 
         const message = inputNodesToText(messageInputRef.current.childNodes);
-        const trimmedMsg = message.trim();
-           if(trimmedMsg.length === 0 ||
-              !user || !broadcasterId ||
-              !context || !context.access ||
-            !('access_token' in context.access)) return;
-        const res = await sendMessage(user, context.access, broadcasterId, trimmedMsg, replyingToMessage?.id);
-        if(res.success) {
+        const res = await sendChatMessage(message, replyingToMessage?.id);
+        if(res) {
             messageInputRef.current.innerHTML = '';
             handleChatReplyClose();
-        } else {
-            console.log(res.error);
         }
     }
 
@@ -210,10 +140,10 @@ export default function Chatroom({
         setShouldShowEmotePopup(cur => !cur);
     }
 
-    const handleEmoteSelect = (emote: IGlobalEmote) => {
+    const handleEmoteSelect = (emote: IAppEmote) => {
         if(!messageInputRef.current) return;
-        const srcSet = getEmoteSrcSet(emote.id, emote.format) ?? "";
-        if(!srcSet) return;
+
+        const srcSet = emote.darkSrcSet.length > 0 ? emote.darkSrcSet : emote.lightSrcSet;
 
         const concat = `<img class="inline" srcset="${srcSet}" alt="${emote.name}"/>`;
 
@@ -234,12 +164,10 @@ export default function Chatroom({
     }
 
     const showUserPopup = async (username: string|undefined, mouseX: number, mouseY: number) => {
-        if(!username ||
-           !context || !context.access ||
-           !('access_token' in context.access)) return;
+        if(!username) return;
 
         const recentMessages = chatMessages.filter(m => m.username === username);
-        setCurrentPopupUser({
+        setCurPopupUser({
             username,
             messages: recentMessages,
         })
@@ -251,7 +179,7 @@ export default function Chatroom({
     const filteredGlobalEmotes = useMemo<React.ReactNode>(() => {
         const idHash: Record<string, string> = {};
 
-        const filteredArr: IGlobalEmote[] = [];
+        const filteredArr: IAppEmote[] = [];
 
         for(let i = 0; i < globalEmotes.length; i++) {
             const emote = globalEmotes[i];
@@ -262,8 +190,8 @@ export default function Chatroom({
         }
 
         return filteredArr.map(emote => {
-                const srcSet = getEmoteSrcSet(emote.id, emote.format);
-                for(const image in emote.images) {
+                const srcSet = emote.darkSrcSet.length > 0 ? emote.darkSrcSet : emote.lightSrcSet;
+                for(const image in srcSet.split(', ')) {
                     preload(image, { as: "image", imageSrcSet: srcSet });
                 }
 
@@ -284,52 +212,6 @@ export default function Chatroom({
         }
             );
     }, [globalEmotes]);
-
-    useEffect(() => {
-        if(!channel || !context ||
-           !context.access ||
-           !('access_token' in context.access)) return;
-
-        setChatMessages([]);
-        getBroadcasterId(channel, context.access);
-    }, [channel, context]);
-
-    useEffect(() => {
-        if(!sessionId || !broadcasterId || !user ||
-           !context || !context.access ||
-            !('access_token' in context.access)) return;
-
-        connectToChatroom(user, context.access, broadcasterId, sessionId, setChatSubId);
-    }, [sessionId, broadcasterId, context, user])
-
-    useEffect(() => {
-        return () => {
-            if(!chatSubId || !context || !context.access ||
-                !('access_token' in context.access)) return;
-
-            deleteSubscription(chatSubId, context.access);
-        }
-    }, [chatSubId, context]);
-
-    useEffect(() => {
-        setBadgeSets(combineChannelGlobalSets(channelBadgeSets, globalBadgeSets));
-    }, [channelBadgeSets, globalBadgeSets]);
-
-    useEffect(() => {
-        if(badgeSets.length === 0) return;
-        const ws = new WebSocket("wss://eventsub.wss.twitch.tv/ws");
-        ws.onmessage = handleEventsubMessage;
-
-        return () => ws.close();
-    }, [badgeSets]);
-
-    useEffect(() => {
-        if(!broadcasterId ||
-           !context || !context.access ||
-            !('access_token' in context.access)) return;
-
-        getChannelBadges(context.access, broadcasterId, setChannelBadgeSets);
-    }, [context, broadcasterId]);
 
     return (
         <div
@@ -396,7 +278,7 @@ export default function Chatroom({
             </div>
             {shouldShowUserPopup &&
                 <UserPopup
-                    user={currentPopupUser}
+                    user={curPopupUser}
                     initPos={initUserPopupPos}
                     onChatReplyClick={handleChatReplyClick}
                     getChatterColor={getChatterColor}

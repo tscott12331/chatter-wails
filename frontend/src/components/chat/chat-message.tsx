@@ -1,9 +1,9 @@
-import { getEmoteSrcSet } from '@api/native-emote';
+import { IAppEmote } from '@api/native-emote';
 import ReplyIcon from '@components/svg/reply-icon';
 import Tooltip from '@components/util/tooltip';
 import React from 'react';
 
-interface IChatMessageFragment {
+export interface IChatMessageFragment {
     type: 'text'|'cheermote'|'emote'|'mention';
     text: string;
     cheermote: {
@@ -11,12 +11,7 @@ interface IChatMessageFragment {
         bits: number;
         tier: number;
     }|null;
-    emote: {
-        id: string;
-        emote_set_id: string;
-        owner_id: string;
-        format: ('static'|'animated')[];
-    }|null;
+    emote: IAppEmote|null;
     mention: {
         user_id: string;
         user_name: string;
@@ -72,6 +67,8 @@ export default function ChatMessage({
             case 'emote':
                 if(!fragment.emote) return fragment.text;
 
+                const srcSet = fragment.emote.darkSrcSet;
+
                 return (
                     <Tooltip
                         text={fragment.text}
@@ -80,10 +77,7 @@ export default function ChatMessage({
                         >
                             <img
                                 className="inline"
-                                srcSet={getEmoteSrcSet(
-                                        fragment.emote.id,
-                                        fragment.emote.format,
-                                        )}
+                                srcSet={srcSet}
                                 alt={fragment.text}
                             />
                     </Tooltip>
