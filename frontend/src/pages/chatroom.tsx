@@ -86,11 +86,9 @@ export default function Chatroom({
 
         const message = inputNodesToText(messageInputRef.current.childNodes);
         const res = await sendChatMessage(message, replyingToMessage?.id);
-        if(res.success) {
+        if(res) {
             messageInputRef.current.innerHTML = '';
             handleChatReplyClose();
-        } else {
-            console.log(res.error);
         }
     }
 

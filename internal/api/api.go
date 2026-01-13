@@ -391,19 +391,34 @@ func ApiPostUsers(
 }
 
 
-type PostMessagesBody struct{
+type ApiPostMessagesBody struct{
 	Broadcaster_id string				`json:"broadcaster_id"`
 	Sender_id string					`json:"sender_id"`
 	Message string 						`json:"message"`
 	Reply_parent_message_id *string		`json:"reply_parent_message_id"`
 }
 
+type ApiMessageDropReason struct{
+	Code string				`json:"code"`
+	Message string			`json:"message"`
+}
+
+type ApiPostMessagesData struct{
+	Message_id string						`json:"message_id"`
+	Is_sent bool							`json:"is_sent"`
+	Drop_reason *ApiMessageDropReason		`json:"drop_reason,omitempty"`
+};
+
+type ApiPostMessagesRes struct{
+	Data []ApiPostMessagesData
+}
+
 func ApiPostMessages(
     access_token string,
-    body PostMessagesBody,
+    body ApiPostMessagesBody,
     params map[string][]string,
-    ) (*ApiResponse[any], error) {
-    return ApiPost[any](
+    ) (*ApiResponse[ApiPostMessagesRes], error) {
+    return ApiPost[ApiPostMessagesRes](
         MESSAGES_ENDPOINT,
         apiMessagesHeaders(access_token),
         body,

@@ -3,9 +3,23 @@ import { createContext, useEffect, useState } from "react";
 import { Login } from '@wailsjs/go/services/AuthService';
 import { GetGlobalBadgeSets } from "@wailsjs/go/services/BadgeService";
 import { GetGlobalEmotes } from "@wailsjs/go/services/EmoteService";
-import { IBadgeSet } from "@/api/badges";
 import { IAppEmote } from "@/api/native-emote";
 import { DeleteAllSubscriptions } from "@wailsjs/go/services/EventSubService";
+
+
+export interface IBadgeSet {
+    set_id: string;
+    versions: {
+        id: string;
+        image_url_1x: string;
+        image_url_2x: string;
+        image_url_4x: string;
+        title: string;
+        description: string;
+        click_action: string|null;
+        click_url: string|null;
+    }[];
+}
 
 interface IGlobalContext {
     user: TUser|null;

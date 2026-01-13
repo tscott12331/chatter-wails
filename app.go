@@ -2,9 +2,11 @@ package main
 
 import (
 	"chatter-wails/internal/api"
+	"chatter-wails/internal/message"
 	"chatter-wails/internal/user"
 	"chatter-wails/services"
 	"context"
+	"errors"
 	"log"
 )
 
@@ -86,14 +88,15 @@ func (a *App) ConnectToChatroom(channelName string) (*ChatroomData, error) {
 				return
 			default:
 				badgeSetsErr <- err
+				return
 			}
-			return
 		}
 		select {
 		case <-ctx.Done():
 			return
 		default:
-			badgeSetsDone<- badgeSets
+			badgeSetsDone <- badgeSets
+			return
 		}
 
 	}(bsCtx)
@@ -125,6 +128,8 @@ func (a *App) ConnectToChatroom(channelName string) (*ChatroomData, error) {
 	newSub := services.ESSubscription[services.ESChatSubscriptionData]{
 		SubType: CHAT_SUB_TYPE,
 		Data: services.ESChatSubscriptionData{
+			BroadcasterId: broadcaster.Id,
+			Channel: channelName,
 			ChannelBadgeSets: chatroomData.BadgeSets,
 		},
 	}
@@ -133,4 +138,26 @@ func (a *App) ConnectToChatroom(channelName string) (*ChatroomData, error) {
 
 	return chatroomData, nil
 
+}
+
+func (a *App) SendChatMessage(chatSubId string, messageContent string, replyId *string) (*api.ApiPostMessagesData, error) {
+	user := a.authService.User
+	if user == nil {
+		log.Printf("[SendChatMessage]: User not logged int, cannot send message, aborting\n\n")
+		return nil, &NotLoggedInError{}
+	}
+
+	subData, ok := a.esService.Client.ChatSubscriptions[chatSubId]
+	if !ok {
+		log.Printf("[SendChatMessage]: Failed to find chat subscription data, aborting\n\n")
+		return nil, errors.New("Failed to find chat subscription data")
+	}
+
+	res, err := message.SendMessage(user.Id, user.Access_token, subData.Data.BroadcasterId, messageContent, replyId)
+	if err != nil {
+		log.Printf("[SendChatMessage]: An error occurred sending the chat message, aborting\n%+v\n\n", err)
+		return nil, err
+	}
+
+	return res, nil
 }

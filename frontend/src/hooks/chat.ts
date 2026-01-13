@@ -3,7 +3,7 @@ import { sendMessage } from "@/api/messages";
 import { TUser } from "@/App";
 import { TChatMessage } from "@/components/chat/chat-message";
 
-import { ConnectToChatroom } from '@wailsjs/go/main/App'
+import { ConnectToChatroom, SendChatMessage } from '@wailsjs/go/main/App'
 import { api } from "@wailsjs/go/models";
 import { DeleteSubscription } from "@wailsjs/go/services/EventSubService"
 import { EventsOn, EventsOff } from "@wailsjs/runtime/runtime";
@@ -43,10 +43,17 @@ export default function useChat({ channel, user, maxMessages = 200 }: {
     }
 
     const sendChatMessage = async (message: string, replyId?: string) => {
+        if(!chatroomData.subId) return
         const trimmed = message.trim();
         if(trimmed.length === 0 || !chatroomData.broadcasterId) return FailedApiRequest();
 
-        return await sendMessage(user, user.access_token, chatroomData.broadcasterId, trimmed, replyId);
+        try {
+            await SendChatMessage(chatroomData.subId, trimmed, replyId);
+            return true;
+        } catch(err) {
+            console.error(err);
+            return false;
+        }
     }
     
     useEffect(() => {

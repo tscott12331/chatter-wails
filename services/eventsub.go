@@ -461,6 +461,7 @@ func esMessageToESWelcome(message *ESMessage) *ESWelcome {
 
 
 type ESChatSubscriptionData struct{
+	BroadcasterId string
 	Channel string
 	ChannelBadgeSets []api.ApiBadgeSet
 }
