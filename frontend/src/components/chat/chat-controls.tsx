@@ -1,5 +1,5 @@
 import { IAppEmote } from "@/api/native-emote";
-import { moveCursorToEnd } from "@/util/rte";
+import { getCursorPos, moveCursorTo, moveCursorToEnd } from "@/util/rte";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { preload } from "react-dom";
 import EmoteIcon from "../svg/emote-icon";
@@ -58,62 +58,113 @@ export default function ChatControls({
         let text = "";
         for(const node of nodes) {
             switch(node.nodeType) {
-                case Node.TEXT_NODE:
-                    text += node.nodeValue;
-                    break;
-                case Node.ELEMENT_NODE:
-                    text += (node as HTMLImageElement).alt;
-                    break;
+            case Node.TEXT_NODE:
+                const prevSibling = node.previousSibling
+                const textContent = node.nodeValue;
+                if(prevSibling && prevSibling.nodeType === Node.ELEMENT_NODE
+                  && textContent?.charAt(0) !== ' ') text += ' ';
+                text += textContent;
+                break;
+            case Node.ELEMENT_NODE:
+                const prevChar = text.at(-1);
+                if(prevChar && prevChar !== ' ') {
+                    text += ' ';
+                }
+
+                text += (node as HTMLImageElement).alt;
+                break;
             }
         }
 
         return text;
     }
 
-    const handleMessageInput = (e: React.InputEvent<HTMLDivElement>) => {
-        const childNodes = e.currentTarget.childNodes;
-        const prevNode = childNodes.item(childNodes.length - 2);
-        const curNode = childNodes.item(childNodes.length - 1);
-        if(prevNode && prevNode.nodeType === Node.ELEMENT_NODE
-          && !(curNode.textContent?.charCodeAt(0) === 32
-              || curNode.textContent?.charCodeAt(0) === 160)) {
-              curNode.textContent = ' ' + curNode.textContent;
-              moveCursorToEnd(e.currentTarget);
+    async function processTextNode(node: ChildNode) {
+        const text = node.textContent;
+        if(!text) return;
+
+        let curTextNodeVal = "";
+        let replaceNodes: (Node|string)[] = [];
+        const potentialEmotes = text.split(' ');
+        for(const potentialEmote of potentialEmotes) {
+            if(potentialEmote.length === 0) {
+                curTextNodeVal += " ";
+                continue;
+            }
+
+            const matchedEmote = emoteList.find((e) => e.name === potentialEmote)
+            if(!matchedEmote) {
+                curTextNodeVal += potentialEmote;
+                curTextNodeVal += " ";
+                continue;
+            }
+
+            if(curTextNodeVal.length > 0 && curTextNodeVal.at(-1) === " ") {
+                replaceNodes.push(curTextNodeVal.slice(0, -1));
+                curTextNodeVal = "";
+            }
+
+            const imgNode = new Image()
+            imgNode.srcset = matchedEmote.darkSrcSet;
+            imgNode.classList.add("inline");
+            imgNode.alt = matchedEmote.name;
+            replaceNodes.push(imgNode);
         }
 
-        const curTextContent = curNode?.textContent;
-        if(!curTextContent) return;
-
-        const potentialEmote = curTextContent.split(' ').at(-1);
-        if(potentialEmote) {
-            for(let i = 0; i < emoteList.length; i++) {
-                const emote = emoteList[i];
-                if(potentialEmote === emote.name) {
-                    curNode.textContent = curTextContent.slice(0, curTextContent.length - potentialEmote.length);
-                    handleEmoteSelect(emote);
-                }
+        if(curTextNodeVal.length > 0) {
+            if(curTextNodeVal.at(-1) === " ") {
+                replaceNodes.push(curTextNodeVal.slice(0, -1));
+            } else {
+                replaceNodes.push(curTextNodeVal);
             }
         }
+
+        node.replaceWith(...replaceNodes);
     }
 
-    const handleEmoteSelect = (emote: IAppEmote) => {
+    async function processMessageInput(messageNodes: NodeListOf<ChildNode>) {
+        const promiseList: Promise<void>[] = []
+        for(const node of messageNodes) {
+            switch(node.nodeType) {
+            case Node.TEXT_NODE:
+                promiseList.push(processTextNode(node));
+            }
+        }
+
+        await Promise.all(promiseList);
+        console.log('pmi done');
+    }
+
+    async function handleMessageInput(e: React.InputEvent<HTMLDivElement>) {
+        const curorPos = getCursorPos(e.currentTarget);
+        console.log(curorPos);
+        processMessageInput(e.currentTarget.childNodes);
+        if(curorPos !== -1) moveCursorTo(e.currentTarget, curorPos + 1);
+    }
+
+    function handleEmoteSelect(emote: IAppEmote) {
         if(!messageInputRef.current) return;
 
         const srcSet = emote.darkSrcSet.length > 0 ? emote.darkSrcSet : emote.lightSrcSet;
 
-        const concat = `<img class="inline" srcset="${srcSet}" alt="${emote.name}"/>`;
+        const concat = `<img class="inline" srcset="${srcSet}" alt="${emote.name}"/> `;
 
-        if(messageInputRef.current.innerHTML.at(-1) === ' ') {
-            messageInputRef.current.innerHTML += `${concat} `;
+        const lastChar = messageInputRef.current.innerHTML.at(-1);
+        console.log(messageInputRef.current.innerHTML);
+        console.log('last char', lastChar);
+        if(lastChar && lastChar === ' ') {
+            console.log('last char is space, no need to add space')
+            messageInputRef.current.innerHTML += `${concat}`;
         } else {
-            messageInputRef.current.innerHTML += ` ${concat} `;
+            console.log('last char is not space, adding space')
+            messageInputRef.current.innerHTML += ` ${concat}`;
         }
 
         messageInputRef.current.focus();
         moveCursorToEnd(messageInputRef.current);
     }
 
-    const filteredGlobalEmotes = useMemo<React.ReactNode>(() => {
+    const filteredEmoteList = useMemo<React.ReactNode>(() => {
         const idHash: Record<string, string> = {};
 
         const filteredArr: IAppEmote[] = [];
@@ -176,7 +227,7 @@ export default function ChatControls({
         className='w-[calc(100%-30px)] h-75 border border-outline-1 rounded-xs m-3.5 absolute left-0 bottom-full bg-bg-2/80 backdrop-blur-xs g-1 p-1 z-600 flex flex-wrap justify-between items-center scroller-y [&>span>div]:w-10 [&>span>div]:h-10 [&>span>div]:p-0.5 [&>span>div]:rounded-xs [&>span>div]:opacity-90 [&>span>div]:hover:bg-bg-5'
         onClick={(e: React.MouseEvent<HTMLDivElement>) => e.stopPropagation()}
         >
-            {filteredGlobalEmotes}
+            {filteredEmoteList}
         </div>
         }
         {isReplying && replyingToMessage &&
