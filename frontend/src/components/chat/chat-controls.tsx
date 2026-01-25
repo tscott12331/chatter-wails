@@ -259,7 +259,7 @@ export default function ChatControls({
 
         <div className={'flex items-center justify-between flex-wrap g-0.5 h-37.5'}>
             <div
-            className='w-full h-[calc(100%-46px)]'
+            className='w-full h-[calc(100%-46px)] overflow-auto'
             contentEditable="true"
             onKeyDown={handleMessageInputKeydown}
             onInput={handleMessageInput}
