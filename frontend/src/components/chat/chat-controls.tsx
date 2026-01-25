@@ -158,7 +158,16 @@ export default function ChatControls({
 
         const srcSet = emote.darkSrcSet.length > 0 ? emote.darkSrcSet : emote.lightSrcSet;
 
+
         const concat = `<img class="inline" srcset="${srcSet}" alt="${emote.name}"/> `;
+
+        const childNodes = messageInputRef.current.childNodes;
+        const lastNode = childNodes.item(childNodes.length - 1);
+
+        // remove breaks (causes strange behavior)
+        if(lastNode.nodeName === "BR") {
+            lastNode.remove();
+        }
 
         const lastChar = messageInputRef.current.innerHTML.at(-1);
         if(lastChar && lastChar === ' ') {
