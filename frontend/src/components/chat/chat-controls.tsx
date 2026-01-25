@@ -79,67 +79,78 @@ export default function ChatControls({
         return text;
     }
 
-    async function processTextNode(node: ChildNode) {
+    async function processTextNode(node: ChildNode, offset: number) {
         const text = node.textContent;
-        if(!text) return;
+        if(!text) return 0;
 
-        let curTextNodeVal = "";
+
         let replaceNodes: (Node|string)[] = [];
-        const potentialEmotes = text.split(' ');
-        for(const potentialEmote of potentialEmotes) {
-            if(potentialEmote.length === 0) {
-                curTextNodeVal += " ";
-                continue;
+        const potentialEmotes = text.split(/\s/);
+        let cursorPos = 0;
+
+        let targetIndex: number = -1;
+        let relCursorOffset = 0;
+
+        for(let i = 0; i < potentialEmotes.length; i++) {
+            const pe = potentialEmotes[i];
+            cursorPos += pe.length;
+            if(cursorPos >= offset) {
+                // target word
+                const matchedEmote = emoteList.find((e) => e.name === pe)
+                if(matchedEmote) {
+                    targetIndex = i;
+                    // add replace nodes
+                    let prevText = potentialEmotes.slice(0, targetIndex).join(" ");
+                    if(prevText.length > 0) prevText = prevText.concat(" ");
+                    replaceNodes.push(prevText);
+
+                    const imgNode = new Image()
+                    imgNode.srcset = matchedEmote.darkSrcSet;
+                    imgNode.classList.add("inline");
+                    imgNode.alt = matchedEmote.name;
+                    replaceNodes.push(imgNode);
+
+                    replaceNodes.push(potentialEmotes.slice(targetIndex + 1).join(" "));
+
+                    // calculate relative cursor offset after replacing text
+                    relCursorOffset = (cursorPos - pe.length) - offset + 1;
+
+                    break;
+                }
             }
 
-            const matchedEmote = emoteList.find((e) => e.name === potentialEmote)
-            if(!matchedEmote) {
-                curTextNodeVal += potentialEmote;
-                curTextNodeVal += " ";
-                continue;
-            }
-
-            if(curTextNodeVal.length > 0 && curTextNodeVal.at(-1) === " ") {
-                replaceNodes.push(curTextNodeVal.slice(0, -1));
-                curTextNodeVal = "";
-            }
-
-            const imgNode = new Image()
-            imgNode.srcset = matchedEmote.darkSrcSet;
-            imgNode.classList.add("inline");
-            imgNode.alt = matchedEmote.name;
-            replaceNodes.push(imgNode);
+            cursorPos += 1;
         }
 
-        if(curTextNodeVal.length > 0) {
-            if(curTextNodeVal.at(-1) === " ") {
-                replaceNodes.push(curTextNodeVal.slice(0, -1));
-            } else {
-                replaceNodes.push(curTextNodeVal);
-            }
+        if(targetIndex === -1) {
+            replaceNodes.push(node);
         }
 
         node.replaceWith(...replaceNodes);
+        return relCursorOffset;
     }
 
     async function processMessageInput(messageNodes: NodeListOf<ChildNode>) {
-        const promiseList: Promise<void>[] = []
+        const selection = window.getSelection();
+        if(!selection) return 0;
+        const range = selection.getRangeAt(0);
+        const offset = range.startOffset;
+
         for(const node of messageNodes) {
-            switch(node.nodeType) {
-            case Node.TEXT_NODE:
-                promiseList.push(processTextNode(node));
+            if(node.contains(selection.anchorNode)) {
+                const co = await processTextNode(node, offset);;
+                return co;
             }
         }
 
-        await Promise.all(promiseList);
-        console.log('pmi done');
+        return 0;
     }
 
     async function handleMessageInput(e: React.InputEvent<HTMLDivElement>) {
         const curorPos = getCursorPos(e.currentTarget);
-        console.log(curorPos);
-        processMessageInput(e.currentTarget.childNodes);
-        if(curorPos !== -1) moveCursorTo(e.currentTarget, curorPos + 1);
+        const target = e.currentTarget;
+        const cursorOffset = await processMessageInput(e.currentTarget.childNodes);
+        if(curorPos !== -1) moveCursorTo(target, curorPos + cursorOffset);
     }
 
     function handleEmoteSelect(emote: IAppEmote) {
@@ -150,13 +161,9 @@ export default function ChatControls({
         const concat = `<img class="inline" srcset="${srcSet}" alt="${emote.name}"/> `;
 
         const lastChar = messageInputRef.current.innerHTML.at(-1);
-        console.log(messageInputRef.current.innerHTML);
-        console.log('last char', lastChar);
         if(lastChar && lastChar === ' ') {
-            console.log('last char is space, no need to add space')
             messageInputRef.current.innerHTML += `${concat}`;
         } else {
-            console.log('last char is not space, adding space')
             messageInputRef.current.innerHTML += ` ${concat}`;
         }
 
