@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"sync"
 )
 
 // App struct
@@ -80,7 +81,10 @@ func (a *App) ConnectToChatroom(channelName string) (*ChatroomData, error) {
 	bsCtx, bsCancel := context.WithCancel(a.ctx)
 	defer bsCancel()
 
+	var wg sync.WaitGroup
+	wg.Add(1)
 	go func(ctx context.Context) {
+		defer wg.Done()
 		badgeSets, err := a.badgeService.GetChannelBadgeSets(accessToken, broadcaster.Id)
 		if err != nil {
 			select {
@@ -93,6 +97,7 @@ func (a *App) ConnectToChatroom(channelName string) (*ChatroomData, error) {
 		}
 		select {
 		case <-ctx.Done():
+			log.Printf("[ConnectToChatroom]: badgeset context closed")
 			return
 		default:
 			badgeSetsDone <- badgeSets
@@ -108,7 +113,7 @@ func (a *App) ConnectToChatroom(channelName string) (*ChatroomData, error) {
 	subId, err := a.esService.CreateSubscription(accessToken, condition, CHAT_SUB_TYPE)
 	if err != nil {
 		log.Printf("[ConnectToChatroom]: An error occurred creating the chat subscription, aborting\n\n")
-		bsCancel()
+		wg.Wait()
 		return nil, err
 	}
 
