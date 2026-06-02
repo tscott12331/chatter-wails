@@ -7,7 +7,7 @@ import { deepEqual } from '@util/obj'
 import { rotateArr } from '@util/arr';
 
 export type TTab = {
-    tab: string;
+    tabRoute: string;
     tabName: string;
 }
 
@@ -19,7 +19,7 @@ export default function TabManager({
 
 }: ITabManagerProps) {
     const HOME_TAB: TTab = {
-        tab: '/',
+        tabRoute: '/',
         tabName: 'home',
     };
 
@@ -33,20 +33,20 @@ export default function TabManager({
     const navigate = useNavigate();
 
     const handleTabSelect = (tab: TTab) => {
-        setCurrentTab(tab.tab);
+        setCurrentTab(tab.tabRoute);
 
-        navigate(tab.tab);
+        navigate(tab.tabRoute);
     }
 
     const handleTabRemove = (tab: TTab) => {
         if(deepEqual(tab, HOME_TAB)) return; // can't remove home tab :)
 
-        if(tab.tab === currentTab) {
-            setCurrentTab(HOME_TAB.tab);
-            navigate(HOME_TAB.tab);
+        if(tab.tabRoute === currentTab) {
+            setCurrentTab(HOME_TAB.tabRoute);
+            navigate(HOME_TAB.tabRoute);
         }
 
-        setTabs((curTabs) => curTabs.filter(t => t.tab !== tab.tab));
+        setTabs((curTabs) => curTabs.filter(t => t.tabRoute !== tab.tabRoute));
     }
 
     const handleAddTab = (tab: TTab) => {
@@ -61,7 +61,7 @@ export default function TabManager({
             if(!trimmedTabName.includes(' ') && trimmedTabName.length >= 3
                && trimmedTabName.length <= 25) {
                    const newTab: TTab = {
-                        tab: `/chatroom/${trimmedTabName}`,
+                        tabRoute: `/chatroom/${trimmedTabName}`,
                         tabName: trimmedTabName
                    };
                    handleAddTab(newTab);
@@ -73,17 +73,17 @@ export default function TabManager({
     }
 
     const handleTabMove = (tab: TTab, x: number) => {
-        const movingIndex = tabs.findIndex(t => t.tab === tab.tab);
+        const movingIndex = tabs.findIndex(t => t.tabRoute === tab.tabRoute);
         let indexOffset = 1;
         let comparedTab: HTMLDivElement|null|undefined;
 
         if(movingIndex - indexOffset > 0 &&
-          (comparedTab = tabsRef.current[tabs[movingIndex - indexOffset].tab].current) &&
+          (comparedTab = tabsRef.current[tabs[movingIndex - indexOffset].tabRoute].current) &&
             x <= comparedTab?.offsetLeft + comparedTab.offsetWidth) {
 
             indexOffset++;
             while(movingIndex - indexOffset > 0 &&
-              (comparedTab = tabsRef.current[tabs[movingIndex - indexOffset].tab].current) &&
+              (comparedTab = tabsRef.current[tabs[movingIndex - indexOffset].tabRoute].current) &&
                 x <= comparedTab?.offsetLeft + comparedTab.offsetWidth) {
                 indexOffset++;
             }
@@ -92,12 +92,12 @@ export default function TabManager({
                     ...rotateArr(tabs.slice(movingIndex - indexOffset + 1, movingIndex + 1), 'right', 1),
                     ...tabs.slice(movingIndex + 1)]);
         } else if(movingIndex + indexOffset < tabs.length &&
-                  (comparedTab = tabsRef.current[tabs[movingIndex + indexOffset].tab].current) &&
+                  (comparedTab = tabsRef.current[tabs[movingIndex + indexOffset].tabRoute].current) &&
                      x >= comparedTab.offsetLeft) {
 
             indexOffset++;
             while(movingIndex + indexOffset < tabs.length &&
-                  (comparedTab = tabsRef.current[tabs[movingIndex + indexOffset].tab].current) &&
+                  (comparedTab = tabsRef.current[tabs[movingIndex + indexOffset].tabRoute].current) &&
                      x >= comparedTab.offsetLeft) {
                 indexOffset++;
             }
@@ -117,7 +117,7 @@ export default function TabManager({
         >
             <div className={'flex items-center justify-center w-7 h-7 border border-text-1 rounded-sm p-1 [&_svg]:fill-text-1 data-[selected=true]:bg-bg-5 hover:bg-bg-8'}
                 onClick={() => handleTabSelect(HOME_TAB)}
-                data-selected={currentTab === HOME_TAB.tab ? 'true' : 'false'}
+                data-selected={currentTab === HOME_TAB.tabRoute ? 'true' : 'false'}
             >
                 <HomeIcon />
             </div>
@@ -125,9 +125,9 @@ export default function TabManager({
             <Tab
                 tab={tab}
                 index={i}
-                key={tab.tab}
-                ref={tabsRef.current[tab.tab] ??= { current: null }}
-                selected={tab.tab === currentTab}
+                key={tab.tabRoute}
+                ref={tabsRef.current[tab.tabRoute] ??= { current: null }}
+                selected={tab.tabRoute === currentTab}
                 onTabSelect={handleTabSelect}
                 onTabRemove={handleTabRemove}
                 onTabMove={handleTabMove}
