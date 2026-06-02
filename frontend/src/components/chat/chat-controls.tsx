@@ -165,7 +165,7 @@ export default function ChatControls({
         const lastNode = childNodes.item(childNodes.length - 1);
 
         // remove breaks (causes strange behavior)
-        if(lastNode.nodeName === "BR") {
+        if(lastNode && lastNode.nodeName === "BR") {
             lastNode.remove();
         }
 
