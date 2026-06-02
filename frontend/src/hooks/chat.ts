@@ -1,5 +1,3 @@
-import { FailedApiRequest } from "@/api/api-response";
-import { sendMessage } from "@/api/messages";
 import { TUser } from "@/App";
 import { TChatMessage } from "@/components/chat/chat-message";
 
@@ -68,7 +66,6 @@ export default function useChat({ channel, user, maxMessages = 200 }: {
         const subId = chatroomData.subId;
         if(!subId) return;
 
-        // subscription.addEventListener('message', handleNotificationMessage);
         setChatMessages([]);
 
         EventsOn(subId, appendChatMessage);
