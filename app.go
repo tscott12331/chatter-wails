@@ -55,6 +55,7 @@ type ChatroomData struct{
 	SubId string					`json:"subId"`
 	BroadcasterId string			`json:"broadcasterId"`
 	BadgeSets []api.ApiBadgeSet		`json:"badgeSets"`
+	ChannelEmotes []services.AppEmote `json:"channelEmotes"`
 }
 
 func (a *App) ConnectToChatroom(channelName string) (*ChatroomData, error) {
@@ -73,15 +74,21 @@ func (a *App) ConnectToChatroom(channelName string) (*ChatroomData, error) {
 
 	var badgeSetsDone chan *[]api.ApiBadgeSet = make(chan *[]api.ApiBadgeSet)
 	var badgeSetsErr chan error = make(chan error)
+	var channelEmotesDone chan *[]services.AppEmote = make(chan *[]services.AppEmote)
+	var chanelEmotesErr chan error = make(chan error)
 	defer func() {
 		close(badgeSetsDone)
 		close(badgeSetsErr)
+		close(channelEmotesDone)
+		close(chanelEmotesErr)
 	}()
 
 	bsCtx, bsCancel := context.WithCancel(a.ctx)
 	defer bsCancel()
 
 	var wg sync.WaitGroup
+
+	// fetch channel badge sets in goroutine
 	wg.Add(1)
 	go func(ctx context.Context) {
 		defer wg.Done()
@@ -101,6 +108,31 @@ func (a *App) ConnectToChatroom(channelName string) (*ChatroomData, error) {
 			return
 		default:
 			badgeSetsDone <- badgeSets
+			return
+		}
+
+	}(bsCtx)
+
+	// fetch channel emotes in goroutine
+	wg.Add(1)
+	go func(ctx context.Context) {
+		defer wg.Done()
+		channelEmotes, err := a.emoteService.GetChannelEmotes(accessToken, broadcaster.Id)
+		if err != nil {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				chanelEmotesErr <- err
+				return
+			}
+		}
+		select {
+		case <-ctx.Done():
+			log.Printf("[ConnectToChatroom]: channel emote context closed")
+			return
+		default:
+			channelEmotesDone <- channelEmotes
 			return
 		}
 
@@ -130,17 +162,24 @@ func (a *App) ConnectToChatroom(channelName string) (*ChatroomData, error) {
 		log.Printf("[ConnectToChatroom]: Failed to get channel badge sets\n%+v\n\n", err)
 	}
 
+	select {
+	case channelEmotes := <-channelEmotesDone:
+		chatroomData.ChannelEmotes = *channelEmotes
+	case err := <-chanelEmotesErr:
+		log.Printf("[ConnectToChatroom]: Failed to get channel emotes\n%+v\n\n", err)
+	}
+
 	newSub := services.ESSubscription[services.ESChatSubscriptionData]{
 		SubType: CHAT_SUB_TYPE,
 		Data: services.ESChatSubscriptionData{
 			BroadcasterId: broadcaster.Id,
 			Channel: channelName,
 			ChannelBadgeSets: chatroomData.BadgeSets,
+			ChannelEmotes: chatroomData.ChannelEmotes,
 		},
 	}
 	a.esService.Client.ChatSubscriptions[subId] = newSub
 	
-
 	return chatroomData, nil
 
 }

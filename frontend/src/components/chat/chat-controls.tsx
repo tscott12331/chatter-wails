@@ -1,3 +1,4 @@
+import { TChatroomEmotes } from "@/api/emote";
 import { IAppEmote } from "@/api/native-emote";
 import { getCursorPos, moveCursorTo, moveCursorToEnd } from "@/util/rte";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -10,7 +11,7 @@ import ReplyPopup from "./reply-popup";
 interface IChatControlsProps {
     isReplying: boolean;
     replyingToMessage: TChatMessage|undefined;
-    emoteList: IAppEmote[];
+    emotes: TChatroomEmotes;
     getChatterColor: (username: string) => string;
     onSendMessage: (message: string) => Promise<boolean>;
     onShowUserPopup: (username: string|undefined, mouseX: number, mouseY: number) => void;
@@ -20,7 +21,7 @@ interface IChatControlsProps {
 export default function ChatControls({
     isReplying,
     replyingToMessage,
-    emoteList,
+    emotes,
     getChatterColor,
     onSendMessage,
     onShowUserPopup,
@@ -79,6 +80,17 @@ export default function ChatControls({
         return text;
     }
 
+    function matchEmote(potentialEmote: string): IAppEmote|null {
+        for(const emoteList of Object.values(emotes)) {
+            const matchedEmote = emoteList.find(emote => emote.name === potentialEmote);
+            if(matchedEmote) {
+                return matchedEmote;
+            }
+        }
+
+        return null;
+    }
+
     async function processTextNode(node: ChildNode, offset: number) {
         const text = node.textContent;
         if(!text) return 0;
@@ -96,7 +108,7 @@ export default function ChatControls({
             cursorPos += pe.length;
             if(cursorPos >= offset) {
                 // target word
-                const matchedEmote = emoteList.find((e) => e.name === pe)
+                const matchedEmote = matchEmote(pe);
                 if(matchedEmote) {
                     targetIndex = i;
                     // add replace nodes
@@ -185,11 +197,12 @@ export default function ChatControls({
 
         const filteredArr: IAppEmote[] = [];
 
-        for(let i = 0; i < emoteList.length; i++) {
-            const emote = emoteList[i];
-            if(!(emote.id in idHash)) {
-                idHash[emote.id] = emote.id;
-                filteredArr.push(emote);
+        for(const emoteList of Object.values(emotes)) {
+            for(const emote of emoteList) {
+                if(!(emote.id in idHash)) {
+                    idHash[emote.id] = emote.id;
+                    filteredArr.push(emote);
+                }
             }
         }
 
@@ -215,7 +228,7 @@ export default function ChatControls({
                 </Tooltip>
         }
             );
-    }, [emoteList]);
+    }, [emotes]);
 
 
 

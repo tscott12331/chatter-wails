@@ -1,7 +1,6 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import ChatMessage, { TChatMessage } from '@components/chat/chat-message';
-import { useContext, useMemo, useRef, useState } from 'react';
-import { DebugLogger } from '@util/debug';
+import { useContext, useState } from 'react';
 import AutoScroller from '@components/util/auto-scroller';
 import JumpToRecentPopup from '@components/chat/jump-to-recent-popup';
 import UserPopup, { IPopupUser } from '@components/chat/user-popup';
@@ -12,11 +11,9 @@ import ChatControls from '@/components/chat/chat-controls';
 interface IChatroomProps {
 }
 
-const dbLog = new DebugLogger();
-
 export default function Chatroom({
 }: IChatroomProps) {
-    const { user, globalEmotes } = useContext(GlobalContext);
+    const { user, globalEmotes, userEmotes } = useContext(GlobalContext);
     const navigate = useNavigate()
 
     if(!user) {
@@ -27,7 +24,7 @@ export default function Chatroom({
     const { channel } = useParams();
 
     const MAX_MESSAGES = 200;
-    const { chatMessages, sendChatMessage } = useChat({channel, user, maxMessages: MAX_MESSAGES});
+    const { chatMessages, sendChatMessage, emotes } = useChat({channel, user, maxMessages: MAX_MESSAGES, emoteRecord: { global: globalEmotes, user: userEmotes }});
 
     const [isReplying, setIsReplying] = useState<boolean>(false);
     const [replyingToMessage, setReplyingToMessage] = useState<TChatMessage|undefined>();
@@ -116,7 +113,7 @@ export default function Chatroom({
             <ChatControls 
                 isReplying={isReplying}
                 replyingToMessage={replyingToMessage}
-                emoteList={globalEmotes}
+                emotes={emotes}
                 getChatterColor={getChatterColor}
                 onSendMessage={handleSendMessage}
                 onShowUserPopup={showUserPopup}

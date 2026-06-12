@@ -3,4 +3,5 @@ export interface IAppEmote {
 	name: string
 	lightSrcSet: string
 	darkSrcSet: string
+    type: "global" | "user" | "channel"
 }

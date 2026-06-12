@@ -59,63 +59,26 @@ export namespace api {
 		}
 	}
 	
-	export class ApiGlobalEmoteImages {
-	    url_1x: string;
-	    url_2x: string;
-	    url_4x: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new ApiGlobalEmoteImages(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.url_1x = source["url_1x"];
-	        this.url_2x = source["url_2x"];
-	        this.url_4x = source["url_4x"];
-	    }
-	}
-	export class ApiGlobalEmote {
+	export class ApiEmote {
 	    id: string;
 	    name: string;
-	    images: ApiGlobalEmoteImages;
 	    format: string[];
 	    scale: string[];
 	    theme_mode: string[];
 	
 	    static createFrom(source: any = {}) {
-	        return new ApiGlobalEmote(source);
+	        return new ApiEmote(source);
 	    }
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.id = source["id"];
 	        this.name = source["name"];
-	        this.images = this.convertValues(source["images"], ApiGlobalEmoteImages);
 	        this.format = source["format"];
 	        this.scale = source["scale"];
 	        this.theme_mode = source["theme_mode"];
 	    }
-	
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice && a.map) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
 	}
-	
 	export class ApiMessageDropReason {
 	    code: string;
 	    message: string;
@@ -233,6 +196,7 @@ export namespace main {
 	    subId: string;
 	    broadcasterId: string;
 	    badgeSets: api.ApiBadgeSet[];
+	    channelEmotes: services.AppEmote[];
 	
 	    static createFrom(source: any = {}) {
 	        return new ChatroomData(source);
@@ -243,6 +207,7 @@ export namespace main {
 	        this.subId = source["subId"];
 	        this.broadcasterId = source["broadcasterId"];
 	        this.badgeSets = this.convertValues(source["badgeSets"], api.ApiBadgeSet);
+	        this.channelEmotes = this.convertValues(source["channelEmotes"], services.AppEmote);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -273,6 +238,7 @@ export namespace services {
 	    name: string;
 	    lightSrcSet: string;
 	    darkSrcSet: string;
+	    type: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new AppEmote(source);
@@ -284,6 +250,7 @@ export namespace services {
 	        this.name = source["name"];
 	        this.lightSrcSet = source["lightSrcSet"];
 	        this.darkSrcSet = source["darkSrcSet"];
+	        this.type = source["type"];
 	    }
 	}
 	export class AppUser {
