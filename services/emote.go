@@ -116,7 +116,7 @@ type AppEmote struct{
 	Name string					`json:"name"`
 	LightSrcSet string		`json:"lightSrcSet"`
 	DarkSrcSet string		`json:"darkSrcSet"`
-	// 'global' | 'user' | 'channel'
+	// 'global' | 'user' | 'channel' | 'seventv'
 	Type string				`json:"type"`
 }
 

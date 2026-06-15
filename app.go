@@ -2,6 +2,7 @@ package main
 
 import (
 	"chatter-wails/internal/api"
+	"chatter-wails/internal/api/seventv"
 	"chatter-wails/internal/message"
 	"chatter-wails/internal/user"
 	"chatter-wails/services"
@@ -56,6 +57,7 @@ type ChatroomData struct{
 	BroadcasterId string			`json:"broadcasterId"`
 	BadgeSets []api.ApiBadgeSet		`json:"badgeSets"`
 	ChannelEmotes []services.AppEmote `json:"channelEmotes"`
+	SevenTVEmotes []services.AppEmote `json:"sevenTVEmotes"`
 }
 
 func (a *App) ConnectToChatroom(channelName string) (*ChatroomData, error) {
@@ -64,7 +66,6 @@ func (a *App) ConnectToChatroom(channelName string) (*ChatroomData, error) {
 	}
 
 	accessToken := a.authService.User.Access_token
-	
 	
 	broadcaster, err := user.GetUserByLogin(accessToken, channelName)
 	if err != nil {
@@ -75,12 +76,14 @@ func (a *App) ConnectToChatroom(channelName string) (*ChatroomData, error) {
 	var badgeSetsDone chan *[]api.ApiBadgeSet = make(chan *[]api.ApiBadgeSet)
 	var badgeSetsErr chan error = make(chan error)
 	var channelEmotesDone chan *[]services.AppEmote = make(chan *[]services.AppEmote)
-	var chanelEmotesErr chan error = make(chan error)
+	var channelEmotesErr chan error = make(chan error)
+	var sevenTVUserReqDone chan *seventv.ApiGetSevenTVUserRes = make(chan *seventv.ApiGetSevenTVUserRes)
+	var sevenTVErr chan error = make(chan error)
 	defer func() {
 		close(badgeSetsDone)
 		close(badgeSetsErr)
 		close(channelEmotesDone)
-		close(chanelEmotesErr)
+		close(channelEmotesErr)
 	}()
 
 	bsCtx, bsCancel := context.WithCancel(a.ctx)
@@ -90,53 +93,14 @@ func (a *App) ConnectToChatroom(channelName string) (*ChatroomData, error) {
 
 	// fetch channel badge sets in goroutine
 	wg.Add(1)
-	go func(ctx context.Context) {
-		defer wg.Done()
-		badgeSets, err := a.badgeService.GetChannelBadgeSets(accessToken, broadcaster.Id)
-		if err != nil {
-			select {
-			case <-ctx.Done():
-				return
-			default:
-				badgeSetsErr <- err
-				return
-			}
-		}
-		select {
-		case <-ctx.Done():
-			log.Printf("[ConnectToChatroom]: badgeset context closed")
-			return
-		default:
-			badgeSetsDone <- badgeSets
-			return
-		}
-
-	}(bsCtx)
+	go a.goGetChannelBadgeSets(bsCtx, badgeSetsDone, badgeSetsErr, &wg, accessToken, broadcaster.Id)
 
 	// fetch channel emotes in goroutine
 	wg.Add(1)
-	go func(ctx context.Context) {
-		defer wg.Done()
-		channelEmotes, err := a.emoteService.GetChannelEmotes(accessToken, broadcaster.Id)
-		if err != nil {
-			select {
-			case <-ctx.Done():
-				return
-			default:
-				chanelEmotesErr <- err
-				return
-			}
-		}
-		select {
-		case <-ctx.Done():
-			log.Printf("[ConnectToChatroom]: channel emote context closed")
-			return
-		default:
-			channelEmotesDone <- channelEmotes
-			return
-		}
+	go a.goGetChannelEmotes(bsCtx, channelEmotesDone, channelEmotesErr, &wg, accessToken, broadcaster.Id)
 
-	}(bsCtx)
+	wg.Add(1)
+	go a.goGetSevenTVEmotes(bsCtx, sevenTVUserReqDone, sevenTVErr, &wg, accessToken, broadcaster.Id)
 
 	condition := map[string]string{
 		"broadcaster_user_id": broadcaster.Id,
@@ -165,8 +129,15 @@ func (a *App) ConnectToChatroom(channelName string) (*ChatroomData, error) {
 	select {
 	case channelEmotes := <-channelEmotesDone:
 		chatroomData.ChannelEmotes = *channelEmotes
-	case err := <-chanelEmotesErr:
+	case err := <-channelEmotesErr:
 		log.Printf("[ConnectToChatroom]: Failed to get channel emotes\n%+v\n\n", err)
+	}
+
+	select {
+	case sevenTVUserRes := <-sevenTVUserReqDone:
+		chatroomData.SevenTVEmotes = seventv.GetAppEmotesFromSevenTVUserRes(sevenTVUserRes)
+	case err := <-sevenTVErr:
+		log.Printf("[ConnectToChatroom]: Failed to get 7tv emotes\n%+v\n\n", err)
 	}
 
 	newSub := services.ESSubscription[services.ESChatSubscriptionData]{
@@ -176,12 +147,102 @@ func (a *App) ConnectToChatroom(channelName string) (*ChatroomData, error) {
 			Channel: channelName,
 			ChannelBadgeSets: chatroomData.BadgeSets,
 			ChannelEmotes: chatroomData.ChannelEmotes,
+			SevenTVEmotes: chatroomData.SevenTVEmotes,
 		},
 	}
 	a.esService.Client.ChatSubscriptions[subId] = newSub
 	
 	return chatroomData, nil
 
+}
+
+func (a *App) goGetChannelEmotes(
+	ctx context.Context, 
+	channelEmotesDone chan *[]services.AppEmote, 
+	channelEmotesErr chan error, 
+	wg *sync.WaitGroup,
+	accessToken string,
+	broadcasterId string,
+) {
+	defer wg.Done()
+	channelEmotes, err := a.emoteService.GetChannelEmotes(accessToken, broadcasterId)
+	if err != nil {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			channelEmotesErr <- err
+			return
+		}
+	}
+	select {
+	case <-ctx.Done():
+		log.Printf("[ConnectToChatroom]: channel emote context closed")
+		return
+	default:
+		channelEmotesDone <- channelEmotes
+		return
+	}
+
+}
+
+func (a *App) goGetChannelBadgeSets(
+	ctx context.Context, 
+	badgeSetsDone chan *[]api.ApiBadgeSet, 
+	badgeSetsErr chan error, 
+	wg *sync.WaitGroup,
+	accessToken string,
+	broadcasterId string,
+) {
+	defer wg.Done()
+	badgeSets, err := a.badgeService.GetChannelBadgeSets(accessToken, broadcasterId)
+	if err != nil {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			badgeSetsErr <- err
+			return
+		}
+	}
+	select {
+	case <-ctx.Done():
+		log.Printf("[ConnectToChatroom]: badgeset context closed")
+		return
+	default:
+		badgeSetsDone <- badgeSets
+		return
+	}
+
+}
+
+func (a *App) goGetSevenTVEmotes(
+	ctx context.Context, 
+	sevenTVUserReqDone chan *seventv.ApiGetSevenTVUserRes, 
+	sevenTVErr chan error, 
+	wg *sync.WaitGroup,
+	accessToken string,
+	broadcasterId string,
+) {
+	defer wg.Done()
+	userRes, err := seventv.GetSevenTVUser("twitch", broadcasterId)
+	if err != nil {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			sevenTVErr <- err
+			return
+		}
+	}
+	select {
+	case <-ctx.Done():
+		log.Printf("[ConnectToChatroom]: seventv emote context closed\n")
+		return
+	default:
+		sevenTVUserReqDone <- userRes
+		return
+	}
 }
 
 func (a *App) SendChatMessage(chatSubId string, messageContent string, replyId *string) (*api.ApiPostMessagesData, error) {

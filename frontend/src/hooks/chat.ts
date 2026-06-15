@@ -15,6 +15,7 @@ interface IChatroomData {
     broadcasterId: string|null;
     badgeSets: api.ApiBadgeSet[];
     channelEmotes: IAppEmote[];
+    sevenTVEmotes: IAppEmote[];
 }
 
 export default function useChat({ channel, user, emoteRecord, maxMessages = 200 }: {
@@ -31,6 +32,7 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
         broadcasterId: null,
         badgeSets: [],
         channelEmotes: [],
+        sevenTVEmotes: [],
     })
 
     const [emotes, setEmotes] = useState<TChatroomEmotes>(emoteRecord);
@@ -77,6 +79,7 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
             const newEmotes: TChatroomEmotes = {};
             Object.assign(newEmotes, curEmotes);
             newEmotes['channel'] = chatroomData.channelEmotes;
+            newEmotes['seventv'] = chatroomData.sevenTVEmotes;
 
             return newEmotes;
         });

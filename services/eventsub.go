@@ -465,6 +465,7 @@ type ESChatSubscriptionData struct{
 	Channel string
 	ChannelBadgeSets []api.ApiBadgeSet
 	ChannelEmotes []AppEmote
+	SevenTVEmotes []AppEmote
 }
 type ESSubscription[T any] struct{
 	SubType string
