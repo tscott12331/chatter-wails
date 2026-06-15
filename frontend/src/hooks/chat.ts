@@ -2,6 +2,7 @@ import { TChatroomEmotes } from "@/api/emote";
 import { IAppEmote } from "@/api/native-emote";
 import { TUser } from "@/App";
 import { TChatMessage } from "@/components/chat/chat-message";
+import { listToMap } from "@/util/map";
 
 import { ConnectToChatroom, SendChatMessage } from '@wailsjs/go/main/App'
 import { api } from "@wailsjs/go/models";
@@ -78,8 +79,8 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
         setEmotes(curEmotes => {
             const newEmotes: TChatroomEmotes = {};
             Object.assign(newEmotes, curEmotes);
-            newEmotes['channel'] = chatroomData.channelEmotes;
-            newEmotes['seventv'] = chatroomData.sevenTVEmotes;
+            newEmotes['channel'] = listToMap(chatroomData.channelEmotes, 'name');
+            newEmotes['seventv'] = listToMap(chatroomData.sevenTVEmotes, 'name');
 
             return newEmotes;
         });

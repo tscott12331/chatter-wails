@@ -81,10 +81,9 @@ export default function ChatControls({
     }
 
     function matchEmote(potentialEmote: string): IAppEmote|null {
-        for(const emoteList of Object.values(emotes)) {
-            const matchedEmote = emoteList.find(emote => emote.name === potentialEmote);
-            if(matchedEmote) {
-                return matchedEmote;
+        for(const emoteMap of Object.values(emotes)) {
+            if(emoteMap.has(potentialEmote)) {
+                return emoteMap.get(potentialEmote)!;
             }
         }
 
@@ -198,7 +197,7 @@ export default function ChatControls({
         const filteredArr: IAppEmote[] = [];
 
         for(const emoteList of Object.values(emotes)) {
-            for(const emote of emoteList) {
+            for(const emote of emoteList.values()) {
                 if(!(emote.id in idHash)) {
                     idHash[emote.id] = emote.id;
                     filteredArr.push(emote);

@@ -7,6 +7,7 @@ import UserPopup, { IPopupUser } from '@components/chat/user-popup';
 import useChat from '@/hooks/chat';
 import { GlobalContext } from '@/contexts/global-context';
 import ChatControls from '@/components/chat/chat-controls';
+import { listToMap } from '@/util/map';
 
 interface IChatroomProps {
 }
@@ -24,7 +25,15 @@ export default function Chatroom({
     const { channel } = useParams();
 
     const MAX_MESSAGES = 200;
-    const { chatMessages, sendChatMessage, emotes } = useChat({channel, user, maxMessages: MAX_MESSAGES, emoteRecord: { global: globalEmotes, user: userEmotes }});
+    const { chatMessages, sendChatMessage, emotes } = useChat({
+                         channel,
+                         user,
+                         maxMessages: MAX_MESSAGES,
+                         emoteRecord: {
+                             global: listToMap(globalEmotes, 'name'),
+                             user: listToMap(userEmotes, 'name'),
+                         }
+                    });
 
     const [isReplying, setIsReplying] = useState<boolean>(false);
     const [replyingToMessage, setReplyingToMessage] = useState<TChatMessage|undefined>();
