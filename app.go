@@ -5,6 +5,7 @@ import (
 	"chatter-wails/internal/api/seventv"
 	"chatter-wails/internal/message"
 	"chatter-wails/internal/user"
+	"chatter-wails/internal/util"
 	"chatter-wails/services"
 	"context"
 	"errors"
@@ -56,8 +57,8 @@ type ChatroomData struct{
 	SubId string					`json:"subId"`
 	BroadcasterId string			`json:"broadcasterId"`
 	BadgeSets []api.ApiBadgeSet		`json:"badgeSets"`
-	ChannelEmotes []services.AppEmote `json:"channelEmotes"`
-	SevenTVEmotes []services.AppEmote `json:"sevenTVEmotes"`
+	ChannelEmotes map[string]*services.AppEmote `json:"channelEmotes"`
+	SevenTVEmotes map[string]*services.AppEmote `json:"sevenTVEmotes"`
 }
 
 func (a *App) ConnectToChatroom(channelName string) (*ChatroomData, error) {
@@ -75,7 +76,7 @@ func (a *App) ConnectToChatroom(channelName string) (*ChatroomData, error) {
 
 	var badgeSetsDone chan *[]api.ApiBadgeSet = make(chan *[]api.ApiBadgeSet)
 	var badgeSetsErr chan error = make(chan error)
-	var channelEmotesDone chan *[]services.AppEmote = make(chan *[]services.AppEmote)
+	var channelEmotesDone chan map[string]*services.AppEmote = make(chan map[string]*services.AppEmote)
 	var channelEmotesErr chan error = make(chan error)
 	var sevenTVUserReqDone chan *seventv.ApiGetSevenTVUserRes = make(chan *seventv.ApiGetSevenTVUserRes)
 	var sevenTVErr chan error = make(chan error)
@@ -128,7 +129,7 @@ func (a *App) ConnectToChatroom(channelName string) (*ChatroomData, error) {
 
 	select {
 	case channelEmotes := <-channelEmotesDone:
-		chatroomData.ChannelEmotes = *channelEmotes
+		chatroomData.ChannelEmotes = channelEmotes
 	case err := <-channelEmotesErr:
 		log.Printf("[ConnectToChatroom]: Failed to get channel emotes\n%+v\n\n", err)
 	}
@@ -158,7 +159,7 @@ func (a *App) ConnectToChatroom(channelName string) (*ChatroomData, error) {
 
 func (a *App) goGetChannelEmotes(
 	ctx context.Context, 
-	channelEmotesDone chan *[]services.AppEmote, 
+	channelEmotesDone chan map[string]*services.AppEmote, 
 	channelEmotesErr chan error, 
 	wg *sync.WaitGroup,
 	accessToken string,
@@ -180,7 +181,10 @@ func (a *App) goGetChannelEmotes(
 		log.Printf("[ConnectToChatroom]: channel emote context closed")
 		return
 	default:
-		channelEmotesDone <- channelEmotes
+		channelEmoteMap := util.ArrToMap(*channelEmotes, func(item services.AppEmote) (string, *services.AppEmote) {
+			return item.Name, &item
+		})
+		channelEmotesDone <- channelEmoteMap
 		return
 	}
 

@@ -2,7 +2,6 @@ import { TChatroomEmotes } from "@/api/emote";
 import { IAppEmote } from "@/api/native-emote";
 import { TUser } from "@/App";
 import { TChatMessage } from "@/components/chat/chat-message";
-import { listToMap } from "@/util/map";
 
 import { ConnectToChatroom, SendChatMessage } from '@wailsjs/go/main/App'
 import { api } from "@wailsjs/go/models";
@@ -15,8 +14,8 @@ interface IChatroomData {
     subId: string|null;
     broadcasterId: string|null;
     badgeSets: api.ApiBadgeSet[];
-    channelEmotes: IAppEmote[];
-    sevenTVEmotes: IAppEmote[];
+    channelEmotes: Record<string, IAppEmote>;
+    sevenTVEmotes: Record<string, IAppEmote>;
 }
 
 export default function useChat({ channel, user, emoteRecord, maxMessages = 200 }: {
@@ -32,8 +31,8 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
         subId: null,
         broadcasterId: null,
         badgeSets: [],
-        channelEmotes: [],
-        sevenTVEmotes: [],
+        channelEmotes: {},
+        sevenTVEmotes: {},
     })
 
     const [emotes, setEmotes] = useState<TChatroomEmotes>(emoteRecord);
@@ -79,8 +78,8 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
         setEmotes(curEmotes => {
             const newEmotes: TChatroomEmotes = {};
             Object.assign(newEmotes, curEmotes);
-            newEmotes['channel'] = listToMap(chatroomData.channelEmotes, 'name');
-            newEmotes['seventv'] = listToMap(chatroomData.sevenTVEmotes, 'name');
+            newEmotes['channel'] = new Map(Object.entries(chatroomData.channelEmotes));
+            newEmotes['seventv'] = new Map(Object.entries(chatroomData.sevenTVEmotes));
 
             return newEmotes;
         });

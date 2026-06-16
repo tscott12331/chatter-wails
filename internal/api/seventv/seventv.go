@@ -168,8 +168,8 @@ func GetSevenTVUser(platform string, platform_id string) (*ApiGetSevenTVUserRes,
 	return &res.Body, nil
 }
 
-func GetAppEmotesFromSevenTVUserRes(res *ApiGetSevenTVUserRes) []services.AppEmote {
-	var appEmotes []services.AppEmote
+func GetAppEmotesFromSevenTVUserRes(res *ApiGetSevenTVUserRes) map[string]*services.AppEmote {
+	var appEmotes map[string]*services.AppEmote = map[string]*services.AppEmote{}
 	for _, emote := range res.Emote_set.Emotes {
 		srcSet := getSevenTVEmoteSrcSet(&emote)
 		appEmote := services.AppEmote{
@@ -180,7 +180,7 @@ func GetAppEmotesFromSevenTVUserRes(res *ApiGetSevenTVUserRes) []services.AppEmo
 			Type: "seventv",
 		}
 
-		appEmotes = append(appEmotes, appEmote)
+		appEmotes[appEmote.Name] = &appEmote
 	}
 
 	return appEmotes
