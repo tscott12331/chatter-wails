@@ -217,7 +217,7 @@ export default function ChatControls({
                 key={emote.id}
                 >
                     <div
-                        className='flex-center'
+                        className='flex-center cursor-pointer'
                         onClick={() => handleEmoteSelect(emote)}
                     >
                         <img
@@ -249,7 +249,7 @@ export default function ChatControls({
 
 
     return (
-    <div className='flex flex-col p-1 basis-[max-content] bg-bg-9 relative'>
+    <div className='flex flex-col p-1 basis-[max-content] bg-bg-6 relative'>
         {shouldShowEmotePopup &&
         <div
         className='w-[calc(100%-30px)] h-75 border border-outline-1 rounded-xs m-3.5 absolute left-0 bottom-full bg-bg-2/80 backdrop-blur-xs g-1 p-1 z-600 flex flex-wrap justify-between items-center scroller-y [&>span>div]:w-10 [&>span>div]:h-10 [&>span>div]:p-0.5 [&>span>div]:rounded-xs [&>span>div]:opacity-90 [&>span>div]:hover:bg-bg-5'
@@ -280,13 +280,13 @@ export default function ChatControls({
             ></div>
             <div className='flex items-center justify-end gap-1.5 w-full'>
                 <button
-                    className='relative flex justify-center items-center w-12.5 p-2.5 bg-none hover:drop-shadow-xs hover:drop-shadow-text-2'
+                    className='relative flex justify-center items-center w-8 bg-none hover:drop-shadow-xs hover:drop-shadow-text-2'
                     onClick={handleEmoteButtonClick}
                 >
                         <EmoteIcon />
                 </button>
                 <button
-                    className="h-12.5 p-2.5"
+                    className="h-8"
                     onClick={handleSendMessage}
                 >send</button>
             </div>

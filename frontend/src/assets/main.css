@@ -56,41 +56,41 @@
 }
 
 @theme {
-    --color-red-70: #3b1927;
-    --color-red-100: #5e2331;
-    --color-red-200: #6f2534;
-    --color-red-300: #8a2740;
-    --color-red-500: #aa3344;
-    --color-red-700: #cc4334;
-    --color-red-900: #e04f3a;
+    --color-red-70: var(--c-red-70)
+    --color-red-100: var(--c-red-100);
+    --color-red-200: var(--c-red-200);
+    --color-red-300: var(--c-red-300);
+    --color-red-500: var(--c-red-500);
+    --color-red-700: var(--c-red-700);
+    --color-red-900: var(--c-red-900);
 
-    --color-input-bg: #666677;
-    --color-input-bg-2: #444455;
-    --color-input-bg-3: #888899;
-    --color-input-outline: #afafaf;
-    --color-input-outline-2: #cacada;
+    --color-input-bg: var(--c-input-bg);
+    --color-input-bg-2: var(--c-input-bg-2);
+    --color-input-bg-3: var(--c-input-bg-3);
+    --color-input-outline: var(--c-input-outline);
+    --color-input-outline-2: var(--c-input-outline-2);
 
-    --color-bg-08: #10101a;
-    --color-bg-09: #13132a;
-    --color-bg-1: #23232a;
-    --color-bg-2: #33333a;
-    --color-bg-3: #43434a;
-    --color-bg-5: #63637a;
-    --color-bg-6: #73738a;
-    --color-bg-7: #83839f;
-    --color-bg-8: #9393b5;
-    --color-bg-9: #a3a4ba;
-    --color-bg-10: #b3b3d6;
-    --color-bg-12: #d3d3ea;
-    --color-bg-13: #e4e4e8;
-    --color-bg-14: #f4f4f9;
+    --color-bg-08: var(--c-bg-08);
+    --color-bg-09: var(--c-bg-09);
+    --color-bg-1: var(--c-bg-1);
+    --color-bg-2: var(--c-bg-2);
+    --color-bg-3: var(--c-bg-3);
+    --color-bg-5: var(--c-bg-5);
+    --color-bg-6: var(--c-bg-6);
+    --color-bg-7: var(--c-bg-7);
+    --color-bg-8: var(--c-bg-8);
+    --color-bg-9: var(--c-bg-9);
+    --color-bg-10: var(--c-bg-10);
+    --color-bg-12: var(--c-bg-12);
+    --color-bg-13: var(--c-bg-13);
+    --color-bg-14: var(--c-bg-14);
 
-    --color-outline-1: #898990;
-    --color-outline-2: #9a9aa0;
+    --color-outline-1: var(--c-outline-1);
+    --color-outline-2: var(--c-outline-2);
 
-    --color-text-1: #efedfe;
-    --color-text-2: #dfddde;
-    --color-text-3: #a0a0b0;
+    --color-text-1: var(--c-text-1);
+    --color-text-2: var(--c-text-2);
+    --color-text-3: var(--c-text-3);
 }
 
 #root {

@@ -3,7 +3,6 @@ import Tab from './tab';
 import HomeIcon from '../svg/home-icon';
 import PlusIcon from '../svg/plus-icon';
 import { useNavigate } from 'react-router-dom';
-import { deepEqual } from '@util/obj'
 import { rotateArr } from '@util/arr';
 
 export type TTab = {
@@ -148,7 +147,7 @@ export default function TabManager({
     return (
         <div className={'flex items-center w-full h-9 gap-1 border-b p-1 border-outline-2'}
         >
-            <div className={'flex items-center justify-center w-7 h-7 border border-text-1 rounded-sm p-1 [&_svg]:fill-text-1 data-[selected=true]:bg-bg-5 hover:bg-bg-8'}
+            <div className={'flex items-center justify-center w-7 h-7 border border-outline-1 rounded-sm p-1 [&_svg]:fill-text-1 data-[selected=true]:bg-bg-5 hover:bg-bg-8 cursor-pointer'}
                 onClick={() => handleTabSelect(HOME_TAB)}
                 data-selected={currentTabRoute === HOME_TAB.tabRoute ? 'true' : 'false'}
             >
@@ -178,7 +177,7 @@ export default function TabManager({
                 />
             </div>
             <div
-                className={'flex justify-center items-center w-7 h-7 p-2 [&_svg]:fill-text-1 [&_svg]:hover:fill-text-2 [&_svg]:hover:brightness-90 [&_svg]:hover:drop-shadow-sm [&_svg]:hover:drop-shadow-outline-1 ' + (isAddingTab ? ' hidden' : '')}
+                className={'flex justify-center items-center w-7 h-7 p-2 [&_svg]:fill-text-1 hover:[&_svg]:fill-text-2 hover:[&_svg]:brightness-90 cursor-pointer' + (isAddingTab ? ' hidden' : '')}
                 onClick={() => setIsAddingTab(true)}
             >
                 <PlusIcon />
