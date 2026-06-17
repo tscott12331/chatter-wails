@@ -217,7 +217,7 @@ export default function ChatControls({
                 key={emote.id}
                 >
                     <div
-                        className='flex-center cursor-pointer'
+                        className='flex justify-center items-center cursor-pointer w-10 h-10 p-0.5 rounded-xs opacity-90 hover:bg-bg-5'
                         onClick={() => handleEmoteSelect(emote)}
                     >
                         <img
@@ -252,7 +252,7 @@ export default function ChatControls({
     <div className='flex flex-col p-1 basis-[max-content] bg-bg-6 relative'>
         {shouldShowEmotePopup &&
         <div
-        className='w-[calc(100%-30px)] h-75 border border-outline-1 rounded-xs m-3.5 absolute left-0 bottom-full bg-bg-2/80 backdrop-blur-xs g-1 p-1 z-600 flex flex-wrap justify-between items-center scroller-y [&>span>div]:w-10 [&>span>div]:h-10 [&>span>div]:p-0.5 [&>span>div]:rounded-xs [&>span>div]:opacity-90 [&>span>div]:hover:bg-bg-5'
+        className='w-[calc(100%-30px)] h-75 border border-outline-1 rounded-xs m-3.5 absolute left-0 bottom-full bg-bg-2/80 backdrop-blur-xs gap-1 p-1 z-600 scroller-y grid grid-cols-[repeat(auto-fill,40px)] justify-between'
         onClick={(e: React.MouseEvent<HTMLDivElement>) => e.stopPropagation()}
         >
             {filteredEmoteList}
