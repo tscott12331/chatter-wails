@@ -145,7 +145,7 @@ export default function TabManager({
     }, []);
 
     return (
-        <div className={'flex items-center w-full h-9 gap-1 border-b p-1 border-outline-2'}
+        <div className={'flex items-center w-full h-9 gap-1 border-b p-1 border-outline-2 bg-bg-09'}
         >
             <div className={'flex items-center justify-center w-7 h-7 border border-outline-1 rounded-sm p-1 [&_svg]:fill-text-1 data-[selected=true]:bg-bg-5 hover:bg-bg-8 cursor-pointer'}
                 onClick={() => handleTabSelect(HOME_TAB)}

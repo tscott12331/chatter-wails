@@ -249,7 +249,7 @@ export default function ChatControls({
 
 
     return (
-    <div className='flex flex-col p-1 basis-[max-content] bg-bg-6 relative'>
+    <div className='flex flex-col p-1 basis-[max-content] bg-bg-09 relative'>
         {shouldShowEmotePopup &&
         <div
         className='w-[calc(100%-30px)] h-75 border border-outline-1 rounded-xs m-3.5 absolute left-0 bottom-full bg-bg-2/80 backdrop-blur-xs gap-1 p-1 z-600 scroller-y grid grid-cols-[repeat(auto-fill,40px)] justify-between'
@@ -280,7 +280,7 @@ export default function ChatControls({
             ></div>
             <div className='flex items-center justify-end gap-1.5 w-full'>
                 <button
-                    className='relative flex justify-center items-center w-8 bg-none hover:drop-shadow-xs hover:drop-shadow-text-2'
+                    className='relative flex justify-center items-center w-8 bg-none'
                     onClick={handleEmoteButtonClick}
                 >
                         <EmoteIcon />

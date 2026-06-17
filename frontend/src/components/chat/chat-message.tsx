@@ -118,7 +118,7 @@ export default function ChatMessage({
     }
 
     return (
-        <div className="p-1.5 relative hover:bg-bg-2 hover:[&_.chat-controls]:visible">
+        <div className="p-1.5 relative hover:bg-bg-1 hover:[&_.chat-controls]:visible">
             {message.reply &&
             <Tooltip
                 hoverTime={0}
