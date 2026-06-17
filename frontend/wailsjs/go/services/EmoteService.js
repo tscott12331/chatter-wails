@@ -6,6 +6,14 @@ export function GetAppEmoteFromApiEmote(arg1, arg2) {
   return window['go']['services']['EmoteService']['GetAppEmoteFromApiEmote'](arg1, arg2);
 }
 
+export function GetChannelEmotes(arg1, arg2) {
+  return window['go']['services']['EmoteService']['GetChannelEmotes'](arg1, arg2);
+}
+
 export function GetGlobalEmotes(arg1) {
   return window['go']['services']['EmoteService']['GetGlobalEmotes'](arg1);
+}
+
+export function GetUserEmotes(arg1) {
+  return window['go']['services']['EmoteService']['GetUserEmotes'](arg1);
 }

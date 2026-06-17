@@ -7,7 +7,7 @@ import { deepEqual } from '@util/obj'
 import { rotateArr } from '@util/arr';
 
 export type TTab = {
-    tab: string;
+    tabRoute: string;
     tabName: string;
 }
 
@@ -19,12 +19,12 @@ export default function TabManager({
 
 }: ITabManagerProps) {
     const HOME_TAB: TTab = {
-        tab: '/',
+        tabRoute: '/',
         tabName: 'home',
     };
 
     const [tabs, setTabs] = useState<TTab[]>([HOME_TAB]);
-    const [currentTab, setCurrentTab] = useState<string>('/');
+    const [currentTabRoute, setCurrentTabRoute] = useState<string>('/');
     const tabsRef = useRef<Record<string, {current: HTMLDivElement|null}>>({})
 
     const [isAddingTab, setIsAddingTab] = useState<boolean>(false);
@@ -33,24 +33,27 @@ export default function TabManager({
     const navigate = useNavigate();
 
     const handleTabSelect = (tab: TTab) => {
-        setCurrentTab(tab.tab);
+        setCurrentTabRoute(tab.tabRoute);
 
-        navigate(tab.tab);
+        navigate(tab.tabRoute);
     }
 
     const handleTabRemove = (tab: TTab) => {
-        if(deepEqual(tab, HOME_TAB)) return; // can't remove home tab :)
+        if(tab.tabRoute == HOME_TAB.tabRoute) return; // can't remove home tab :)
 
-        if(tab.tab === currentTab) {
-            setCurrentTab(HOME_TAB.tab);
-            navigate(HOME_TAB.tab);
+        if(tab.tabRoute === currentTabRoute) {
+            setCurrentTabRoute(HOME_TAB.tabRoute);
+            navigate(HOME_TAB.tabRoute);
         }
 
-        setTabs((curTabs) => curTabs.filter(t => t.tab !== tab.tab));
+        setTabs((curTabs) => curTabs.filter(t => t.tabRoute !== tab.tabRoute));
+        delete tabsRef.current[tab.tabRoute];
     }
 
     const handleAddTab = (tab: TTab) => {
-        if(tabs.includes(tab)) return handleTabSelect(tab);
+        if(tabs.find(t => t.tabRoute === tab.tabRoute)) {
+            return handleTabSelect(tab)
+        }
 
         setTabs((curTabs) => [...curTabs, tab]);
     }
@@ -61,7 +64,7 @@ export default function TabManager({
             if(!trimmedTabName.includes(' ') && trimmedTabName.length >= 3
                && trimmedTabName.length <= 25) {
                    const newTab: TTab = {
-                        tab: `/chatroom/${trimmedTabName}`,
+                        tabRoute: `/chatroom/${trimmedTabName.toLowerCase()}`,
                         tabName: trimmedTabName
                    };
                    handleAddTab(newTab);
@@ -72,44 +75,74 @@ export default function TabManager({
         }
     }
 
-    const handleTabMove = (tab: TTab, x: number) => {
-        const movingIndex = tabs.findIndex(t => t.tab === tab.tab);
-        let indexOffset = 1;
-        let comparedTab: HTMLDivElement|null|undefined;
+    const handleTabMove = (movedTab: TTab, movedTabX: number) => {
+        const movedTabIndex = tabs.findIndex(t => t.tabRoute === movedTab.tabRoute);
+        if(movedTabIndex === -1) return;
 
-        if(movingIndex - indexOffset > 0 &&
-          (comparedTab = tabsRef.current[tabs[movingIndex - indexOffset].tab].current) &&
-            x <= comparedTab?.offsetLeft + comparedTab.offsetWidth) {
+        const movedTabElement = tabsRef.current[movedTab.tabRoute].current;
+        if(!movedTabElement) return;
+        const movedTabRect = movedTabElement.getBoundingClientRect()
+        // console.log(`rect.x: ${movedTabRect.x}`);
+        // console.log(`movedTabDX: ${movedTabDX}`);
+        // console.log(`movedTabX: ${movedTabX}`);
 
-            indexOffset++;
-            while(movingIndex - indexOffset > 0 &&
-              (comparedTab = tabsRef.current[tabs[movingIndex - indexOffset].tab].current) &&
-                x <= comparedTab?.offsetLeft + comparedTab.offsetWidth) {
-                indexOffset++;
+        const entries = Object.entries(tabsRef.current)
+                            .filter(([t, _]) => t != movedTab.tabRoute);
+
+        
+
+        let furthestPassedTabRoute = HOME_TAB.tabRoute;
+        let logString = "\nSTART\n";
+        for(const [i, [tabRoute, element]] of entries.entries()) {
+            const rect = element.current?.getBoundingClientRect()
+            logString += `tab index ${i} ${tabRoute}\n`
+            if(!rect) continue;
+            const middleOfTab = rect.x + rect.width/2;
+            const middleOfMovedTab = movedTabRect.x + movedTabRect.width/2;
+            logString += `middleOfTab: ${middleOfTab}\n`;
+            logString += `middleOfMovedTab: ${middleOfMovedTab}\n`;
+
+            // tabs are stored from left to right
+            // keep updating furthestPassedTab until tabX > x
+            if(middleOfMovedTab < middleOfTab) {
+                break;
             }
 
-            setTabs([...tabs.slice(0, movingIndex - indexOffset + 1),
-                    ...rotateArr(tabs.slice(movingIndex - indexOffset + 1, movingIndex + 1), 'right', 1),
-                    ...tabs.slice(movingIndex + 1)]);
-        } else if(movingIndex + indexOffset < tabs.length &&
-                  (comparedTab = tabsRef.current[tabs[movingIndex + indexOffset].tab].current) &&
-                     x >= comparedTab.offsetLeft) {
-
-            indexOffset++;
-            while(movingIndex + indexOffset < tabs.length &&
-                  (comparedTab = tabsRef.current[tabs[movingIndex + indexOffset].tab].current) &&
-                     x >= comparedTab.offsetLeft) {
-                indexOffset++;
-            }
-
-            setTabs([...tabs.slice(0, movingIndex),
-                    ...rotateArr(tabs.slice(movingIndex, movingIndex + indexOffset), 'right', indexOffset - 1),
-                    ...tabs.slice(movingIndex + indexOffset)]);
+            furthestPassedTabRoute = tabRoute;
         }
+        // console.log(logString);
+
+        const furthestPassedTabIndex = tabs.findIndex(t => t.tabRoute === furthestPassedTabRoute);
+        if(furthestPassedTabIndex === -1) return;
+
+        let leftIndex: number = 0;
+        let rightIndex: number = 0;
+        let dir: 'left'|'right' = 'left';
+        if(movedTabIndex > furthestPassedTabIndex) {
+            leftIndex = Math.min(furthestPassedTabIndex + 1, tabs.length - 1);
+            rightIndex = movedTabIndex;
+            dir = 'right';
+        } else if(movedTabIndex < furthestPassedTabIndex) {
+            leftIndex = movedTabIndex;
+            rightIndex = furthestPassedTabIndex;
+            dir = 'left';
+        } else {
+            return;
+        }
+
+        if(leftIndex == rightIndex) return;
+
+        const preRotateSegement = [...tabs.slice(leftIndex, rightIndex + 1)];
+        const rotatedSegement = rotateArr(preRotateSegement, dir)
+        const newTabs = [...tabs.slice(0, leftIndex),
+                 ...rotatedSegement,
+                 ...tabs.slice(rightIndex + 1)
+                ];
+        setTabs(newTabs);
     }
 
     useEffect(() => {
-        if(location.hash.slice(1) !== currentTab) navigate(currentTab);
+        if(location.hash.slice(1) !== currentTabRoute) navigate(currentTabRoute);
     }, []);
 
     return (
@@ -117,7 +150,7 @@ export default function TabManager({
         >
             <div className={'flex items-center justify-center w-7 h-7 border border-text-1 rounded-sm p-1 [&_svg]:fill-text-1 data-[selected=true]:bg-bg-5 hover:bg-bg-8'}
                 onClick={() => handleTabSelect(HOME_TAB)}
-                data-selected={currentTab === HOME_TAB.tab ? 'true' : 'false'}
+                data-selected={currentTabRoute === HOME_TAB.tabRoute ? 'true' : 'false'}
             >
                 <HomeIcon />
             </div>
@@ -125,9 +158,9 @@ export default function TabManager({
             <Tab
                 tab={tab}
                 index={i}
-                key={tab.tab}
-                ref={tabsRef.current[tab.tab] ??= { current: null }}
-                selected={tab.tab === currentTab}
+                key={tab.tabRoute}
+                ref={tabsRef.current[tab.tabRoute] ??= { current: null }}
+                selected={tab.tabRoute === currentTabRoute}
                 onTabSelect={handleTabSelect}
                 onTabRemove={handleTabRemove}
                 onTabMove={handleTabMove}

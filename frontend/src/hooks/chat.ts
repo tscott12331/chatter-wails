@@ -1,3 +1,5 @@
+import { TChatroomEmotes } from "@/api/emote";
+import { IAppEmote } from "@/api/native-emote";
 import { TUser } from "@/App";
 import { TChatMessage } from "@/components/chat/chat-message";
 
@@ -11,12 +13,15 @@ import { useEffect, useState } from "react";
 interface IChatroomData {
     subId: string|null;
     broadcasterId: string|null;
-    badgeSets: api.ApiBadgeSet[]
+    badgeSets: api.ApiBadgeSet[];
+    channelEmotes: Record<string, IAppEmote>;
+    sevenTVEmotes: Record<string, IAppEmote>;
 }
 
-export default function useChat({ channel, user, maxMessages = 200 }: {
+export default function useChat({ channel, user, emoteRecord, maxMessages = 200 }: {
     channel: string|undefined,
-    user: TUser
+    user: TUser,
+    emoteRecord: TChatroomEmotes,
     maxMessages?: number,
 }) {
 
@@ -26,7 +31,11 @@ export default function useChat({ channel, user, maxMessages = 200 }: {
         subId: null,
         broadcasterId: null,
         badgeSets: [],
+        channelEmotes: {},
+        sevenTVEmotes: {},
     })
+
+    const [emotes, setEmotes] = useState<TChatroomEmotes>(emoteRecord);
     
 
     const appendChatMessage = (message: TChatMessage) => {
@@ -66,6 +75,15 @@ export default function useChat({ channel, user, maxMessages = 200 }: {
         const subId = chatroomData.subId;
         if(!subId) return;
 
+        setEmotes(curEmotes => {
+            const newEmotes: TChatroomEmotes = {};
+            Object.assign(newEmotes, curEmotes);
+            newEmotes['channel'] = new Map(Object.entries(chatroomData.channelEmotes));
+            newEmotes['seventv'] = new Map(Object.entries(chatroomData.sevenTVEmotes));
+
+            return newEmotes;
+        });
+
         setChatMessages([]);
 
         EventsOn(subId, appendChatMessage);
@@ -76,5 +94,5 @@ export default function useChat({ channel, user, maxMessages = 200 }: {
         }
     }, [chatroomData]);
 
-    return { chatMessages, sendChatMessage }
+    return { chatMessages, sendChatMessage, emotes }
 }

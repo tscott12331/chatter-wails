@@ -6,8 +6,8 @@ export const deepEqual = (obj1: object, obj2: object): boolean => {
 
     for(const obj1Key of obj1Keys) {
         if(obj2Keys.includes(obj1Key)) {
-            const obj1Value = obj1[obj1Key];
-            const obj2Value = obj2[obj1Key];
+            const obj1Value = obj1[obj1Key as keyof typeof obj1];
+            const obj2Value = obj2[obj1Key as keyof typeof obj2];
             if(typeof obj1Value !== typeof obj2Value) return false;
 
             const valueType = typeof obj1Value;

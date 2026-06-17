@@ -10,6 +10,7 @@ import (
 	"slices"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/gorilla/websocket"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -110,8 +111,12 @@ type ESChatMessageFragment struct{
 
 var esDarkTheme = "dark"
 var esLightTheme = "light"
-func esChatMessageFragmentToAppMessageFragment(cmf *ESChatMessageFragment) *AppChatMessageFragment {
+func esChatMessageFragmentToAppMessageFragment(cmf *ESChatMessageFragment, emoteMap map[string]*AppEmote) []*AppChatMessageFragment {
 	var appEmote *AppEmote = nil
+	if cmf.Fragment_type == "text" {
+		return parseTextFragmentEmotes(cmf, emoteMap)
+	}
+
 	if cmf.Emote != nil {
 		appEmote = &AppEmote{
 			Id: cmf.Emote.Id,
@@ -121,15 +126,92 @@ func esChatMessageFragmentToAppMessageFragment(cmf *ESChatMessageFragment) *AppC
 		}
 	}
 
-	return &AppChatMessageFragment{
+	return []*AppChatMessageFragment{{
 		Fragment_type: cmf.Fragment_type,
 		Text: cmf.Text,
 		Cheermote: cmf.Cheermote,
 		Emote: appEmote,
 		Mention: cmf.Mention,
-	}
+	}}
 }
 
+func consumeWhitespace(text string, i int) (int, string) {
+	nextIndex := i
+	for nextIndex < len(text) && unicode.IsSpace(rune(text[nextIndex])) {
+		nextIndex += 1
+	}
+
+	return nextIndex, text[i:nextIndex]
+}
+
+func parseWord(text string, i int, emoteMap map[string]*AppEmote) (int, string, *AppEmote) {
+	nextIndex := i
+	for nextIndex < len(text) && !unicode.IsSpace(rune(text[nextIndex])) {
+		nextIndex += 1
+	}
+	
+	// fmt.Printf("nextIndex %d\n", nextIndex)
+	word := text[i:nextIndex]
+	emote := emoteMap[word]
+
+	return nextIndex, word, emote
+}
+
+func parseTextFragmentEmotes(cmf *ESChatMessageFragment, emoteMap map[string]*AppEmote) []*AppChatMessageFragment {
+	fragments := []*AppChatMessageFragment{}
+	
+	text := cmf.Text
+	i := 0
+
+	var sb strings.Builder
+
+	for i < len(text) {
+		nextIndex, spaces := consumeWhitespace(text, i)
+		i = nextIndex
+		sb.WriteString(spaces)
+
+		nextIndex, word, emote := parseWord(text, i, emoteMap)
+		i = nextIndex
+
+		if emote == nil {
+			sb.WriteString(word)
+		} else {
+			textFragment := &AppChatMessageFragment{
+				Fragment_type: cmf.Fragment_type,
+				Text: sb.String(),
+				Cheermote: cmf.Cheermote,
+				Emote: nil,
+				Mention: cmf.Mention,
+			}
+
+			emoteFragment := &AppChatMessageFragment{
+				Fragment_type: "emote",
+				Text: word,
+				Cheermote: cmf.Cheermote,
+				Emote: emote,
+				Mention: cmf.Mention,
+			}
+
+			fragments = append(fragments, textFragment)
+			fragments = append(fragments, emoteFragment)
+
+			sb.Reset()
+		}
+	}
+
+	if sb.Len() > 0 {
+		textFragment := &AppChatMessageFragment{
+			Fragment_type: cmf.Fragment_type,
+			Text: sb.String(),
+			Cheermote: cmf.Cheermote,
+			Emote: nil,
+			Mention: cmf.Mention,
+		}
+		fragments = append(fragments, textFragment)
+	}
+
+	return fragments
+}
 
 
 type ESMessageBadge struct{
@@ -154,7 +236,7 @@ type ESChatMessage struct{
 	Id string							`json:"id"`
 	Username string						`json:"username"`
 	Text string							`json:"text"`
-	Fragments []AppChatMessageFragment	`json:"fragments"`
+	Fragments []*AppChatMessageFragment	`json:"fragments"`
 	Color string						`json:"color"`
 	Badges []ESMessageBadge				`json:"badges"`
 	Reply *ESMessageReply				`json:"reply,omitempty"`
@@ -195,7 +277,7 @@ type ESEvent struct {
 
 type ESChatMessageEventMessage struct{
 	Text string							`json:"text"`
-	Fragments []AppChatMessageFragment	`json:"fragments"`
+	Fragments []*AppChatMessageFragment	`json:"fragments"`
 }
 type ESChatMessageEvent = struct{
 	Broadcaster_user_id string				`json:"broadcaster_user_id"`
@@ -387,10 +469,12 @@ func esBadgesToMessageBadges(esBadges []ESBadge, badgeSets []api.ApiBadgeSet) []
     return messageBadges;
 }
 
-func esNotificationToEsChatMessage(notification *ESNotification, channelBadges []api.ApiBadgeSet) *ESChatMessage {
-	var fragments = []AppChatMessageFragment{}
+func esNotificationToEsChatMessage(notification *ESNotification, chatSubscriptionData *ESChatSubscriptionData) *ESChatMessage {
+	channelBadges := chatSubscriptionData.ChannelBadgeSets
+	seventvEmotes := chatSubscriptionData.SevenTVEmotes
+	var fragments = []*AppChatMessageFragment{}
 	for _, fragment := range notification.Payload.Event.Message.Fragments {
-		fragments = append(fragments, *esChatMessageFragmentToAppMessageFragment(&fragment))
+		fragments = append(fragments, esChatMessageFragmentToAppMessageFragment(&fragment, seventvEmotes)...)
 	}
 
 	return &ESChatMessage{
@@ -405,9 +489,9 @@ func esNotificationToEsChatMessage(notification *ESNotification, channelBadges [
 }
 
 func esNotificationToEsChatMessageNotification(notification *ESNotification) *ESChatMessageNotification {
-	var fragments = []AppChatMessageFragment{}
+	var fragments = []*AppChatMessageFragment{}
 	for _, fragment := range notification.Payload.Event.Message.Fragments {
-		fragments = append(fragments, *esChatMessageFragmentToAppMessageFragment(&fragment))
+		fragments = append(fragments, esChatMessageFragmentToAppMessageFragment(&fragment, map[string]*AppEmote{})...)
 	}
 
 	return &ESChatMessageNotification{
@@ -464,6 +548,8 @@ type ESChatSubscriptionData struct{
 	BroadcasterId string
 	Channel string
 	ChannelBadgeSets []api.ApiBadgeSet
+	ChannelEmotes map[string]*AppEmote
+	SevenTVEmotes map[string]*AppEmote
 }
 type ESSubscription[T any] struct{
 	SubType string
@@ -576,12 +662,13 @@ func (c *Client) handleESNotification(message ESMessage) {
 	switch sub_type {
 	case "channel.chat.message":
 		subId := notification.Payload.Subscription.Id
-		var channelBadges = []api.ApiBadgeSet{}
-		if sub, ok := c.ChatSubscriptions[subId]; ok {
-			channelBadges = sub.Data.ChannelBadgeSets
+
+		sub, ok := c.ChatSubscriptions[subId]
+		if !ok {
+			return
 		}
 
-		chatMessage := esNotificationToEsChatMessage(notification, channelBadges)
+		chatMessage := esNotificationToEsChatMessage(notification, &sub.Data)
 		runtime.EventsEmit(c.ctx, notification.Payload.Subscription.Id, chatMessage)
 	}
 }
@@ -701,7 +788,7 @@ func (c *Client) writePump(ctx context.Context) {
 
 			// Add queued chat messages to the current websocket message.
 			n := len(c.send)
-			for i := 0; i < n; i++ {
+			for range n {
 				queued_message := <-c.send
 				log.Printf("[writePump]: Added queued message to write: %s\n\n", queued_message)
 				w.Write(newline)

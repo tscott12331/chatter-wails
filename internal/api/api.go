@@ -470,12 +470,65 @@ func ApiGetGlobalBadges(
     )
 }
 
+  // "data": [
+  //   {
+  //     "emote_set_id": "",
+  //     "emote_type": "hypetrain",
+  //     "format": [
+  //       "static"
+  //     ],
+  //     "id": "304420818",
+  //     "name": "HypeLol",
+  //     "owner_id": "477339272",
+  //     "scale": [
+  //       "1.0",
+  //       "2.0",
+  //       "3.0"
+  //     ],
+  //     "theme_mode": [
+  //       "light",
+  //       "dark"
+  //     ]
+  //   }
+  // ],
+  // "template": "https://static-cdn.jtvnw.net/emoticons/v2/{{id}}/{{format}}/{{theme_mode}}/{{scale}}",
+  // "pagination": {
+  //   "cursor": "eyJiIjpudWxsLJxhIjoiIn0gf5"
+  // }
+
+// important api emote fields (more are commented out below)
+type ApiEmote struct{
+	Id string				`json:"id"`
+	Name string				`json:"name"`
+	Format []string			`json:"format"`
+	Scale []string			`json:"scale"`
+	Theme_mode []string 	`json:"theme_mode"`
+}
+
+type ApiUserEmote ApiEmote
+
+// type ApiUserEmote struct{
+// 	Emote_set_id string 	`json:"emote_set_id"`
+// 	Emote_type string		`json:"emote_type"`
+// 	Format []string			`json:"format"`
+// 	Id string				`json:"id"`
+// 	Name string				`json:"name"`
+// 	Owner_id string			`json:"owner_id"`
+// 	Scale []string			`json:"scale"`
+// 	Theme_mode []string 	`json:"theme_mode"`
+// }
+
+type ApiGetUserEmotesRes struct{
+	Data []ApiUserEmote				`json:"data"`
+	Template string					`json:"template"`
+	Pagination ApiPagination		`json:"pagination"`
+}
 
 func ApiGetUserEmotes(
     access_token string,
     params map[string][]string,
-    ) (*ApiResponse[any], error) {
-    return ApiGet[any](
+    ) (*ApiResponse[ApiGetUserEmotesRes], error) {
+    return ApiGet[ApiGetUserEmotesRes](
 		USER_EMOTES_ENDPOINT,
 		apiEmotesHeaders(access_token),
 		params,
@@ -491,14 +544,15 @@ type ApiGlobalEmoteImages struct{
 	Url_4x string		`json:"url_4x"`
 }
 
-type ApiGlobalEmote struct{
-	Id string					`json:"id"`
-	Name string					`json:"name"`
-    Images ApiGlobalEmoteImages	`json:"images"`
-	Format []string				`json:"format"`
-	Scale []string				`json:"scale"`
-	Theme_mode []string			`json:"theme_mode"`
-}
+type ApiGlobalEmote ApiEmote
+// type ApiGlobalEmote struct{
+// 	Id string					`json:"id"`
+// 	Name string					`json:"name"`
+//     Images ApiGlobalEmoteImages	`json:"images"`
+// 	Format []string				`json:"format"`
+// 	Scale []string				`json:"scale"`
+// 	Theme_mode []string			`json:"theme_mode"`
+// }
 
 type ApiGetGlobalEmotesRes struct{
 	Data []ApiGlobalEmote 	`json:"data"`
@@ -511,6 +565,24 @@ func ApiGetGlobalEmotes(
     ) (*ApiResponse[ApiGetGlobalEmotesRes], error) {
     return ApiGet[ApiGetGlobalEmotesRes](
 		GLOBAL_EMOTES_ENDPOINT,
+		apiEmotesHeaders(access_token),
+		params,
+	)
+}
+
+type ApiChannelEmote ApiEmote
+
+type ApiGetChannelEmotesRes struct{
+	Data []ApiChannelEmote 	`json:"data"`
+	Template string			`json:"template"`
+}
+
+func ApiGetChannelEmotes(
+    access_token string,
+    params map[string][]string,
+    ) (*ApiResponse[ApiGetChannelEmotesRes], error) {
+    return ApiGet[ApiGetChannelEmotesRes](
+		EMOTES_ENDPOINT,
 		apiEmotesHeaders(access_token),
 		params,
 	)

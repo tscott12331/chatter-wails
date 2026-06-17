@@ -3,6 +3,10 @@
 import {api} from '../models';
 import {services} from '../models';
 
-export function GetAppEmoteFromApiEmote(arg1:api.ApiGlobalEmote,arg2:string):Promise<services.AppEmote>;
+export function GetAppEmoteFromApiEmote(arg1:api.ApiEmote,arg2:string):Promise<services.AppEmote>;
+
+export function GetChannelEmotes(arg1:string,arg2:string):Promise<any>;
 
 export function GetGlobalEmotes(arg1:string):Promise<any>;
+
+export function GetUserEmotes(arg1:string):Promise<any>;
