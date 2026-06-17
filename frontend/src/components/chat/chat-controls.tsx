@@ -94,7 +94,7 @@ export default function ChatControls({
         const matches: IAppEmote[] = [];
         for(const emoteMap of Object.values(emotes)) {
             for(const [emoteName, emote] of emoteMap) {
-                if(emoteName.startsWith(potentialEmote)) {
+                if(emoteName.toLowerCase().startsWith(potentialEmote.toLowerCase())) {
                     matches.push(emote);
                 }
             }
@@ -141,11 +141,13 @@ export default function ChatControls({
     function completeNodeWord(opts: CompletionOpts) {
         // TODO: add carousel for completion options instead of just completing the first option
         const completion = opts.matches[0];
-        const newText = `${opts.text.slice(0, opts.wordStart)}${completion.name}${opts.text.slice(opts.wordEnd)}`;
+        const newText = `${opts.text.slice(0, opts.wordStart)}${completion.name}${opts.text.slice(opts.wordEnd)} `;
+
+        const offset = (opts.wordStart + completion.name.length) - opts.cursorOffset;
 
         opts.node.replaceWith(newText);
         
-        return (opts.wordStart + completion.name.length) - opts.cursorOffset;
+        return offset;
     }
 
     async function processTextNode(node: ChildNode, cursorOffset: number) {
