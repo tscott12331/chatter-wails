@@ -91,6 +91,7 @@ export default function ChatMessage({
                         }}
                         onClick={(e: React.MouseEvent<HTMLSpanElement>) =>
                                 showUserPopup(fragment.mention?.user_name, e.pageX, e.pageY)}
+                        className="cursor-pointer"
                         key={index}
                     >{fragment.text}</span>
                 );
@@ -117,7 +118,7 @@ export default function ChatMessage({
     }
 
     return (
-        <div className="p-1.5 relative hover:bg-bg-2 hover:[&_.chat-controls]:visible">
+        <div className="p-1.5 relative hover:bg-bg-1 hover:[&_.chat-controls]:visible">
             {message.reply &&
             <Tooltip
                 hoverTime={0}
@@ -129,7 +130,7 @@ export default function ChatMessage({
             <p>
                 {badgesToNodes(message.badges)}
                 <span
-                    className="contrast-300 font-medium my-0 mr-0.5"
+                    className="contrast-300 font-medium my-0 mr-0.5 cursor-pointer"
                     style={{
                         color: message.color
                     }}
@@ -141,7 +142,7 @@ export default function ChatMessage({
                 {defragmentMessage(message.fragments)}
             </p>
             <div
-                className='chat-controls absolute top-0 -right-3 invisible flex justify-end items-center'
+                className='chat-controls absolute -top-1 right-5 invisible flex justify-end items-center'
             >
                 {showChatReplyButton &&
                 <div className="w-6 h-6 p-0.5 rounded-xs bg-bg-3/60 backdrop-blur-xs contrast-100 hover:outline hover:outline-outline-2 hover:contrast-200 hover:brightness-120 [&_svg]:fill-text-1 [&_svg]:contrast-200 cursor-pointer"
