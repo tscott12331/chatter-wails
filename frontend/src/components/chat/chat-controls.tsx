@@ -36,10 +36,19 @@ export default function ChatControls({
         setShouldShowEmotePopup(cur => !cur);
     }
 
-    const handleMessageInputKeydown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-        if(e.key === "Enter") {
-            e.preventDefault();
-            handleSendMessage();
+    const handleMessageInputKeydown = async (e: React.KeyboardEvent<HTMLDivElement>) => {
+        switch(e.key) {
+            case "Enter":
+                e.preventDefault();
+                handleSendMessage();
+                break;
+            case "Tab":
+                e.preventDefault();
+                const curorPos = getCursorPos(e.currentTarget);
+                const target = e.currentTarget;
+                const cursorOffset = await processMessageInput(e.currentTarget.childNodes);
+                if(curorPos !== -1) moveCursorTo(target, curorPos + cursorOffset);
+                break;
         }
     }
 
@@ -80,65 +89,76 @@ export default function ChatControls({
         return text;
     }
 
-    function matchEmote(potentialEmote: string): IAppEmote|null {
+    // TODO: change emoteMap structure to trie to improve lookup on completion
+    function getEmoteMatches(potentialEmote: string): IAppEmote[] {
+        const matches: IAppEmote[] = [];
         for(const emoteMap of Object.values(emotes)) {
-            if(emoteMap.has(potentialEmote)) {
-                return emoteMap.get(potentialEmote)!;
+            for(const [emoteName, emote] of emoteMap) {
+                if(emoteName.startsWith(potentialEmote)) {
+                    matches.push(emote);
+                }
             }
         }
 
-        return null;
+        return matches;
     }
 
-    async function processTextNode(node: ChildNode, offset: number) {
+    function getWordFromCursorPos(text: string, offset: number) {
+        let wordStart = offset - 1;
+        let wordEnd = wordStart;
+        if(wordStart < 0 || wordStart >= text.length) {
+            return {
+                word: " ",
+                wordStart,
+                wordEnd,
+            };
+        }
+
+        while(wordStart >= 0 && /\S/.test(text[wordStart])) {
+            wordStart -= 1;
+        }
+        wordStart += 1
+
+        while(wordEnd < text.length && /\S/.test(text[wordEnd])) {
+            wordEnd += 1;
+        }
+
+        return {
+            word: text.slice(wordStart, wordEnd),
+            wordStart,
+            wordEnd,
+        }
+    }
+
+    interface CompletionOpts {
+        node: ChildNode;
+        text: string;
+        matches: IAppEmote[];
+        cursorOffset: number;
+        wordStart: number;
+        wordEnd: number;
+    }
+    function completeNodeWord(opts: CompletionOpts) {
+        // TODO: add carousel for completion options instead of just completing the first option
+        const completion = opts.matches[0];
+        const newText = `${opts.text.slice(0, opts.wordStart)}${completion.name}${opts.text.slice(opts.wordEnd)}`;
+
+        opts.node.replaceWith(newText);
+        
+        return (opts.wordStart + completion.name.length) - opts.cursorOffset;
+    }
+
+    async function processTextNode(node: ChildNode, cursorOffset: number) {
         const text = node.textContent;
         if(!text) return 0;
 
+        const { word: potentialEmote, wordStart, wordEnd }  = getWordFromCursorPos(text, cursorOffset);
+        if(potentialEmote.length === 0) return 0;
 
-        let replaceNodes: (Node|string)[] = [];
-        const potentialEmotes = text.split(/\s/);
-        let cursorPos = 0;
+        const matches = getEmoteMatches(potentialEmote);
+        if(matches.length === 0) return 0;
 
-        let targetIndex: number = -1;
-        let relCursorOffset = 0;
-
-        for(let i = 0; i < potentialEmotes.length; i++) {
-            const pe = potentialEmotes[i];
-            cursorPos += pe.length;
-            if(cursorPos >= offset) {
-                // target word
-                const matchedEmote = matchEmote(pe);
-                if(matchedEmote) {
-                    targetIndex = i;
-                    // add replace nodes
-                    let prevText = potentialEmotes.slice(0, targetIndex).join(" ");
-                    if(prevText.length > 0) prevText = prevText.concat(" ");
-                    replaceNodes.push(prevText);
-
-                    const imgNode = new Image()
-                    imgNode.srcset = matchedEmote.darkSrcSet;
-                    imgNode.classList.add("inline");
-                    imgNode.alt = matchedEmote.name;
-                    replaceNodes.push(imgNode);
-
-                    replaceNodes.push(potentialEmotes.slice(targetIndex + 1).join(" "));
-
-                    // calculate relative cursor offset after replacing text
-                    relCursorOffset = (cursorPos - pe.length) - offset + 1;
-
-                    break;
-                }
-            }
-
-            cursorPos += 1;
-        }
-
-        if(targetIndex === -1) {
-            replaceNodes.push(node);
-        }
-
-        node.replaceWith(...replaceNodes);
-        return relCursorOffset;
+        return completeNodeWord({ node, text, matches, cursorOffset, wordStart, wordEnd });
     }
 
     async function processMessageInput(messageNodes: NodeListOf<ChildNode>) {
@@ -149,7 +169,7 @@ export default function ChatControls({
 
         for(const node of messageNodes) {
             if(node.contains(selection.anchorNode)) {
-                const co = await processTextNode(node, offset);;
+                const co = await processTextNode(node, offset);
                 return co;
             }
         }
@@ -157,20 +177,8 @@ export default function ChatControls({
         return 0;
     }
 
-    async function handleMessageInput(e: React.InputEvent<HTMLDivElement>) {
-        const curorPos = getCursorPos(e.currentTarget);
-        const target = e.currentTarget;
-        const cursorOffset = await processMessageInput(e.currentTarget.childNodes);
-        if(curorPos !== -1) moveCursorTo(target, curorPos + cursorOffset);
-    }
-
     function handleEmoteSelect(emote: IAppEmote) {
         if(!messageInputRef.current) return;
-
-        const srcSet = emote.darkSrcSet.length > 0 ? emote.darkSrcSet : emote.lightSrcSet;
-
-
-        const concat = `<img class="inline" srcset="${srcSet}" alt="${emote.name}"/> `;
 
         const childNodes = messageInputRef.current.childNodes;
         const lastNode = childNodes.item(childNodes.length - 1);
@@ -182,9 +190,9 @@ export default function ChatControls({
 
         const lastChar = messageInputRef.current.innerHTML.at(-1);
         if(lastChar && lastChar === ' ') {
-            messageInputRef.current.innerHTML += `${concat}`;
+            messageInputRef.current.innerHTML += `${emote.name} `;
         } else {
-            messageInputRef.current.innerHTML += ` ${concat}`;
+            messageInputRef.current.innerHTML += ` ${emote.name} `;
         }
 
         messageInputRef.current.focus();
@@ -274,7 +282,6 @@ export default function ChatControls({
             className='w-full h-[calc(100%-46px)] overflow-auto'
             contentEditable="true"
             onKeyDown={handleMessageInputKeydown}
-            onInput={handleMessageInput}
             ref={messageInputRef}
             onClick={(e: React.MouseEvent<HTMLDivElement>) => e.stopPropagation()}
             ></div>
