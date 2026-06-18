@@ -30,11 +30,13 @@ export default function EmoteCarousel({
                     hoverTime={0}
                     key={i}
                     >
-                        <img
-                            className={`inline p-1 ${i === highlightIndex && "bg-bg-5"}`}
-                            srcSet={e.darkSrcSet}
-                            alt={e.name}
-                        />
+                        <div className={`w-10 h-10 flex justify-center items-center ${i === highlightIndex && "bg-bg-5"}`}>
+                            <img
+                                className={`inline p-1`}
+                                srcSet={e.darkSrcSet}
+                                alt={e.name}
+                            />
+                        </div>
                 </Tooltip>
             )}
         </div>
