@@ -43,10 +43,6 @@ export default function ChatControls({
     }
 
     const handleMessageInputKeydown = async (e: React.KeyboardEvent<HTMLDivElement>) => {
-        if(e.key != "Tab") {
-            setCarouselData(null);
-        }
-
         switch(e.key) {
             case "Enter":
                 e.preventDefault();
@@ -56,9 +52,13 @@ export default function ChatControls({
                 e.preventDefault();
                 const curorPos = getCursorPos(e.currentTarget);
                 const target = e.currentTarget;
-                const cursorOffset = await updateCarousel(e.currentTarget.childNodes);
+                const cursorOffset = await updateCarousel(e.currentTarget.childNodes, e.shiftKey);
                 if(curorPos !== -1) moveCursorTo(target, curorPos + cursorOffset);
                 break;
+            case "Shift":
+                break;
+            default:
+                setCarouselData(null);
         }
     }
 
@@ -160,7 +160,7 @@ export default function ChatControls({
         return offset;
     }
 
-    async function updateCarouselFromNode(node: ChildNode, cursorOffset: number) {
+    async function updateCarouselFromNode(node: ChildNode, cursorOffset: number, reverse: boolean) {
         const text = node.textContent;
         if(!text) return 0;
 
@@ -174,7 +174,8 @@ export default function ChatControls({
             matches = getEmoteMatches(potentialEmote);
         } else {
             matches = carouselData.emotes;
-            index = (carouselData.index + 1) % matches.length;
+            index = reverse ? carouselData.index - 1 : carouselData.index + 1;
+            index = (index + matches.length) % matches.length;
         }
 
         if(matches.length === 0) return 0;
@@ -189,7 +190,7 @@ export default function ChatControls({
         return completeNodeWord({ node, match, cursorOffset, wordStart, wordEnd });
     }
 
-    async function updateCarousel(messageNodes: NodeListOf<ChildNode>) {
+    async function updateCarousel(messageNodes: NodeListOf<ChildNode>, reverse: boolean) {
         const selection = window.getSelection();
         if(!selection) return 0;
         const range = selection.getRangeAt(0);
@@ -197,7 +198,7 @@ export default function ChatControls({
 
         for(const node of messageNodes) {
             if(node.contains(selection.anchorNode)) {
-                const co = await updateCarouselFromNode(node, offset);
+                const co = await updateCarouselFromNode(node, offset, reverse);
                 return co;
             }
         }
