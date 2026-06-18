@@ -28,6 +28,7 @@ export default function ChatControls({
     onReplyClosed,
 }: IChatControlsProps) {
     const [shouldShowEmotePopup, setShouldShowEmotePopup] = useState<boolean>(false);
+    const [carouselData, setCarouselData] = useState<{ matches: IAppEmote[], index: number }|null>(null);
 
     const messageInputRef = useRef<HTMLDivElement>(null);
 
@@ -37,6 +38,10 @@ export default function ChatControls({
     }
 
     const handleMessageInputKeydown = async (e: React.KeyboardEvent<HTMLDivElement>) => {
+        if(e.key != "Tab") {
+            setCarouselData(null);
+        }
+
         switch(e.key) {
             case "Enter":
                 e.preventDefault();
@@ -46,7 +51,7 @@ export default function ChatControls({
                 e.preventDefault();
                 const curorPos = getCursorPos(e.currentTarget);
                 const target = e.currentTarget;
-                const cursorOffset = await processMessageInput(e.currentTarget.childNodes);
+                const cursorOffset = await updateCarousel(e.currentTarget.childNodes);
                 if(curorPos !== -1) moveCursorTo(target, curorPos + cursorOffset);
                 break;
         }
@@ -132,38 +137,58 @@ export default function ChatControls({
 
     interface CompletionOpts {
         node: ChildNode;
-        text: string;
-        matches: IAppEmote[];
+        match: IAppEmote;
         cursorOffset: number;
         wordStart: number;
         wordEnd: number;
     }
     function completeNodeWord(opts: CompletionOpts) {
         // TODO: add carousel for completion options instead of just completing the first option
-        const completion = opts.matches[0];
-        const newText = `${opts.text.slice(0, opts.wordStart)}${completion.name}${opts.text.slice(opts.wordEnd)} `;
+        const text = opts.node.textContent;
+        if(!text) return 0;
+        const newText = `${text.slice(0, opts.wordStart)}${opts.match.name}${text.slice(opts.wordEnd)} `;
 
-        const offset = (opts.wordStart + completion.name.length) - opts.cursorOffset;
+        const offset = (opts.wordStart + opts.match.name.length) - opts.cursorOffset;
 
         opts.node.replaceWith(newText);
         
         return offset;
     }
 
-    async function processTextNode(node: ChildNode, cursorOffset: number) {
+    async function updateCarouselFromNode(node: ChildNode, cursorOffset: number) {
         const text = node.textContent;
         if(!text) return 0;
 
         const { word: potentialEmote, wordStart, wordEnd }  = getWordFromCursorPos(text, cursorOffset);
         if(potentialEmote.length === 0) return 0;
 
-        const matches = getEmoteMatches(potentialEmote);
+        if(carouselData !== null) {
+            carouselData.matches
+        }
+
+        let matches: IAppEmote[] = [];
+        let index = 0;
+
+        if(carouselData === null) {
+            matches = getEmoteMatches(potentialEmote);
+        } else {
+            matches = carouselData.matches;
+            index = (carouselData.index + 1) % matches.length;
+        }
+
         if(matches.length === 0) return 0;
 
-        return completeNodeWord({ node, text, matches, cursorOffset, wordStart, wordEnd });
+        setCarouselData({
+            matches,
+            index,
+        });
+
+        const match = matches[index];
+
+        return completeNodeWord({ node, match, cursorOffset, wordStart, wordEnd });
     }
 
-    async function processMessageInput(messageNodes: NodeListOf<ChildNode>) {
+    async function updateCarousel(messageNodes: NodeListOf<ChildNode>) {
         const selection = window.getSelection();
         if(!selection) return 0;
         const range = selection.getRangeAt(0);
@@ -171,7 +196,7 @@ export default function ChatControls({
 
         for(const node of messageNodes) {
             if(node.contains(selection.anchorNode)) {
-                const co = await processTextNode(node, offset);
+                const co = await updateCarouselFromNode(node, offset);
                 return co;
             }
         }
