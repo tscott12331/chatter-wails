@@ -1,10 +1,11 @@
 import { TChatroomEmotes } from "@/api/emote";
 import { IAppEmote } from "@/api/native-emote";
 import { getCursorPos, moveCursorTo, moveCursorToEnd } from "@/util/rte";
-import { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { preload } from "react-dom";
 import EmoteIcon from "../svg/emote-icon";
 import Tooltip from "../util/tooltip";
+import EmoteCarousel, { IEmoteCarouselData } from "./carousel";
 import { TChatMessage } from "./chat-message";
 import ReplyPopup from "./reply-popup";
 
@@ -28,13 +29,17 @@ export default function ChatControls({
     onReplyClosed,
 }: IChatControlsProps) {
     const [shouldShowEmotePopup, setShouldShowEmotePopup] = useState<boolean>(false);
-    const [carouselData, setCarouselData] = useState<{ matches: IAppEmote[], index: number }|null>(null);
+    const [carouselData, setCarouselData] = useState<IEmoteCarouselData|null>(null);
 
     const messageInputRef = useRef<HTMLDivElement>(null);
 
     const handleEmoteButtonClick = (e: React.MouseEvent<HTMLButtonElement>) => {
         e.stopPropagation();
         setShouldShowEmotePopup(cur => !cur);
+    }
+
+    const handleMessageInputBlur = () => {
+        setCarouselData(null);
     }
 
     const handleMessageInputKeydown = async (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -162,24 +167,20 @@ export default function ChatControls({
         const { word: potentialEmote, wordStart, wordEnd }  = getWordFromCursorPos(text, cursorOffset);
         if(potentialEmote.length === 0) return 0;
 
-        if(carouselData !== null) {
-            carouselData.matches
-        }
-
         let matches: IAppEmote[] = [];
         let index = 0;
 
         if(carouselData === null) {
             matches = getEmoteMatches(potentialEmote);
         } else {
-            matches = carouselData.matches;
+            matches = carouselData.emotes;
             index = (carouselData.index + 1) % matches.length;
         }
 
         if(matches.length === 0) return 0;
 
         setCarouselData({
-            matches,
+            emotes: matches,
             index,
         });
 
@@ -284,7 +285,12 @@ export default function ChatControls({
 
 
     return (
-    <div className='flex flex-col p-1 basis-[max-content] bg-bg-09 relative'>
+    <div className='flex flex-col p-1 basis-[max-content] bg-bg-09 relative z-4500'>
+        {carouselData && 
+        <div className="absolute -top-8 flex justify-center items-center w-full">
+            <EmoteCarousel data={carouselData} />
+        </div>
+        }
         {shouldShowEmotePopup &&
         <div
         className='w-[calc(100%-30px)] h-75 border border-outline-1 rounded-xs m-3.5 absolute left-0 bottom-full bg-bg-2/80 backdrop-blur-xs gap-1 p-1 z-600 scroller-y grid grid-cols-[repeat(auto-fill,40px)] justify-between'
@@ -309,6 +315,7 @@ export default function ChatControls({
             className='w-full h-[calc(100%-46px)] overflow-auto'
             contentEditable="true"
             onKeyDown={handleMessageInputKeydown}
+            onBlur={handleMessageInputBlur}
             ref={messageInputRef}
             onClick={(e: React.MouseEvent<HTMLDivElement>) => e.stopPropagation()}
             ></div>
