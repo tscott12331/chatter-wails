@@ -74,59 +74,38 @@ export default function TabManager({
         }
     }
 
-    const handleTabMove = (movedTab: TTab, movedTabX: number) => {
-        const movedTabIndex = tabs.findIndex(t => t.tabRoute === movedTab.tabRoute);
-        if(movedTabIndex === -1) return;
-
+    const handleTabPlace = (movedTabIndex: number) => {
+        const movedTab = tabs[movedTabIndex];
         const movedTabElement = tabsRef.current[movedTab.tabRoute].current;
         if(!movedTabElement) return;
         const movedTabRect = movedTabElement.getBoundingClientRect()
-        // console.log(`rect.x: ${movedTabRect.x}`);
-        // console.log(`movedTabDX: ${movedTabDX}`);
-        // console.log(`movedTabX: ${movedTabX}`);
 
-        const entries = Object.entries(tabsRef.current)
-                            .filter(([t, _]) => t != movedTab.tabRoute);
+        let furthestPassedIndex = 0;
+        for(let i = 1; i < tabs.length; i++) {
+            const tab = tabs[i];
+            const tabElement = tabsRef.current[tab.tabRoute];
+            if(!tabElement.current) continue;
 
-        
+            const tabRect = tabElement.current.getBoundingClientRect();
+            
+            if(movedTabRect.x < tabRect.x) break;
 
-        let furthestPassedTabRoute = HOME_TAB.tabRoute;
-        let logString = "\nSTART\n";
-        for(const [i, [tabRoute, element]] of entries.entries()) {
-            const rect = element.current?.getBoundingClientRect()
-            logString += `tab index ${i} ${tabRoute}\n`
-            if(!rect) continue;
-            const middleOfTab = rect.x + rect.width/2;
-            const middleOfMovedTab = movedTabRect.x + movedTabRect.width/2;
-            logString += `middleOfTab: ${middleOfTab}\n`;
-            logString += `middleOfMovedTab: ${middleOfMovedTab}\n`;
-
-            // tabs are stored from left to right
-            // keep updating furthestPassedTab until tabX > x
-            if(middleOfMovedTab < middleOfTab) {
-                break;
-            }
-
-            furthestPassedTabRoute = tabRoute;
+            furthestPassedIndex = i;
         }
-        // console.log(logString);
 
-        const furthestPassedTabIndex = tabs.findIndex(t => t.tabRoute === furthestPassedTabRoute);
-        if(furthestPassedTabIndex === -1) return;
+        if(furthestPassedIndex === movedTabIndex) return;
 
         let leftIndex: number = 0;
         let rightIndex: number = 0;
         let dir: 'left'|'right' = 'left';
-        if(movedTabIndex > furthestPassedTabIndex) {
-            leftIndex = Math.min(furthestPassedTabIndex + 1, tabs.length - 1);
+        if(movedTabIndex > furthestPassedIndex) {
+            leftIndex = Math.min(furthestPassedIndex + 1, tabs.length - 1);
             rightIndex = movedTabIndex;
             dir = 'right';
-        } else if(movedTabIndex < furthestPassedTabIndex) {
+        } else if(movedTabIndex < furthestPassedIndex) {
             leftIndex = movedTabIndex;
-            rightIndex = furthestPassedTabIndex;
+            rightIndex = furthestPassedIndex;
             dir = 'left';
-        } else {
-            return;
         }
 
         if(leftIndex == rightIndex) return;
@@ -156,13 +135,13 @@ export default function TabManager({
             {tabs.slice(1).map((tab, i) =>
             <Tab
                 tab={tab}
-                index={i}
+                index={i+1}
                 key={tab.tabRoute}
                 ref={tabsRef.current[tab.tabRoute] ??= { current: null }}
                 selected={tab.tabRoute === currentTabRoute}
                 onTabSelect={handleTabSelect}
                 onTabRemove={handleTabRemove}
-                onTabMove={handleTabMove}
+                onTabPlace={() => handleTabPlace(i+1)}
             />
                      )}
             <div className={(isAddingTab ? '' : ' hidden') + ' flex justify-start items-center border border-text-1 rounded-sm text-sm p-1 h-7 bg-bg-09 max-w-50 min-w-25'}
