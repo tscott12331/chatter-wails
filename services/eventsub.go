@@ -471,7 +471,7 @@ func esBadgesToMessageBadges(esBadges []ESBadge, badgeSets []api.ApiBadgeSet) []
 
 func esNotificationToEsChatMessage(notification *ESNotification, chatSubscriptionData *ESChatSubscriptionData) *ESChatMessage {
 	channelBadges := chatSubscriptionData.ChannelBadgeSets
-	seventvEmotes := chatSubscriptionData.SevenTVEmotes
+	seventvEmotes := chatSubscriptionData.SevenTV.SevenTVEmotes
 	var fragments = []*AppChatMessageFragment{}
 	for _, fragment := range notification.Payload.Event.Message.Fragments {
 		fragments = append(fragments, esChatMessageFragmentToAppMessageFragment(&fragment, seventvEmotes)...)
@@ -544,19 +544,24 @@ func esMessageToESWelcome(message *ESMessage) *ESWelcome {
 
 
 
+type ESChatSubscriptionSevenTVData struct{
+	SevenTVEmotes map[string]*AppEmote
+	Enabled bool
+}
+
 type ESChatSubscriptionData struct{
 	BroadcasterId string
 	Channel string
 	ChannelBadgeSets []api.ApiBadgeSet
 	ChannelEmotes map[string]*AppEmote
-	SevenTVEmotes map[string]*AppEmote
+	SevenTV *ESChatSubscriptionSevenTVData
 }
 type ESSubscription[T any] struct{
 	SubType string
 	Data T
 }
 
-type ESSubscriptionMap[T any] map[string]ESSubscription[T]
+type ESSubscriptionMap[T any] map[string]*ESSubscription[T]
 
 type Client struct {
 	ctx context.Context
@@ -565,7 +570,7 @@ type Client struct {
 	connected bool
 
 	sessionId *string
-	ChatSubscriptions ESSubscriptionMap[ESChatSubscriptionData]
+	ChatSubscriptions ESSubscriptionMap[*ESChatSubscriptionData]
 
 	waitingClient chan struct{}
 	sessionIdChan chan *string
@@ -585,7 +590,7 @@ type EventSubService struct {
 func NewEventSubService() *EventSubService {
 	es := &EventSubService{}
 	es.Client = Client{
-		ChatSubscriptions: make(ESSubscriptionMap[ESChatSubscriptionData]),
+		ChatSubscriptions: make(ESSubscriptionMap[*ESChatSubscriptionData]),
 
 		waitingClient: make(chan struct{}),
 		sessionIdChan: make(chan *string),
@@ -668,7 +673,7 @@ func (c *Client) handleESNotification(message ESMessage) {
 			return
 		}
 
-		chatMessage := esNotificationToEsChatMessage(notification, &sub.Data)
+		chatMessage := esNotificationToEsChatMessage(notification, sub.Data)
 		runtime.EventsEmit(c.ctx, notification.Payload.Subscription.Id, chatMessage)
 	}
 }

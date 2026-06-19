@@ -58,7 +58,6 @@ type ChatroomData struct{
 	BroadcasterId string			`json:"broadcasterId"`
 	BadgeSets []api.ApiBadgeSet		`json:"badgeSets"`
 	ChannelEmotes map[string]*services.AppEmote `json:"channelEmotes"`
-	SevenTVEmotes map[string]*services.AppEmote `json:"sevenTVEmotes"`
 }
 
 func (a *App) ConnectToChatroom(channelName string) (*ChatroomData, error) {
@@ -78,8 +77,6 @@ func (a *App) ConnectToChatroom(channelName string) (*ChatroomData, error) {
 	var badgeSetsErr chan error = make(chan error)
 	var channelEmotesDone chan map[string]*services.AppEmote = make(chan map[string]*services.AppEmote)
 	var channelEmotesErr chan error = make(chan error)
-	var sevenTVUserReqDone chan *seventv.ApiGetSevenTVUserRes = make(chan *seventv.ApiGetSevenTVUserRes)
-	var sevenTVErr chan error = make(chan error)
 	defer func() {
 		close(badgeSetsDone)
 		close(badgeSetsErr)
@@ -99,9 +96,6 @@ func (a *App) ConnectToChatroom(channelName string) (*ChatroomData, error) {
 	// fetch channel emotes in goroutine
 	wg.Add(1)
 	go a.goGetChannelEmotes(bsCtx, channelEmotesDone, channelEmotesErr, &wg, accessToken, broadcaster.Id)
-
-	wg.Add(1)
-	go a.goGetSevenTVEmotes(bsCtx, sevenTVUserReqDone, sevenTVErr, &wg, accessToken, broadcaster.Id)
 
 	condition := map[string]string{
 		"broadcaster_user_id": broadcaster.Id,
@@ -134,21 +128,14 @@ func (a *App) ConnectToChatroom(channelName string) (*ChatroomData, error) {
 		log.Printf("[ConnectToChatroom]: Failed to get channel emotes\n%+v\n\n", err)
 	}
 
-	select {
-	case sevenTVUserRes := <-sevenTVUserReqDone:
-		chatroomData.SevenTVEmotes = seventv.GetAppEmotesFromSevenTVUserRes(sevenTVUserRes)
-	case err := <-sevenTVErr:
-		log.Printf("[ConnectToChatroom]: Failed to get 7tv emotes\n%+v\n\n", err)
-	}
-
-	newSub := services.ESSubscription[services.ESChatSubscriptionData]{
+	newSub := &services.ESSubscription[*services.ESChatSubscriptionData]{
 		SubType: CHAT_SUB_TYPE,
-		Data: services.ESChatSubscriptionData{
+		Data: &services.ESChatSubscriptionData{
 			BroadcasterId: broadcaster.Id,
 			Channel: channelName,
 			ChannelBadgeSets: chatroomData.BadgeSets,
 			ChannelEmotes: chatroomData.ChannelEmotes,
-			SevenTVEmotes: chatroomData.SevenTVEmotes,
+			SevenTV: &services.ESChatSubscriptionSevenTVData{},
 		},
 	}
 	a.esService.Client.ChatSubscriptions[subId] = newSub
@@ -190,6 +177,28 @@ func (a *App) goGetChannelEmotes(
 
 }
 
+func (a *App) EnableSevenTV(subId string) (map[string]*services.AppEmote, error) {
+	sub, subExists := a.esService.Client.ChatSubscriptions[subId]
+
+	if !subExists {
+		return nil, errors.New("Cannot enable 7tv on nonexistent chat subscription")
+	}
+
+	if subExists && sub.Data.SevenTV.Enabled {
+		return sub.Data.SevenTV.SevenTVEmotes, nil
+	}
+
+	userRes, err := seventv.GetSevenTVUser("twitch", sub.Data.BroadcasterId)
+	if err != nil {
+		return nil, err
+	}
+
+	emotes := seventv.GetAppEmotesFromSevenTVUserRes(userRes)
+	sub.Data.SevenTV.SevenTVEmotes = emotes
+
+	return emotes, nil
+}
+
 func (a *App) goGetChannelBadgeSets(
 	ctx context.Context, 
 	badgeSetsDone chan *[]api.ApiBadgeSet, 
@@ -218,35 +227,6 @@ func (a *App) goGetChannelBadgeSets(
 		return
 	}
 
-}
-
-func (a *App) goGetSevenTVEmotes(
-	ctx context.Context, 
-	sevenTVUserReqDone chan *seventv.ApiGetSevenTVUserRes, 
-	sevenTVErr chan error, 
-	wg *sync.WaitGroup,
-	accessToken string,
-	broadcasterId string,
-) {
-	defer wg.Done()
-	userRes, err := seventv.GetSevenTVUser("twitch", broadcasterId)
-	if err != nil {
-		select {
-		case <-ctx.Done():
-			return
-		default:
-			sevenTVErr <- err
-			return
-		}
-	}
-	select {
-	case <-ctx.Done():
-		log.Printf("[ConnectToChatroom]: seventv emote context closed\n")
-		return
-	default:
-		sevenTVUserReqDone <- userRes
-		return
-	}
 }
 
 func (a *App) SendChatMessage(chatSubId string, messageContent string, replyId *string) (*api.ApiPostMessagesData, error) {

@@ -197,7 +197,6 @@ export namespace main {
 	    broadcasterId: string;
 	    badgeSets: api.ApiBadgeSet[];
 	    channelEmotes: Record<string, services.AppEmote>;
-	    sevenTVEmotes: Record<string, services.AppEmote>;
 	
 	    static createFrom(source: any = {}) {
 	        return new ChatroomData(source);
@@ -209,7 +208,6 @@ export namespace main {
 	        this.broadcasterId = source["broadcasterId"];
 	        this.badgeSets = this.convertValues(source["badgeSets"], api.ApiBadgeSet);
 	        this.channelEmotes = this.convertValues(source["channelEmotes"], services.AppEmote, true);
-	        this.sevenTVEmotes = this.convertValues(source["sevenTVEmotes"], services.AppEmote, true);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
