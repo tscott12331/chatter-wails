@@ -53,33 +53,26 @@ func (nli *NotLoggedInError) Error() string {
 const CHAT_SUB_TYPE = "channel.chat.message"
 
 
-type ChatroomData struct{
-	SubId string					`json:"subId"`
-	BroadcasterId string			`json:"broadcasterId"`
-	BadgeSets []api.ApiBadgeSet		`json:"badgeSets"`
-	ChannelEmotes map[string]*services.AppEmote `json:"channelEmotes"`
-}
-
-func (a *App) ConnectToChatroom(channelName string) (*ChatroomData, error) {
+func (a *App) ConnectToChatroom(channelName string) (*services.ChatroomData, error) {
 	if a.authService.User == nil {
 		return nil, &NotLoggedInError{}
+	}
+
+	if data, exists := a.esService.Client.GetChatroomData(channelName); exists {
+		return data, nil
 	}
 
 	accessToken := a.authService.User.Access_token
 	
 	broadcaster, err := user.GetUserByLogin(accessToken, channelName)
 	if err != nil {
-		log.Printf("[ConnectToChatroom]: An error occurred fetching the broadcaster info, aborting\n\n")
+		log.Printf("[ConnectToChatroom]: An error occurred fetching the broadcaster info, aborting")
 		return nil, err
 	}
 
-	var badgeSetsDone chan *[]api.ApiBadgeSet = make(chan *[]api.ApiBadgeSet)
-	var badgeSetsErr chan error = make(chan error)
 	var channelEmotesDone chan map[string]*services.AppEmote = make(chan map[string]*services.AppEmote)
 	var channelEmotesErr chan error = make(chan error)
 	defer func() {
-		close(badgeSetsDone)
-		close(badgeSetsErr)
 		close(channelEmotesDone)
 		close(channelEmotesErr)
 	}()
@@ -88,10 +81,6 @@ func (a *App) ConnectToChatroom(channelName string) (*ChatroomData, error) {
 	defer bsCancel()
 
 	var wg sync.WaitGroup
-
-	// fetch channel badge sets in goroutine
-	wg.Add(1)
-	go a.goGetChannelBadgeSets(bsCtx, badgeSetsDone, badgeSetsErr, &wg, accessToken, broadcaster.Id)
 
 	// fetch channel emotes in goroutine
 	wg.Add(1)
@@ -103,22 +92,14 @@ func (a *App) ConnectToChatroom(channelName string) (*ChatroomData, error) {
 	}
 	subId, err := a.esService.CreateSubscription(accessToken, condition, CHAT_SUB_TYPE)
 	if err != nil {
-		log.Printf("[ConnectToChatroom]: An error occurred creating the chat subscription, aborting\n\n")
+		log.Printf("[ConnectToChatroom]: An error occurred creating the chat subscription, aborting")
 		wg.Wait()
 		return nil, err
 	}
 
-	chatroomData := &ChatroomData{
+	chatroomData := &services.ChatroomData{
 		SubId: subId,
 		BroadcasterId: broadcaster.Id,
-	}
-
-	select {
-	case channelBadgeSets := <-badgeSetsDone:
-		badgeSets := services.CombineChannelGlobalSets(channelBadgeSets, a.badgeService.GlobalBadgeSets)
-		chatroomData.BadgeSets = *badgeSets
-	case err := <-badgeSetsErr:
-		log.Printf("[ConnectToChatroom]: Failed to get channel badge sets\n%+v\n\n", err)
 	}
 
 	select {
@@ -129,16 +110,20 @@ func (a *App) ConnectToChatroom(channelName string) (*ChatroomData, error) {
 	}
 
 	newSub := &services.ESSubscription[*services.ESChatSubscriptionData]{
+		SubId: subId,
 		SubType: CHAT_SUB_TYPE,
 		Data: &services.ESChatSubscriptionData{
 			BroadcasterId: broadcaster.Id,
 			Channel: channelName,
-			ChannelBadgeSets: chatroomData.BadgeSets,
+			ChannelBadgeSets: &util.SingleWriteMutex[[]api.ApiBadgeSet]{},
 			ChannelEmotes: chatroomData.ChannelEmotes,
 			SevenTV: &services.ESChatSubscriptionSevenTVData{},
 		},
 	}
-	a.esService.Client.ChatSubscriptions[subId] = newSub
+	a.esService.Client.AddChatSubscription(newSub)
+
+	// fetch channel badge sets in goroutine
+	go a.goGetChannelBadgeSets(accessToken, broadcaster.Id, subId)
 	
 	return chatroomData, nil
 
@@ -195,38 +180,37 @@ func (a *App) EnableSevenTV(subId string) (map[string]*services.AppEmote, error)
 
 	emotes := seventv.GetAppEmotesFromSevenTVUserRes(userRes)
 	sub.Data.SevenTV.SevenTVEmotes = emotes
+	sub.Data.SevenTV.Enabled = true
 
 	return emotes, nil
 }
 
 func (a *App) goGetChannelBadgeSets(
-	ctx context.Context, 
-	badgeSetsDone chan *[]api.ApiBadgeSet, 
-	badgeSetsErr chan error, 
-	wg *sync.WaitGroup,
 	accessToken string,
 	broadcasterId string,
+	subId string,
 ) {
-	defer wg.Done()
-	badgeSets, err := a.badgeService.GetChannelBadgeSets(accessToken, broadcasterId)
-	if err != nil {
-		select {
-		case <-ctx.Done():
-			return
-		default:
-			badgeSetsErr <- err
-			return
-		}
-	}
-	select {
-	case <-ctx.Done():
-		log.Printf("[ConnectToChatroom]: badgeset context closed")
-		return
-	default:
-		badgeSetsDone <- badgeSets
+	sub, exists := a.esService.Client.ChatSubscriptions[subId]
+	if !exists {
+		log.Printf("Subscription %v doesn't exist\n", subId)
 		return
 	}
 
+	// data already fetched
+	if sub.Data.ChannelBadgeSets.IsWritten() {
+		log.Printf("Badge sets already written")
+		return
+	}
+
+	badgeSets, err := a.badgeService.GetChannelBadgeSets(accessToken, broadcasterId)
+	if err != nil {
+		log.Printf("ERROR: %+v", err)
+	}
+	combinedSets := services.CombineChannelGlobalSets(badgeSets, a.badgeService.GlobalBadgeSets)
+
+	if !sub.Data.ChannelBadgeSets.Write(*combinedSets) {
+		log.Printf("Tried to write badge sets which were already written")
+	}
 }
 
 func (a *App) SendChatMessage(chatSubId string, messageContent string, replyId *string) (*api.ApiPostMessagesData, error) {
@@ -249,4 +233,8 @@ func (a *App) SendChatMessage(chatSubId string, messageContent string, replyId *
 	}
 
 	return res, nil
+}
+
+func (a *App) DisconnectFromChatroom(channelName string) error {
+	return a.esService.DeleteChatSubscriptionFromChannelName(a.authService.User.Access_token, channelName)
 }

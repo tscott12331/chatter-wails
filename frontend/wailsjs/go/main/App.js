@@ -6,6 +6,10 @@ export function ConnectToChatroom(arg1) {
   return window['go']['main']['App']['ConnectToChatroom'](arg1);
 }
 
+export function DisconnectFromChatroom(arg1) {
+  return window['go']['main']['App']['DisconnectFromChatroom'](arg1);
+}
+
 export function EnableSevenTV(arg1) {
   return window['go']['main']['App']['EnableSevenTV'](arg1);
 }

@@ -4,8 +4,6 @@ import { TUser } from "@/App";
 import { TChatMessage } from "@/components/chat/chat-message";
 
 import { ConnectToChatroom, EnableSevenTV, SendChatMessage } from '@wailsjs/go/main/App'
-import { api } from "@wailsjs/go/models";
-import { DeleteSubscription } from "@wailsjs/go/services/EventSubService"
 import { EventsOn, EventsOff } from "@wailsjs/runtime/runtime";
 
 import { useEffect, useState } from "react";
@@ -13,7 +11,6 @@ import { useEffect, useState } from "react";
 interface IChatroomData {
     subId: string|null;
     broadcasterId: string|null;
-    badgeSets: api.ApiBadgeSet[];
     channelEmotes: Record<string, IAppEmote>;
 }
 
@@ -29,7 +26,6 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
     const [chatroomData, setChatroomData] = useState<IChatroomData>({
         subId: null,
         broadcasterId: null,
-        badgeSets: [],
         channelEmotes: {},
     })
 
@@ -97,7 +93,7 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
         
         return () => {
             EventsOff(subId);
-            DeleteSubscription(user.access_token, subId);
+            // DeleteChatSubscription(user.access_token, subId);
         }
     }, [chatroomData]);
 

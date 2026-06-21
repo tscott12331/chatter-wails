@@ -16,6 +16,7 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 
 	"chatter-wails/internal/api"
+	"chatter-wails/internal/util"
 )
 
 const (
@@ -470,7 +471,7 @@ func esBadgesToMessageBadges(esBadges []ESBadge, badgeSets []api.ApiBadgeSet) []
 }
 
 func esNotificationToEsChatMessage(notification *ESNotification, chatSubscriptionData *ESChatSubscriptionData) *ESChatMessage {
-	channelBadges := chatSubscriptionData.ChannelBadgeSets
+	channelBadges, _ := chatSubscriptionData.ChannelBadgeSets.Read()
 	seventvEmotes := chatSubscriptionData.SevenTV.SevenTVEmotes
 	var fragments = []*AppChatMessageFragment{}
 	for _, fragment := range notification.Payload.Event.Message.Fragments {
@@ -542,8 +543,6 @@ func esMessageToESWelcome(message *ESMessage) *ESWelcome {
 }
 
 
-
-
 type ESChatSubscriptionSevenTVData struct{
 	SevenTVEmotes map[string]*AppEmote
 	Enabled bool
@@ -552,11 +551,12 @@ type ESChatSubscriptionSevenTVData struct{
 type ESChatSubscriptionData struct{
 	BroadcasterId string
 	Channel string
-	ChannelBadgeSets []api.ApiBadgeSet
+	ChannelBadgeSets *util.SingleWriteMutex[[]api.ApiBadgeSet]
 	ChannelEmotes map[string]*AppEmote
 	SevenTV *ESChatSubscriptionSevenTVData
 }
 type ESSubscription[T any] struct{
+	SubId string
 	SubType string
 	Data T
 }
@@ -571,6 +571,7 @@ type Client struct {
 
 	sessionId *string
 	ChatSubscriptions ESSubscriptionMap[*ESChatSubscriptionData]
+	channelNameToSubId ESSubscriptionMap[*ESChatSubscriptionData]
 
 	waitingClient chan struct{}
 	sessionIdChan chan *string
@@ -582,6 +583,32 @@ type Client struct {
 	done chan struct{}
 }
 
+func (c *Client) AddChatSubscription(data *ESSubscription[*ESChatSubscriptionData]) {
+	c.ChatSubscriptions[data.SubId] = data
+	c.channelNameToSubId[strings.ToLower(data.Data.Channel)] = data
+}
+
+type ChatroomData struct{
+	SubId string					`json:"subId"`
+	BroadcasterId string			`json:"broadcasterId"`
+	ChannelEmotes map[string]*AppEmote `json:"channelEmotes"`
+}
+
+func (c *Client) GetChatroomData(channelName string) (*ChatroomData, bool) {
+	sub, exists := c.channelNameToSubId[strings.ToLower(channelName)]
+	if !exists {
+		return nil, false
+	}
+
+	data := &ChatroomData{
+		SubId: sub.SubId,
+		BroadcasterId: sub.Data.BroadcasterId,
+		ChannelEmotes: sub.Data.ChannelEmotes,
+	}
+
+	return data, true
+}
+
 type EventSubService struct {
 	Ctx context.Context
 	Client Client
@@ -591,6 +618,7 @@ func NewEventSubService() *EventSubService {
 	es := &EventSubService{}
 	es.Client = Client{
 		ChatSubscriptions: make(ESSubscriptionMap[*ESChatSubscriptionData]),
+		channelNameToSubId: make(ESSubscriptionMap[*ESChatSubscriptionData]),
 
 		waitingClient: make(chan struct{}),
 		sessionIdChan: make(chan *string),
@@ -956,4 +984,31 @@ func (es *EventSubService) DeleteAllSubscriptions(accessToken string) error {
 	}
 
 	return err
+}
+
+func (es *EventSubService) DeleteChatSubscriptionFromSubId(accessToken, subId string) error {
+	sub, exists := es.Client.ChatSubscriptions[subId]
+	if !exists {
+		return nil
+	}
+
+	channelName := sub.Data.Channel
+	return es.deleteChatSubscription(accessToken, subId, channelName)
+}
+
+func (es *EventSubService) DeleteChatSubscriptionFromChannelName(accessToken, channelName string) error {
+	sub, exists := es.Client.channelNameToSubId[channelName]
+	if !exists {
+		return nil
+	}
+
+	subId := sub.SubId
+	return es.deleteChatSubscription(accessToken, subId, channelName)
+}
+
+func (es *EventSubService) deleteChatSubscription(accessToken, subId, channelName string) error {
+	delete(es.Client.ChatSubscriptions, subId)
+	delete(es.Client.channelNameToSubId, channelName)
+
+	return es.DeleteSubscription(accessToken, subId)
 }

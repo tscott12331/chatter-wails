@@ -9,6 +9,10 @@ export function CreateSubscription(arg1:string,arg2:services.ESSubscriptionCondi
 
 export function DeleteAllSubscriptions(arg1:string):Promise<void>;
 
+export function DeleteChatSubscriptionFromChannelName(arg1:string,arg2:string):Promise<void>;
+
+export function DeleteChatSubscriptionFromSubId(arg1:string,arg2:string):Promise<void>;
+
 export function DeleteSubscription(arg1:string,arg2:string):Promise<void>;
 
 export function GetSubscriptions(arg1:string):Promise<Array<api.ApiSubscription>>;

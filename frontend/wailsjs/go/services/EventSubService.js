@@ -14,6 +14,14 @@ export function DeleteAllSubscriptions(arg1) {
   return window['go']['services']['EventSubService']['DeleteAllSubscriptions'](arg1);
 }
 
+export function DeleteChatSubscriptionFromChannelName(arg1, arg2) {
+  return window['go']['services']['EventSubService']['DeleteChatSubscriptionFromChannelName'](arg1, arg2);
+}
+
+export function DeleteChatSubscriptionFromSubId(arg1, arg2) {
+  return window['go']['services']['EventSubService']['DeleteChatSubscriptionFromSubId'](arg1, arg2);
+}
+
 export function DeleteSubscription(arg1, arg2) {
   return window['go']['services']['EventSubService']['DeleteSubscription'](arg1, arg2);
 }
