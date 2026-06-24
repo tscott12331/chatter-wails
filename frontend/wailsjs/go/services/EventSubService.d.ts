@@ -5,9 +5,15 @@ import {api} from '../models';
 
 export function Connect():Promise<void>;
 
+export function CreateChatSubscription(arg1:string,arg2:string,arg3:string,arg4:any):Promise<services.ChatroomData>;
+
 export function CreateSubscription(arg1:string,arg2:services.ESSubscriptionCondition,arg3:string):Promise<string>;
 
 export function DeleteAllSubscriptions(arg1:string):Promise<void>;
+
+export function DeleteChatSubscriptionFromChannelName(arg1:string,arg2:string):Promise<void>;
+
+export function DeleteChatSubscriptionFromSubId(arg1:string,arg2:string):Promise<void>;
 
 export function DeleteSubscription(arg1:string,arg2:string):Promise<void>;
 

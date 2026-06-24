@@ -4,7 +4,8 @@ import HomeIcon from '../svg/home-icon';
 import PlusIcon from '../svg/plus-icon';
 import { useNavigate } from 'react-router-dom';
 import { rotateArr } from '@util/arr';
-
+import { DeleteChatSubscription } from '@wailsjs/go/services/EventSubService';
+import { DisconnectFromChatroom } from '@wailsjs/go/main/App'
 export type TTab = {
     tabRoute: string;
     tabName: string;
@@ -44,6 +45,8 @@ export default function TabManager({
             setCurrentTabRoute(HOME_TAB.tabRoute);
             navigate(HOME_TAB.tabRoute);
         }
+
+        DisconnectFromChatroom(tab.tabName).catch(e => console.error(e));
 
         setTabs((curTabs) => curTabs.filter(t => t.tabRoute !== tab.tabRoute));
         delete tabsRef.current[tab.tabRoute];

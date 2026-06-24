@@ -6,12 +6,24 @@ export function Connect() {
   return window['go']['services']['EventSubService']['Connect']();
 }
 
+export function CreateChatSubscription(arg1, arg2, arg3, arg4) {
+  return window['go']['services']['EventSubService']['CreateChatSubscription'](arg1, arg2, arg3, arg4);
+}
+
 export function CreateSubscription(arg1, arg2, arg3) {
   return window['go']['services']['EventSubService']['CreateSubscription'](arg1, arg2, arg3);
 }
 
 export function DeleteAllSubscriptions(arg1) {
   return window['go']['services']['EventSubService']['DeleteAllSubscriptions'](arg1);
+}
+
+export function DeleteChatSubscriptionFromChannelName(arg1, arg2) {
+  return window['go']['services']['EventSubService']['DeleteChatSubscriptionFromChannelName'](arg1, arg2);
+}
+
+export function DeleteChatSubscriptionFromSubId(arg1, arg2) {
+  return window['go']['services']['EventSubService']['DeleteChatSubscriptionFromSubId'](arg1, arg2);
 }
 
 export function DeleteSubscription(arg1, arg2) {
