@@ -4,13 +4,10 @@ import (
 	"chatter-wails/internal/api"
 	"chatter-wails/internal/api/seventv"
 	"chatter-wails/internal/message"
-	"chatter-wails/internal/user"
-	"chatter-wails/internal/util"
 	"chatter-wails/services"
 	"context"
 	"errors"
 	"log"
-	"sync"
 )
 
 // App struct
@@ -50,120 +47,87 @@ func (nli *NotLoggedInError) Error() string {
 }
 
 
-const CHAT_SUB_TYPE = "channel.chat.message"
-
 
 func (a *App) ConnectToChatroom(channelName string) (*services.ChatroomData, error) {
 	if a.authService.User == nil {
 		return nil, &NotLoggedInError{}
 	}
 
-	if data, exists := a.esService.Client.GetChatroomData(channelName); exists {
-		return data, nil
-	}
-
 	accessToken := a.authService.User.Access_token
-	
-	broadcaster, err := user.GetUserByLogin(accessToken, channelName)
-	if err != nil {
-		log.Printf("[ConnectToChatroom]: An error occurred fetching the broadcaster info, aborting")
-		return nil, err
-	}
 
-	var channelEmotesDone chan map[string]*services.AppEmote = make(chan map[string]*services.AppEmote)
-	var channelEmotesErr chan error = make(chan error)
-	defer func() {
-		close(channelEmotesDone)
-		close(channelEmotesErr)
-	}()
+	return a.esService.CreateChatSubscription(accessToken, a.authService.User.Id, channelName, a.badgeService.GlobalBadgeSets)
 
-	bsCtx, bsCancel := context.WithCancel(a.ctx)
-	defer bsCancel()
-
-	var wg sync.WaitGroup
-
-	// fetch channel emotes in goroutine
-	wg.Add(1)
-	go a.goGetChannelEmotes(bsCtx, channelEmotesDone, channelEmotesErr, &wg, accessToken, broadcaster.Id)
-
-	condition := map[string]string{
-		"broadcaster_user_id": broadcaster.Id,
-		"user_id": a.authService.User.Id,
-	}
-	subId, err := a.esService.CreateSubscription(accessToken, condition, CHAT_SUB_TYPE)
-	if err != nil {
-		log.Printf("[ConnectToChatroom]: An error occurred creating the chat subscription, aborting")
-		wg.Wait()
-		return nil, err
-	}
-
-	chatroomData := &services.ChatroomData{
-		SubId: subId,
-		BroadcasterId: broadcaster.Id,
-	}
-
-	select {
-	case channelEmotes := <-channelEmotesDone:
-		chatroomData.ChannelEmotes = channelEmotes
-	case err := <-channelEmotesErr:
-		log.Printf("[ConnectToChatroom]: Failed to get channel emotes\n%+v\n\n", err)
-	}
-
-	newSub := &services.ESSubscription[*services.ESChatSubscriptionData]{
-		SubId: subId,
-		SubType: CHAT_SUB_TYPE,
-		Data: &services.ESChatSubscriptionData{
-			BroadcasterId: broadcaster.Id,
-			Channel: channelName,
-			ChannelBadgeSets: &util.SingleWriteMutex[[]api.ApiBadgeSet]{},
-			ChannelEmotes: chatroomData.ChannelEmotes,
-			SevenTV: &services.ESChatSubscriptionSevenTVData{},
-		},
-	}
-	a.esService.Client.AddChatSubscription(newSub)
-
-	// fetch channel badge sets in goroutine
-	go a.goGetChannelBadgeSets(accessToken, broadcaster.Id, subId)
-	
-	return chatroomData, nil
-
-}
-
-func (a *App) goGetChannelEmotes(
-	ctx context.Context, 
-	channelEmotesDone chan map[string]*services.AppEmote, 
-	channelEmotesErr chan error, 
-	wg *sync.WaitGroup,
-	accessToken string,
-	broadcasterId string,
-) {
-	defer wg.Done()
-	channelEmotes, err := a.emoteService.GetChannelEmotes(accessToken, broadcasterId)
-	if err != nil {
-		select {
-		case <-ctx.Done():
-			return
-		default:
-			channelEmotesErr <- err
-			return
-		}
-	}
-	select {
-	case <-ctx.Done():
-		log.Printf("[ConnectToChatroom]: channel emote context closed")
-		return
-	default:
-		channelEmoteMap := util.ArrToMap(*channelEmotes, func(item services.AppEmote) (string, *services.AppEmote) {
-			return item.Name, &item
-		})
-		channelEmotesDone <- channelEmoteMap
-		return
-	}
+	// if data, exists := a.esService.Client.GetChatroomData(channelName); exists {
+	// 	return data, nil
+	// }
+	//
+	// broadcaster, err := user.GetUserByLogin(accessToken, channelName)
+	// if err != nil {
+	// 	log.Printf("[ConnectToChatroom]: An error occurred fetching the broadcaster info, aborting")
+	// 	return nil, err
+	// }
+	//
+	// var channelEmotesDone chan map[string]*services.AppEmote = make(chan map[string]*services.AppEmote)
+	// var channelEmotesErr chan error = make(chan error)
+	// defer func() {
+	// 	close(channelEmotesDone)
+	// 	close(channelEmotesErr)
+	// }()
+	//
+	// bsCtx, bsCancel := context.WithCancel(a.ctx)
+	// defer bsCancel()
+	//
+	// var wg sync.WaitGroup
+	//
+	// // fetch channel emotes in goroutine
+	// wg.Add(1)
+	// go a.goGetChannelEmotes(bsCtx, channelEmotesDone, channelEmotesErr, &wg, accessToken, broadcaster.Id)
+	//
+	// condition := map[string]string{
+	// 	"broadcaster_user_id": broadcaster.Id,
+	// 	"user_id": a.authService.User.Id,
+	// }
+	// subId, err := a.esService.CreateSubscription(accessToken, condition, CHAT_SUB_TYPE)
+	// if err != nil {
+	// 	log.Printf("[ConnectToChatroom: ERROR: %+v\n", err)
+	// 	wg.Wait()
+	// 	return nil, err
+	// }
+	//
+	// chatroomData := &services.ChatroomData{
+	// 	SubId: subId,
+	// 	BroadcasterId: broadcaster.Id,
+	// }
+	//
+	// select {
+	// case channelEmotes := <-channelEmotesDone:
+	// 	chatroomData.ChannelEmotes = channelEmotes
+	// case err := <-channelEmotesErr:
+	// 	log.Printf("[ConnectToChatroom]: Failed to get channel emotes\n%+v\n\n", err)
+	// }
+	//
+	// newSub := &services.ESSubscription[*services.ESChatSubscriptionData]{
+	// 	SubId: subId,
+	// 	SubType: CHAT_SUB_TYPE,
+	// 	Data: &services.ESChatSubscriptionData{
+	// 		BroadcasterId: broadcaster.Id,
+	// 		Channel: channelName,
+	// 		ChannelBadgeSets: &util.SingleWriteMutex[[]api.ApiBadgeSet]{},
+	// 		ChannelEmotes: chatroomData.ChannelEmotes,
+	// 		SevenTV: &services.ESChatSubscriptionSevenTVData{},
+	// 	},
+	// }
+	// a.esService.Client.AddChatSubscription(newSub)
+	//
+	// // fetch channel badge sets in goroutine
+	// go a.goGetChannelBadgeSets(accessToken, broadcaster.Id, subId)
+	//
+	// return chatroomData, nil
 
 }
 
 func (a *App) EnableSevenTV(subId string) (map[string]*services.AppEmote, error) {
-	sub, subExists := a.esService.Client.ChatSubscriptions[subId]
+	sub, subExists := a.esService.Client.ChatSubscriptions.Read().GetSubFromId(subId)
 
 	if !subExists {
 		return nil, errors.New("Cannot enable 7tv on nonexistent chat subscription")
@@ -190,7 +154,7 @@ func (a *App) goGetChannelBadgeSets(
 	broadcasterId string,
 	subId string,
 ) {
-	sub, exists := a.esService.Client.ChatSubscriptions[subId]
+	sub, exists := a.esService.Client.ChatSubscriptions.Read().GetSubFromId(subId)
 	if !exists {
 		log.Printf("Subscription %v doesn't exist\n", subId)
 		return
@@ -202,7 +166,7 @@ func (a *App) goGetChannelBadgeSets(
 		return
 	}
 
-	badgeSets, err := a.badgeService.GetChannelBadgeSets(accessToken, broadcasterId)
+	badgeSets, err := services.GetChannelBadgeSets(accessToken, broadcasterId)
 	if err != nil {
 		log.Printf("ERROR: %+v", err)
 	}
@@ -220,7 +184,7 @@ func (a *App) SendChatMessage(chatSubId string, messageContent string, replyId *
 		return nil, &NotLoggedInError{}
 	}
 
-	subData, ok := a.esService.Client.ChatSubscriptions[chatSubId]
+	subData, ok := a.esService.Client.ChatSubscriptions.Read().GetSubFromId(chatSubId)
 	if !ok {
 		log.Printf("[SendChatMessage]: Failed to find chat subscription data, aborting\n\n")
 		return nil, errors.New("Failed to find chat subscription data")

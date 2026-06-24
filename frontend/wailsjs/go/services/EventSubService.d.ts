@@ -5,6 +5,8 @@ import {api} from '../models';
 
 export function Connect():Promise<void>;
 
+export function CreateChatSubscription(arg1:string,arg2:string,arg3:string,arg4:any):Promise<services.ChatroomData>;
+
 export function CreateSubscription(arg1:string,arg2:services.ESSubscriptionCondition,arg3:string):Promise<string>;
 
 export function DeleteAllSubscriptions(arg1:string):Promise<void>;

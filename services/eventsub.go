@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 	"unicode"
 
@@ -16,6 +17,7 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 
 	"chatter-wails/internal/api"
+	"chatter-wails/internal/user"
 	"chatter-wails/internal/util"
 )
 
@@ -34,6 +36,9 @@ const (
 
 
 )
+
+const CHAT_SUB_TYPE = "channel.chat.message"
+
 
 var (
 	newline = []byte{'\n'}
@@ -563,39 +568,35 @@ type ESSubscription[T any] struct{
 
 type ESSubscriptionMap[T any] map[string]*ESSubscription[T]
 
-type Client struct {
-	ctx context.Context
-
-	conn *websocket.Conn
-	connected bool
-
-	sessionId *string
-	ChatSubscriptions ESSubscriptionMap[*ESChatSubscriptionData]
-	channelNameToSubId ESSubscriptionMap[*ESChatSubscriptionData]
-
-	waitingClient chan struct{}
-	sessionIdChan chan *string
-	newSessionIdChan chan *string
-
-	send chan []byte
-
-	ready chan bool
-	done chan struct{}
+type ChatSubscriptions struct{
+	fromSubId ESSubscriptionMap[*ESChatSubscriptionData]
+	fromChannelName ESSubscriptionMap[*ESChatSubscriptionData]
 }
 
-func (c *Client) AddChatSubscription(data *ESSubscription[*ESChatSubscriptionData]) {
-	c.ChatSubscriptions[data.SubId] = data
-	c.channelNameToSubId[strings.ToLower(data.Data.Channel)] = data
+func NewChatSubscriptions() *ChatSubscriptions {
+	return &ChatSubscriptions{
+		fromSubId: make(ESSubscriptionMap[*ESChatSubscriptionData]),
+		fromChannelName: make(ESSubscriptionMap[*ESChatSubscriptionData]),
+	}
 }
 
-type ChatroomData struct{
-	SubId string					`json:"subId"`
-	BroadcasterId string			`json:"broadcasterId"`
-	ChannelEmotes map[string]*AppEmote `json:"channelEmotes"`
+func (cs *ChatSubscriptions) SetSubData(data *ESSubscription[*ESChatSubscriptionData]) {
+	cs.fromSubId[data.SubId] = data
+	cs.fromChannelName[strings.ToLower(data.Data.Channel)] = data
 }
 
-func (c *Client) GetChatroomData(channelName string) (*ChatroomData, bool) {
-	sub, exists := c.channelNameToSubId[strings.ToLower(channelName)]
+func (cs *ChatSubscriptions) GetSubFromChannelName(channelName string) (*ESSubscription[*ESChatSubscriptionData], bool) {
+	d, e := cs.fromChannelName[strings.ToLower(channelName)]
+	return d, e
+}
+
+func (cs *ChatSubscriptions) GetSubFromId(subId string) (*ESSubscription[*ESChatSubscriptionData], bool) {
+	d, e := cs.fromSubId[subId]
+	return d, e
+}
+
+func (cs *ChatSubscriptions) GetChatroomData(channelName string) (*ChatroomData, bool) {
+	sub, exists := cs.GetSubFromChannelName(channelName)
 	if !exists {
 		return nil, false
 	}
@@ -609,6 +610,39 @@ func (c *Client) GetChatroomData(channelName string) (*ChatroomData, bool) {
 	return data, true
 }
 
+
+type Client struct {
+	ctx context.Context
+
+	conn *websocket.Conn
+	connected bool
+
+	sessionId *string
+
+	ChatSubscriptions util.MutexValue[*ChatSubscriptions]
+	
+	waitingClient chan struct{}
+	sessionIdChan chan *string
+	newSessionIdChan chan *string
+
+	send chan []byte
+
+	ready chan bool
+	done chan struct{}
+}
+
+func (c *Client) AddChatSubscription(data *ESSubscription[*ESChatSubscriptionData]) {
+	c.ChatSubscriptions.Update(func(cs **ChatSubscriptions) {
+		(*cs).SetSubData(data)
+	})
+}
+
+type ChatroomData struct{
+	SubId string					`json:"subId"`
+	BroadcasterId string			`json:"broadcasterId"`
+	ChannelEmotes map[string]*AppEmote `json:"channelEmotes"`
+}
+
 type EventSubService struct {
 	Ctx context.Context
 	Client Client
@@ -617,8 +651,7 @@ type EventSubService struct {
 func NewEventSubService() *EventSubService {
 	es := &EventSubService{}
 	es.Client = Client{
-		ChatSubscriptions: make(ESSubscriptionMap[*ESChatSubscriptionData]),
-		channelNameToSubId: make(ESSubscriptionMap[*ESChatSubscriptionData]),
+		ChatSubscriptions: *util.NewMutexValue(NewChatSubscriptions()),
 
 		waitingClient: make(chan struct{}),
 		sessionIdChan: make(chan *string),
@@ -696,7 +729,7 @@ func (c *Client) handleESNotification(message ESMessage) {
 	case "channel.chat.message":
 		subId := notification.Payload.Subscription.Id
 
-		sub, ok := c.ChatSubscriptions[subId]
+		sub, ok := c.ChatSubscriptions.Read().GetSubFromId(subId)
 		if !ok {
 			return
 		}
@@ -951,6 +984,163 @@ func (es *EventSubService) CreateSubscription(accessToken string, condition ESSu
 	
 }
 
+func (es *EventSubService) CreateChatSubscription(accessToken, userId, channelName string, globalBadgeSets *[]api.ApiBadgeSet) (*ChatroomData, error) {
+	// maybe this could return (sub, exists, fetching)
+	var chatroomData *ChatroomData
+	var err error
+	es.Client.ChatSubscriptions.Update(func(cs **ChatSubscriptions) {
+		log.Printf("in update, %+v\n", *cs)
+		data, exists := (*cs).GetChatroomData(channelName)
+		log.Printf("channel %+v already fetched? %+v\n", channelName, exists)
+		if exists {
+			chatroomData = data
+			return
+		}
+
+		broadcaster, broadcasterErr := user.GetUserByLogin(accessToken, channelName)
+		if broadcasterErr != nil {
+			log.Printf("[ConnectToChatroom]: An error occurred fetching the broadcaster info, aborting")
+			err = broadcasterErr
+			return
+		}
+
+
+		// fetch channel emotes
+		// TODO: move this to similar pattern as badge sets
+		var channelEmotesDone chan map[string]*AppEmote = make(chan map[string]*AppEmote)
+		var channelEmotesErr chan error = make(chan error)
+		defer func() {
+			close(channelEmotesDone)
+			close(channelEmotesErr)
+		}()
+
+		ceCtx, ceCancel := context.WithCancel(es.Ctx)
+		defer ceCancel()
+
+		var wg sync.WaitGroup
+
+		// fetch channel emotes in goroutine
+		wg.Add(1)
+		go es.goGetChannelEmotes(ceCtx, channelEmotesDone, channelEmotesErr, &wg, accessToken, broadcaster.Id)
+
+		// fetch
+		sub, fetchErr := es.fetchAndInitChatSubscription(accessToken, userId, channelName, broadcaster.Id, globalBadgeSets)
+		err = fetchErr
+		if err != nil {
+			wg.Wait()
+			return
+		}
+
+
+		chatroomData = &ChatroomData{
+			SubId: sub.SubId,
+			BroadcasterId: sub.Data.BroadcasterId,
+		}
+		select {
+		case channelEmotes := <-channelEmotesDone:
+			chatroomData.ChannelEmotes = channelEmotes
+			sub.Data.ChannelEmotes = channelEmotes
+		case err := <-channelEmotesErr:
+			log.Printf("[ConnectToChatroom]: Failed to get channel emotes\n%+v\n\n", err)
+		}
+
+		(*cs).SetSubData(sub)
+	})
+
+	return chatroomData, err
+}
+
+func (es *EventSubService) fetchAndInitChatSubscription(accessToken, userId, channelName, broadcasterId string, globalBadgeSets *[]api.ApiBadgeSet) (*ESSubscription[*ESChatSubscriptionData], error){
+	condition := map[string]string{
+		"broadcaster_user_id": broadcasterId,
+		"user_id": userId,
+	}
+	subId, err := es.CreateSubscription(accessToken, condition, CHAT_SUB_TYPE)
+	if err != nil {
+		log.Printf("[ConnectToChatroom]: ERROR: %+v\n", err)
+		return nil, err
+	}
+
+	newSub := &ESSubscription[*ESChatSubscriptionData]{
+		SubId: subId,
+		SubType: CHAT_SUB_TYPE,
+		Data: &ESChatSubscriptionData{
+			BroadcasterId: broadcasterId,
+			Channel: channelName,
+			ChannelBadgeSets: &util.SingleWriteMutex[[]api.ApiBadgeSet]{},
+			// ChannelEmotes: chatroomData.ChannelEmotes,
+			SevenTV: &ESChatSubscriptionSevenTVData{},
+		},
+	}
+
+	// fetch channel badge sets in goroutine
+	go es.goGetChannelBadgeSets(accessToken, broadcasterId, subId, globalBadgeSets)
+
+	return newSub, nil
+}
+
+func (es *EventSubService) goGetChannelBadgeSets(
+	accessToken string,
+	broadcasterId string,
+	subId string,
+	globalBadgeSets *[]api.ApiBadgeSet,
+) {
+	sub, exists := es.Client.ChatSubscriptions.Read().GetSubFromId(subId)
+	if !exists {
+		log.Printf("Subscription %v doesn't exist\n", subId)
+		return
+	}
+
+	// data already fetched
+	if sub.Data.ChannelBadgeSets.IsWritten() {
+		log.Printf("Badge sets already written")
+		return
+	}
+
+	badgeSets, err := GetChannelBadgeSets(accessToken, broadcasterId)
+	if err != nil {
+		log.Printf("ERROR: %+v", err)
+	}
+	combinedSets := CombineChannelGlobalSets(badgeSets, globalBadgeSets)
+
+	if !sub.Data.ChannelBadgeSets.Write(*combinedSets) {
+		log.Printf("Tried to write badge sets which were already written")
+	}
+}
+
+func (es *EventSubService) goGetChannelEmotes(
+	ctx context.Context, 
+	channelEmotesDone chan map[string]*AppEmote, 
+	channelEmotesErr chan error, 
+	wg *sync.WaitGroup,
+	accessToken string,
+	broadcasterId string,
+) {
+	defer wg.Done()
+	channelEmotes, err := GetChannelEmotes(accessToken, broadcasterId)
+	if err != nil {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			channelEmotesErr <- err
+			return
+		}
+	}
+	select {
+	case <-ctx.Done():
+		log.Printf("[ConnectToChatroom]: channel emote context closed")
+		return
+	default:
+		channelEmoteMap := util.ArrToMap(*channelEmotes, func(item AppEmote) (string, *AppEmote) {
+			return item.Name, &item
+		})
+		channelEmotesDone <- channelEmoteMap
+		return
+	}
+
+}
+
 func (es *EventSubService) DeleteSubscription(accessToken string, subId string) (error) {
 	res, err := api.ApiDeleteSubscriptions(accessToken, map[string][]string{
 		"id": {subId},
@@ -965,6 +1155,8 @@ func (es *EventSubService) DeleteSubscription(accessToken string, subId string) 
 		log.Printf("[DeleteSubscription]: Failed to delete subscription\n\n")
 		return &api.StatusError[any]{Res: res}
 	}
+
+	fmt.Printf("Deleted subscription %s\nres: %+v\n", subId, res)
 
 	return nil
 }
@@ -987,7 +1179,7 @@ func (es *EventSubService) DeleteAllSubscriptions(accessToken string) error {
 }
 
 func (es *EventSubService) DeleteChatSubscriptionFromSubId(accessToken, subId string) error {
-	sub, exists := es.Client.ChatSubscriptions[subId]
+	sub, exists := es.Client.ChatSubscriptions.Read().GetSubFromId(subId)
 	if !exists {
 		return nil
 	}
@@ -997,18 +1189,23 @@ func (es *EventSubService) DeleteChatSubscriptionFromSubId(accessToken, subId st
 }
 
 func (es *EventSubService) DeleteChatSubscriptionFromChannelName(accessToken, channelName string) error {
-	sub, exists := es.Client.channelNameToSubId[channelName]
+	sub, exists := es.Client.ChatSubscriptions.Read().GetSubFromChannelName(channelName)
 	if !exists {
+		log.Printf("subscription for %s doesn't exist", channelName)
 		return nil
 	}
+
+	log.Printf("deleting subscription %+v", sub)
 
 	subId := sub.SubId
 	return es.deleteChatSubscription(accessToken, subId, channelName)
 }
 
 func (es *EventSubService) deleteChatSubscription(accessToken, subId, channelName string) error {
-	delete(es.Client.ChatSubscriptions, subId)
-	delete(es.Client.channelNameToSubId, channelName)
+	es.Client.ChatSubscriptions.Update(func(cs **ChatSubscriptions) {
+		delete((*cs).fromSubId, subId)
+		delete((*cs).fromChannelName, channelName)
+	})
 
 	return es.DeleteSubscription(accessToken, subId)
 }

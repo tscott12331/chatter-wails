@@ -7,6 +7,12 @@ type MutexValue[T any] struct {
 	mutex  sync.Mutex
 }
 
+func NewMutexValue[T any](initial T) *MutexValue[T] {
+	return &MutexValue[T]{
+		value: initial,
+	}
+}
+
 func (mv *MutexValue[T]) Write(value T) {
 	mv.mutex.Lock()
 	mv.value = value
@@ -21,6 +27,11 @@ func (mv *MutexValue[T]) Read() T {
 	return value
 }
 
+func (mv *MutexValue[T]) Update(updateFunc func(*T)) {
+	mv.mutex.Lock()
+	updateFunc(&mv.value)
+	mv.mutex.Unlock()
+}
 
 
 
@@ -61,4 +72,26 @@ func (sfm *SingleWriteMutex[T]) Write(value T) bool {
 	sfm.mutex.Unlock()
 
 	return true
+}
+
+type FetchCache[K comparable, V any] struct {
+	cache MutexValue[map[K]*V]
+}
+
+func (fc *FetchCache[K, V]) Fetch(fn func() V, key K) *V {
+	var result *V
+	fc.cache.Update(func(m *map[K]*V) {
+		value, exists := (*m)[key]
+		if exists {
+			result = value
+			return
+		}
+
+		fetchRes := fn()
+
+		(*m)[key] = &fetchRes
+		result = &fetchRes
+	})
+
+	return result
 }

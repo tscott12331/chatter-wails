@@ -37,7 +37,7 @@ func (bs *BadgeService) GetGlobalBadgeSets(accessToken string) (*[]api.ApiBadgeS
 	return sets, nil
 }
 
-func (bs *BadgeService) GetChannelBadgeSets(accessToken string, broadcasterId string) (*[]api.ApiBadgeSet, error) {
+func GetChannelBadgeSets(accessToken string, broadcasterId string) (*[]api.ApiBadgeSet, error) {
 	res, err := api.ApiGetChannelBadges(accessToken, map[string][]string{
 		"broadcaster_id": {broadcasterId},
 	})

@@ -45,7 +45,7 @@ func (es *EmoteService) GetUserEmotes(access_token string) (*[]AppEmote, error) 
 	emotes := []AppEmote{}
 	tmpl := res.Body.Template
 	for _, emote := range res.Body.Data {
-		appEmote := *es.GetAppEmoteFromApiEmote(api.ApiEmote(emote), tmpl)
+		appEmote := *GetAppEmoteFromApiEmote(api.ApiEmote(emote), tmpl)
 		appEmote.Type = "user"
 		emotes = append(emotes, appEmote)
 	}
@@ -72,7 +72,7 @@ func (es *EmoteService) GetGlobalEmotes(access_token string) (*[]AppEmote, error
 	emotes := []AppEmote{}
 	tmpl := res.Body.Template
 	for _, emote := range res.Body.Data {
-		appEmote := *es.GetAppEmoteFromApiEmote(api.ApiEmote(emote), tmpl)
+		appEmote := *GetAppEmoteFromApiEmote(api.ApiEmote(emote), tmpl)
 		appEmote.Type = "global"
 		emotes = append(emotes, appEmote)
 	}
@@ -82,7 +82,7 @@ func (es *EmoteService) GetGlobalEmotes(access_token string) (*[]AppEmote, error
 	return &emotes, nil
 }
 
-func (es *EmoteService) GetChannelEmotes(access_token string, broadcaster_id string) (*[]AppEmote, error) {
+func GetChannelEmotes(access_token string, broadcaster_id string) (*[]AppEmote, error) {
 	params := map[string][]string{
 		"broadcaster_id": {broadcaster_id},
 	}
@@ -102,7 +102,7 @@ func (es *EmoteService) GetChannelEmotes(access_token string, broadcaster_id str
 	emotes := []AppEmote{}
 	tmpl := res.Body.Template
 	for _, emote := range res.Body.Data {
-		appEmote := *es.GetAppEmoteFromApiEmote(api.ApiEmote(emote), tmpl)
+		appEmote := *GetAppEmoteFromApiEmote(api.ApiEmote(emote), tmpl)
 		appEmote.Type = "channel"
 		emotes = append(emotes, appEmote)
 	}
@@ -128,7 +128,7 @@ var TMPL_SCALE_RPL = []byte("{{scale}}")
 var B_DARK_THEME = []byte("dark")
 var B_LIGHT_THEME = []byte("light")
 
-func (es *EmoteService) GetAppEmoteFromApiEmote(apiEmote api.ApiEmote, tmpl string) *AppEmote {
+func GetAppEmoteFromApiEmote(apiEmote api.ApiEmote, tmpl string) *AppEmote {
 	hasDark := slices.Contains(apiEmote.Theme_mode, "dark")
 	hasLight := slices.Contains(apiEmote.Theme_mode, "light")
 	appEmote := &AppEmote{

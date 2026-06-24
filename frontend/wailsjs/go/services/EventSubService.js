@@ -6,6 +6,10 @@ export function Connect() {
   return window['go']['services']['EventSubService']['Connect']();
 }
 
+export function CreateChatSubscription(arg1, arg2, arg3, arg4) {
+  return window['go']['services']['EventSubService']['CreateChatSubscription'](arg1, arg2, arg3, arg4);
+}
+
 export function CreateSubscription(arg1, arg2, arg3) {
   return window['go']['services']['EventSubService']['CreateSubscription'](arg1, arg2, arg3);
 }
