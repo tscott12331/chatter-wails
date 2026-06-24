@@ -1,10 +1,10 @@
 import { TUser } from "@/App";
 import { createContext, useEffect, useState } from "react";
-import { Login } from '@wailsjs/go/services/AuthService';
-import { GetGlobalBadgeSets } from "@wailsjs/go/services/BadgeService";
-import { GetGlobalEmotes, GetUserEmotes } from "@wailsjs/go/services/EmoteService";
+import { Login } from '@wailsjs/go/auth/AuthService';
+import { GetGlobalBadgeSets } from "@wailsjs/go/badge/BadgeService";
+import { GetGlobalEmotes, GetUserEmotes } from "@wailsjs/go/emote/EmoteService";
 import { IAppEmote } from "@/api/native-emote";
-import { DeleteAllSubscriptions } from "@wailsjs/go/services/EventSubService";
+import { DeleteAllSubscriptions } from "@wailsjs/go/eventsub/EventSubService";
 
 
 export interface IBadgeSet {

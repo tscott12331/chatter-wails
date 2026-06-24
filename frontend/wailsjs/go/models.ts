@@ -111,28 +111,8 @@ export namespace api {
 
 }
 
-export namespace services {
+export namespace auth {
 	
-	export class AppEmote {
-	    id: string;
-	    name: string;
-	    lightSrcSet: string;
-	    darkSrcSet: string;
-	    type: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new AppEmote(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.id = source["id"];
-	        this.name = source["name"];
-	        this.lightSrcSet = source["lightSrcSet"];
-	        this.darkSrcSet = source["darkSrcSet"];
-	        this.type = source["type"];
-	    }
-	}
 	export class AppUser {
 	    id: string;
 	    login: string;
@@ -186,10 +166,40 @@ export namespace services {
 		    return a;
 		}
 	}
+
+}
+
+export namespace emote {
+	
+	export class AppEmote {
+	    id: string;
+	    name: string;
+	    lightSrcSet: string;
+	    darkSrcSet: string;
+	    type: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new AppEmote(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.lightSrcSet = source["lightSrcSet"];
+	        this.darkSrcSet = source["darkSrcSet"];
+	        this.type = source["type"];
+	    }
+	}
+
+}
+
+export namespace eventsub {
+	
 	export class ChatroomData {
 	    subId: string;
 	    broadcasterId: string;
-	    channelEmotes: Record<string, AppEmote>;
+	    channelEmotes: Record<string, emote.AppEmote>;
 	
 	    static createFrom(source: any = {}) {
 	        return new ChatroomData(source);
@@ -199,7 +209,7 @@ export namespace services {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.subId = source["subId"];
 	        this.broadcasterId = source["broadcasterId"];
-	        this.channelEmotes = this.convertValues(source["channelEmotes"], AppEmote, true);
+	        this.channelEmotes = this.convertValues(source["channelEmotes"], emote.AppEmote, true);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

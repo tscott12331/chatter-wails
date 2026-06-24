@@ -4,7 +4,10 @@ import (
 	"chatter-wails/internal/api"
 	"chatter-wails/internal/api/seventv"
 	"chatter-wails/internal/message"
-	"chatter-wails/services"
+	"chatter-wails/services/auth"
+	"chatter-wails/services/badge"
+	"chatter-wails/services/emote"
+	"chatter-wails/services/eventsub"
 	"context"
 	"errors"
 	"log"
@@ -13,19 +16,19 @@ import (
 // App struct
 type App struct {
 	ctx context.Context
-	esService *services.EventSubService
-	emoteService *services.EmoteService
-	badgeService *services.BadgeService
-	authService *services.AuthService
+	esService *eventsub.EventSubService
+	emoteService *emote.EmoteService
+	badgeService *badge.BadgeService
+	authService *auth.AuthService
 }
 
 // NewApp creates a new App application struct
 func NewApp() *App {
 	return &App{
-		esService: services.NewEventSubService(),
-		emoteService: services.NewEmoteService(),
-		badgeService: services.NewBadgeService(),
-		authService: services.NewAuthService(),
+		esService: eventsub.NewEventSubService(),
+		emoteService: emote.NewEmoteService(),
+		badgeService: badge.NewBadgeService(),
+		authService: auth.NewAuthService(),
 	}
 }
 
@@ -48,7 +51,7 @@ func (nli *NotLoggedInError) Error() string {
 
 
 
-func (a *App) ConnectToChatroom(channelName string) (*services.ChatroomData, error) {
+func (a *App) ConnectToChatroom(channelName string) (*eventsub.ChatroomData, error) {
 	if a.authService.User == nil {
 		return nil, &NotLoggedInError{}
 	}
@@ -58,7 +61,7 @@ func (a *App) ConnectToChatroom(channelName string) (*services.ChatroomData, err
 	return a.esService.CreateChatSubscription(accessToken, a.authService.User.Id, channelName, a.badgeService.GlobalBadgeSets)
 }
 
-func (a *App) EnableSevenTV(subId string) (map[string]*services.AppEmote, error) {
+func (a *App) EnableSevenTV(subId string) (map[string]*emote.AppEmote, error) {
 	sub, subExists := a.esService.Client.ChatSubscriptions.Read().GetSubFromId(subId)
 
 	if !subExists {
@@ -98,11 +101,11 @@ func (a *App) goGetChannelBadgeSets(
 		return
 	}
 
-	badgeSets, err := services.GetChannelBadgeSets(accessToken, broadcasterId)
+	badgeSets, err := badge.GetChannelBadgeSets(accessToken, broadcasterId)
 	if err != nil {
 		log.Printf("ERROR: %+v", err)
 	}
-	combinedSets := services.CombineChannelGlobalSets(badgeSets, a.badgeService.GlobalBadgeSets)
+	combinedSets := badge.CombineChannelGlobalSets(badgeSets, a.badgeService.GlobalBadgeSets)
 
 	if !sub.Data.ChannelBadgeSets.Write(*combinedSets) {
 		log.Printf("Tried to write badge sets which were already written")

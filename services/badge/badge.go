@@ -1,4 +1,4 @@
-package services
+package badge
 
 import (
 	"chatter-wails/internal/api"
