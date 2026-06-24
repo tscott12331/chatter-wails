@@ -82,7 +82,6 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
             const newEmotes: TChatroomEmotes = {};
             Object.assign(newEmotes, curEmotes);
             newEmotes['channel'] = new Map(Object.entries(chatroomData.channelEmotes));
-            // newEmotes['seventv'] = new Map(Object.entries(chatroomData.sevenTVEmotes));
 
             return newEmotes;
         });
@@ -93,7 +92,6 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
         
         return () => {
             EventsOff(subId);
-            // DeleteChatSubscription(user.access_token, subId);
         }
     }, [chatroomData]);
 

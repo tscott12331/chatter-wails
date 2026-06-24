@@ -989,9 +989,7 @@ func (es *EventSubService) CreateChatSubscription(accessToken, userId, channelNa
 	var chatroomData *ChatroomData
 	var err error
 	es.Client.ChatSubscriptions.Update(func(cs **ChatSubscriptions) {
-		log.Printf("in update, %+v\n", *cs)
 		data, exists := (*cs).GetChatroomData(channelName)
-		log.Printf("channel %+v already fetched? %+v\n", channelName, exists)
 		if exists {
 			chatroomData = data
 			return
@@ -1004,9 +1002,7 @@ func (es *EventSubService) CreateChatSubscription(accessToken, userId, channelNa
 			return
 		}
 
-
 		// fetch channel emotes
-		// TODO: move this to similar pattern as badge sets
 		var channelEmotesDone chan map[string]*AppEmote = make(chan map[string]*AppEmote)
 		var channelEmotesErr chan error = make(chan error)
 		defer func() {
@@ -1014,7 +1010,7 @@ func (es *EventSubService) CreateChatSubscription(accessToken, userId, channelNa
 			close(channelEmotesErr)
 		}()
 
-		ceCtx, ceCancel := context.WithCancel(es.Ctx)
+		ceCtx, ceCancel := context.WithTimeout(es.Ctx, 15 * time.Second)
 		defer ceCancel()
 
 		var wg sync.WaitGroup
@@ -1030,7 +1026,6 @@ func (es *EventSubService) CreateChatSubscription(accessToken, userId, channelNa
 			wg.Wait()
 			return
 		}
-
 
 		chatroomData = &ChatroomData{
 			SubId: sub.SubId,
