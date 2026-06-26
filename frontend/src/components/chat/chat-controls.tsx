@@ -91,7 +91,9 @@ export default function ChatControls({
                     text += ' ';
                 }
 
-                text += (node as HTMLImageElement).alt;
+                if(node instanceof HTMLImageElement) {
+                    text += node.alt;
+                }
                 break;
             }
         }
