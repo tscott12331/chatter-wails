@@ -2,11 +2,10 @@ import { TChatroomEmotes } from "@/api/emote";
 import { IAppEmote } from "@/api/native-emote";
 import { getCursorPos, moveCursorTo, moveCursorToEnd } from "@/util/rte";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { preload } from "react-dom";
 import EmoteIcon from "../svg/emote-icon";
-import Tooltip from "../util/tooltip";
 import EmoteCarousel, { IEmoteCarouselData } from "./carousel";
 import { TChatMessage } from "./chat-message";
+import EmoteMenu from "./emote-menu";
 import ReplyPopup from "./reply-popup";
 
 interface IChatControlsProps {
@@ -32,6 +31,7 @@ export default function ChatControls({
     const [carouselData, setCarouselData] = useState<IEmoteCarouselData|null>(null);
 
     const messageInputRef = useRef<HTMLDivElement>(null);
+    const emotePopupRef = useRef<HTMLDivElement>(null);
 
     const handleEmoteButtonClick = (e: React.MouseEvent<HTMLButtonElement>) => {
         e.stopPropagation();
@@ -228,42 +228,22 @@ export default function ChatControls({
         moveCursorToEnd(messageInputRef.current);
     }
 
-    const filteredEmoteList = useMemo<React.ReactNode>(() => {
+    const filteredEmoteList = useMemo<TChatroomEmotes>(() => {
         const idHash: Record<string, string> = {};
 
-        const filteredArr: IAppEmote[] = [];
+        const filtered: TChatroomEmotes = {};
 
-        for(const emoteList of Object.values(emotes)) {
-            for(const emote of emoteList.values()) {
+        for(const [emoteType, emoteMap] of Object.entries(emotes)) {
+            filtered[emoteType] = new Map<string, IAppEmote>()
+            for(const [emoteName, emote] of emoteMap) {
                 if(!(emote.id in idHash)) {
                     idHash[emote.id] = emote.id;
-                    filteredArr.push(emote);
+                    filtered[emoteType].set(emoteName, emote);
                 }
             }
         }
 
-        return filteredArr.map(emote => {
-                const srcSet = emote.darkSrcSet.length > 0 ? emote.darkSrcSet : emote.lightSrcSet;
-                for(const image in srcSet.split(', ')) {
-                    preload(image, { as: "image", imageSrcSet: srcSet });
-                }
-
-                return <Tooltip
-                text={emote.name}
-                hoverTime={0}
-                key={emote.id}
-                >
-                    <div
-                        className='flex justify-center items-center cursor-pointer w-10 h-10 p-0.5 rounded-xs opacity-90 hover:bg-bg-5'
-                        onClick={() => handleEmoteSelect(emote)}
-                    >
-                        <img
-                            srcSet={srcSet}
-                        />
-                    </div>
-                </Tooltip>
-        }
-            );
+        return filtered
     }, [emotes]);
 
 
@@ -271,7 +251,8 @@ export default function ChatControls({
     useEffect(() => {
         function handleOutsideClick(e: MouseEvent) {
             if(e.target instanceof Node) {
-                if(messageInputRef.current && !messageInputRef.current.contains(e.target)) {
+                if(!messageInputRef.current?.contains(e.target)
+                   && !emotePopupRef.current?.contains(e.target)) {
                     setShouldShowEmotePopup(false);
                 }
             }
@@ -292,14 +273,12 @@ export default function ChatControls({
             <EmoteCarousel data={carouselData} />
         </div>
         }
-        {shouldShowEmotePopup &&
-        <div
-        className='w-[calc(100%-30px)] h-75 border border-outline-1 rounded-xs m-3.5 absolute left-0 bottom-full bg-bg-2/80 backdrop-blur-xs gap-1 p-1 z-600 scroller-y grid grid-cols-[repeat(auto-fill,40px)] justify-between'
-        onClick={(e: React.MouseEvent<HTMLDivElement>) => e.stopPropagation()}
-        >
-            {filteredEmoteList}
-        </div>
-        }
+        <EmoteMenu 
+            emotes={filteredEmoteList}
+            open={shouldShowEmotePopup}
+            handleEmoteSelect={handleEmoteSelect}
+            ref={emotePopupRef}
+        />
         {isReplying && replyingToMessage &&
         <div>
             <ReplyPopup
