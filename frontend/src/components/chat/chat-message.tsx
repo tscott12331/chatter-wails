@@ -67,19 +67,28 @@ export default function ChatMessage({
             case 'emote':
                 if(!fragment.emote) return fragment.text;
 
-                const srcSet = fragment.emote.darkSrcSet;
-
                 return (
                     <Tooltip
                         text={fragment.text}
                         hoverTime={0}
                         key={index}
                         >
+                        <div className="align-middle inline-grid place-items-center grid-cols-1 grid-rows-1">
                             <img
-                                className="inline"
-                                srcSet={srcSet}
+                                className="row-1 col-1"
+                                srcSet={fragment.emote.darkSrcSet.length > 0 ? fragment.emote.darkSrcSet : fragment.emote.lightSrcSet}
                                 alt={fragment.text}
                             />
+                            {
+                            fragment.emote.emoteStack?.map(e =>
+                                <img
+                                    className="row-1 col-1"
+                                    srcSet={e.darkSrcSet.length > 0 ? e.darkSrcSet : e.lightSrcSet}
+                                    alt={fragment.text}
+                                />
+                             )
+                            }
+                        </div>
                     </Tooltip>
                 );
             case 'mention':
@@ -127,7 +136,7 @@ export default function ChatMessage({
                 <p className='w-full text-text-3 text-sm ellipsis'>replying to @{message.reply.parent_user_name}: {message.reply.parent_message_body}</p>
             </Tooltip>
             }
-            <p>
+            <div>
                 {badgesToNodes(message.badges)}
                 <span
                     className="contrast-300 font-medium my-0 mr-0.5 cursor-pointer"
@@ -140,7 +149,7 @@ export default function ChatMessage({
                 </span>
                 <span>: </span>
                 {defragmentMessage(message.fragments)}
-            </p>
+            </div>
             <div
                 className='chat-controls absolute -top-1 right-5 invisible flex justify-end items-center'
             >

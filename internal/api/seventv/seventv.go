@@ -18,6 +18,8 @@ var (
 	}
 )
 
+const SEVENTV_ZERO_WIDTH = 1 << 8
+
 func constructUserEndpointURL(platform string, platform_id string) *url.URL {
 	var endpoint url.URL
 	endpoint.Scheme = USER_ENDPOINT.Scheme
@@ -178,6 +180,7 @@ func GetAppEmotesFromSevenTVUserRes(res *ApiGetSevenTVUserRes) map[string]*emote
 			LightSrcSet: srcSet,
 			DarkSrcSet: srcSet,
 			Type: "seventv",
+			ZeroWidth: stvEmote.Data.Flags & SEVENTV_ZERO_WIDTH != 0,
 		}
 
 		appEmotes[appEmote.Name] = &appEmote
