@@ -4,4 +4,6 @@ export interface IAppEmote {
 	lightSrcSet: string
 	darkSrcSet: string
     type: "global" | "user" | "channel"
+    zeroWidth: boolean;
+    emoteStack?: IAppEmote[];
 }

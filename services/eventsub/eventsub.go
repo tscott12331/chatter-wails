@@ -128,10 +128,9 @@ func parseTextFragmentEmotes(cmf *ESChatMessageFragment, emoteMap map[string]*em
 		i = nextIndex
 		sb.WriteString(spaces)
 
-		nextIndex, word, emote := parseWord(text, i, emoteMap)
+		nextIndex, word, appEmote := parseWord(text, i, emoteMap)
 		i = nextIndex
-
-		if emote == nil {
+		if appEmote == nil {
 			sb.WriteString(word)
 		} else {
 			textFragment := &AppChatMessageFragment{
@@ -142,11 +141,13 @@ func parseTextFragmentEmotes(cmf *ESChatMessageFragment, emoteMap map[string]*em
 				Mention: cmf.Mention,
 			}
 
+			i, appEmote.EmoteStack = parseZeroWidthEmotes(text, i, emoteMap)
+
 			emoteFragment := &AppChatMessageFragment{
 				Fragment_type: "emote",
 				Text: word,
 				Cheermote: cmf.Cheermote,
-				Emote: emote,
+				Emote: appEmote,
 				Mention: cmf.Mention,
 			}
 
@@ -172,7 +173,27 @@ func parseTextFragmentEmotes(cmf *ESChatMessageFragment, emoteMap map[string]*em
 }
 
 
+func parseZeroWidthEmotes(text string, i int, emoteMap map[string]*emote.AppEmote) (int, []*emote.AppEmote){
+	emotes := []*emote.AppEmote{}
 
+	indexAfterLast := i
+	nextIndex, _ := consumeWhitespace(text, indexAfterLast)
+
+	for {
+		ni, _, emote := parseWord(text, nextIndex, emoteMap)
+		if emote == nil || !emote.ZeroWidth {
+			break
+		}
+
+		emotes = append(emotes, emote)
+		indexAfterLast = ni
+		nextIndex, _ = consumeWhitespace(text, indexAfterLast)
+
+		if nextIndex >= len(text) { break }
+	}
+
+	return indexAfterLast, emotes
+}
 
 
 type ESChatSubscriptionSevenTVData struct{
@@ -404,114 +425,6 @@ func (c *Client) handleESMessage(message []byte) {
 	}
 
 }
-
-// readPump pumps messages from the websocket connection to the hub.
-//
-// The application runs readPump in a per-connection goroutine. The application
-// ensures that there is at most one reader on a connection by executing all
-// reads from this goroutine.
-// func (c *Client) readPump(ctx context.Context) {
-// 	log.Printf("[readPump]: Started read goroutine for eventsub\n\n")
-// 	defer func() {
-// 		log.Printf("[readPump]: Setting ready to false\n\n")
-// 		c.ready <- false
-// 	}()
-//
-// 	// c.conn.SetReadLimit(maxMessageSize)
-// 	c.conn.SetReadDeadline(time.Now().Add(pongWait))
-// 	c.conn.SetPongHandler(func(string) error { c.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
-// 	for {
-// 		select {
-// 		case <-ctx.Done():
-// 			log.Printf("[readPump]: Context canceled, closing\n\n")
-// 			return
-// 		default:
-// 			_, message, err := c.conn.ReadMessage()
-// 			if err != nil {
-// 				if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-// 					log.Printf("[readPump]: unexpected close, %v\n\n", err)
-// 				} else {
-// 					log.Printf("[readPump]: expected close, %v\n\n", err)
-// 				}
-// 				return
-// 			}
-// 			message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
-//
-// 			c.handleESMessage(message)
-// 		}
-// 	}
-// }
-
-// writePump pumps messages from the hub to the websocket connection.
-//
-// A goroutine running writePump is started for each connection. The
-// application ensures that there is at most one writer to a connection by
-// executing all writes from this goroutine.
-// func (c *Client) writePump(ctx context.Context) {
-// 	log.Printf("[writePump]: Started write goroutine for eventsub\n\n")
-// 	ticker := time.NewTicker(pingPeriod)
-// 	defer func() {
-// 		log.Printf("[writePump]: Closing connection\n\n")
-// 		ticker.Stop()
-// 		c.conn.Close()
-// 	}()
-//
-// 	ready := c.ready
-// 	for {
-// 		select {
-// 		case message, ok := <-c.send:
-// 			log.Printf("[writePump]: Attempting to write message to eventsub\n\n")
-// 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
-// 			if !ok {
-// 				// The hub closed the channel.
-// 				log.Printf("[writePump]: Message channel was closed, aborting\n\n")
-// 				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
-// 				return
-// 			}
-//
-// 			w, err := c.conn.NextWriter(websocket.TextMessage)
-// 			if err != nil {
-// 				log.Printf("[writePump]: An error occurred creating the message writer, aborting\n\n")
-// 				return
-// 			}
-// 			w.Write(message)
-// 			log.Printf("[writePump]: Added message to write: %s\n\n", message)
-//
-// 			// Add queued chat messages to the current websocket message.
-// 			n := len(c.send)
-// 			for range n {
-// 				queued_message := <-c.send
-// 				log.Printf("[writePump]: Added queued message to write: %s\n\n", queued_message)
-// 				w.Write(newline)
-// 				w.Write(queued_message)
-// 			}
-//
-// 			if err := w.Close(); err != nil {
-// 				log.Printf("[writePump]: An error occurred sending the message, aborting\n\n")
-// 				return
-// 			}
-// 		case <-ticker.C:
-// 			log.Printf("[writePump]: Attempting to send ping message\n\n")
-// 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
-// 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
-// 				log.Printf("[writePump]: An error occurred sending ping message, aborting\n\n")
-// 				return
-// 			}
-// 		case <-c.done:
-// 			log.Printf("[writePump]: Connection has been closed, closing\n\n")
-// 			return
-// 		case r := <-ready:
-// 			if !r {
-// 				log.Printf("[writePump]: Ready is false, closing\n\n")
-// 				return
-// 			}
-// 		case <-ctx.Done():
-// 			log.Printf("[writePump]: Context canceled, closing\n\n")
-// 			return
-// 		}
-// 	}
-// }
-
 
 type CastError struct {}
 func (ce *CastError) Error() string {

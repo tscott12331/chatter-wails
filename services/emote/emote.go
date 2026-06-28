@@ -118,6 +118,8 @@ type AppEmote struct{
 	DarkSrcSet string		`json:"darkSrcSet"`
 	// 'global' | 'user' | 'channel' | 'seventv'
 	Type string				`json:"type"`
+	ZeroWidth bool			`json:"zeroWidth"`
+	EmoteStack []*AppEmote  `json:"emoteStack"`
 }
 
 var TMPL_ID_RPL = []byte("{{id}}")
