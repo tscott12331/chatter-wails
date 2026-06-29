@@ -4,9 +4,14 @@ import { TUser } from "@/App";
 import { TChatMessage } from "@/components/chat/chat-message";
 
 import { ConnectToChatroom, EnableSevenTV, SendChatMessage } from '@wailsjs/go/main/App'
-import { EventsOn, EventsOff } from "@wailsjs/runtime/runtime";
+import { EventsOn, EventsOff, EventsEmit } from "@wailsjs/runtime/runtime";
 
 import { useEffect, useState } from "react";
+
+interface IChatOpenData {
+    channel: string;
+    open: boolean;
+}
 
 interface IChatroomData {
     subId: string|null;
@@ -89,9 +94,24 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
         setChatMessages([]);
 
         EventsOn(subId, appendChatMessage);
+        if(channel) {
+            const chatOpenData: IChatOpenData = {
+                channel,
+                open: true
+            }
+            EventsEmit("chatopen",  chatOpenData);
+        }
         
         return () => {
             EventsOff(subId);
+
+            if(channel) {
+                const chatOpenData: IChatOpenData = {
+                    channel,
+                    open: false,
+                }
+                EventsEmit("chatopen",  chatOpenData);
+            }
         }
     }, [chatroomData]);
 

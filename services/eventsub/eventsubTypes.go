@@ -17,7 +17,6 @@ type ESBadge struct {
 }
 
 
-
 type AppChatMessageFragment struct{
 	Fragment_type string							`json:"type"`
 	Text string										`json:"text"`
