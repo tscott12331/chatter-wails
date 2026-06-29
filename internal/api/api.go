@@ -89,6 +89,12 @@ var (
 		Host: "api.twitch.tv",
 		Path: "/helix/chat/emotes/global",
 	}
+
+	STREAMS_ENDPOINT = url.URL{
+		Scheme: "https",
+		Host: "api.twitch.tv",
+		Path: "/helix/streams",
+	}
 )
 
 var CLIENT_ID string
@@ -110,6 +116,8 @@ var apiMessagesHeaders = apiHeaders;
 var apiBadgesHeaders = apiHeaders;
 
 var apiEmotesHeaders = apiHeaders;
+
+var apiStreamsHeaders = apiHeaders;
 
 func apiValidateHeaders(access_token string) *http.Header {
     return &http.Header{
@@ -584,6 +592,38 @@ func ApiGetChannelEmotes(
     return ApiGet[ApiGetChannelEmotesRes](
 		EMOTES_ENDPOINT,
 		apiEmotesHeaders(access_token),
+		params,
+	)
+}
+
+type ApiStream struct{
+	Id string		`json:"id"`
+	User_id string		`json:"user_id"`
+	User_login string		`json:"user_login"`
+	User_name string		`json:"user_name"`
+	Game_id string		`json:"game_id"`
+	Game_name string		`json:"game_name"`
+	Type string		`json:"type"`
+	Title string		`json:"title"`
+	Tags []string
+	Viewer_count int		`json:"viewer_count"`
+	Started_at string		`json:"started_at"`
+	Language string		`json:"language"`
+	Thumbnail_url string		`json:"thumbnail_url"`
+}
+
+type ApiGetStreamsRes struct{
+	Data []ApiStream				`json:"data"`
+	Pagination ApiPagination	`json:"pagination"`
+}
+
+func ApiGetStreams(
+	access_token string,
+	params map[string][]string,
+	) (*ApiResponse[ApiGetStreamsRes], error) {
+	return ApiGet[ApiGetStreamsRes](
+		STREAMS_ENDPOINT,
+		apiStreamsHeaders(access_token),
 		params,
 	)
 }

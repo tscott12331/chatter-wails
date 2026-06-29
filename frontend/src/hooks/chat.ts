@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 
 interface IChatOpenData {
     channel: string;
+    accessToken: string;
     open: boolean;
 }
 
@@ -97,6 +98,7 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
         if(channel) {
             const chatOpenData: IChatOpenData = {
                 channel,
+                accessToken: user.access_token,
                 open: true
             }
             EventsEmit("chatopen",  chatOpenData);
@@ -108,6 +110,7 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
             if(channel) {
                 const chatOpenData: IChatOpenData = {
                     channel,
+                    accessToken: user.access_token,
                     open: false,
                 }
                 EventsEmit("chatopen",  chatOpenData);
