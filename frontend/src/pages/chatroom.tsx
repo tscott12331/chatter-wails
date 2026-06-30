@@ -31,7 +31,9 @@ export default function Chatroom({
                          user,
                          maxMessages: MAX_MESSAGES,
                          emoteRecord: {
+                            // @ts-ignore
                              global: listToMap(globalEmotes, 'name'),
+                            // @ts-ignore
                              user: listToMap(userEmotes, 'name'),
                          }
                     });

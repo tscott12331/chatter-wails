@@ -11,10 +11,13 @@ import (
 	"context"
 	"errors"
 	"log"
+
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
-// App struct
-type App struct {
+// AppService struct
+type AppService struct {
+	app *application.App
 	ctx context.Context
 	esService *eventsub.EventSubService
 	emoteService *emote.EmoteService
@@ -22,19 +25,20 @@ type App struct {
 	authService *auth.AuthService
 }
 
-// NewApp creates a new App application struct
-func NewApp() *App {
-	return &App{
-		esService: eventsub.NewEventSubService(),
-		emoteService: emote.NewEmoteService(),
-		badgeService: badge.NewBadgeService(),
-		authService: auth.NewAuthService(),
+// NewAppService creates a new App application struct
+func NewAppService(app *application.App) *AppService {
+	return &AppService{
+		app: app,
+		esService: eventsub.NewEventSubService(app),
+		emoteService: emote.NewEmoteService(app),
+		badgeService: badge.NewBadgeService(app),
+		authService: auth.NewAuthService(app),
 	}
 }
 
 // startup is called when the app starts. The context is saved
 // so we can call the runtime methods
-func (a *App) startup(ctx context.Context) {
+func (a *AppService) ServiceStartup(ctx context.Context, options application.ServiceOptions) error {
 	a.ctx = ctx
 	a.esService.Ctx = ctx
 	a.emoteService.Ctx = ctx
@@ -42,6 +46,8 @@ func (a *App) startup(ctx context.Context) {
 	a.authService.Ctx = ctx
 
 	go a.esService.Connect()
+
+	return nil
 }
 
 type NotLoggedInError struct{}
@@ -51,7 +57,7 @@ func (nli *NotLoggedInError) Error() string {
 
 
 
-func (a *App) ConnectToChatroom(channelName string) (*eventsub.ChatroomData, error) {
+func (a *AppService) ConnectToChatroom(channelName string) (*eventsub.ChatroomData, error) {
 	if a.authService.User == nil {
 		return nil, &NotLoggedInError{}
 	}
@@ -61,7 +67,7 @@ func (a *App) ConnectToChatroom(channelName string) (*eventsub.ChatroomData, err
 	return a.esService.CreateChatSubscription(accessToken, a.authService.User.Id, channelName, a.badgeService.GlobalBadgeSets)
 }
 
-func (a *App) EnableSevenTV(subId string) (map[string]*emote.AppEmote, error) {
+func (a *AppService) EnableSevenTV(subId string) (map[string]*emote.AppEmote, error) {
 	sub, subExists := a.esService.Client.ChatSubscriptions.Read().GetSubFromId(subId)
 
 	if !subExists {
@@ -84,7 +90,7 @@ func (a *App) EnableSevenTV(subId string) (map[string]*emote.AppEmote, error) {
 	return emotes, nil
 }
 
-func (a *App) goGetChannelBadgeSets(
+func (a *AppService) goGetChannelBadgeSets(
 	accessToken string,
 	broadcasterId string,
 	subId string,
@@ -112,7 +118,7 @@ func (a *App) goGetChannelBadgeSets(
 	}
 }
 
-func (a *App) SendChatMessage(chatSubId string, messageContent string, replyId *string) (*api.ApiPostMessagesData, error) {
+func (a *AppService) SendChatMessage(chatSubId string, messageContent string, replyId *string) (*api.ApiPostMessagesData, error) {
 	user := a.authService.User
 	if user == nil {
 		log.Printf("[SendChatMessage]: User not logged int, cannot send message, aborting\n\n")
@@ -134,6 +140,6 @@ func (a *App) SendChatMessage(chatSubId string, messageContent string, replyId *
 	return res, nil
 }
 
-func (a *App) DisconnectFromChatroom(channelName string) error {
+func (a *AppService) DisconnectFromChatroom(channelName string) error {
 	return a.esService.DeleteChatSubscriptionFromChannelName(a.authService.User.Access_token, channelName)
 }

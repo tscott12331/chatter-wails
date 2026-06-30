@@ -3,9 +3,7 @@ package main
 import (
 	"embed"
 
-	"github.com/wailsapp/wails/v2"
-	"github.com/wailsapp/wails/v2/pkg/options"
-	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 //go:embed all:frontend/dist
@@ -13,28 +11,40 @@ var assets embed.FS
 
 func main() {
 	// Create an instance of the app structure
-	app := NewApp()
-
 	// Create application with options
-	err := wails.Run(&options.App{
-		Title:  "chatter-wails",
-		Width:  1024,
-		Height: 768,
-		AssetServer: &assetserver.Options{
-			Assets: assets,
-		},
-		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
-		OnStartup:        app.startup,
-		Bind: []interface{}{
-			app,
-			app.esService,
-			app.emoteService,
-			app.badgeService,
-			app.authService,
+	app := application.New(application.Options{
+		Name: "Chatter",
+		Assets: application.AssetOptions{
+			Handler: application.AssetFileServerFS(assets),
 		},
 	})
 
+	appServiceRaw := NewAppService(app)
+
+	appService := application.NewService(appServiceRaw)
+	esService := application.NewService(appServiceRaw.esService)
+	emoteService := application.NewService(appServiceRaw.emoteService)
+	badgeService := application.NewService(appServiceRaw.badgeService)
+	authService := application.NewService(appServiceRaw.authService)
+
+	app.RegisterService(appService)
+	app.RegisterService(esService)
+	app.RegisterService(emoteService)
+	app.RegisterService(badgeService)
+	app.RegisterService(authService)
+
+
+	app.Window.NewWithOptions(application.WebviewWindowOptions{
+		Title:  "chatter-wails",
+		Width:  1024,
+		Height: 768,
+		BackgroundColour: application.NewRGBA(27, 38, 54, 1),
+		BackgroundType: application.BackgroundTypeSolid,
+	})
+
+	err := app.Run()
+
 	if err != nil {
-		println("Error:", err.Error())
+		println("ERROR:", err.Error())
 	}
 }

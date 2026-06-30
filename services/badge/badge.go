@@ -5,16 +5,19 @@ import (
 	"context"
 	"log"
 	"slices"
+
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 type BadgeService struct {
+	app *application.App
 	Ctx context.Context
 
 	GlobalBadgeSets *[]api.ApiBadgeSet
 }
 
-func NewBadgeService() *BadgeService {
-	return &BadgeService{}
+func NewBadgeService(app *application.App) *BadgeService {
+	return &BadgeService{app: app}
 }
 
 

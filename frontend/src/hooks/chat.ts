@@ -4,8 +4,8 @@ import { TUser } from "@/App";
 import { TChatMessage } from "@/components/chat/chat-message";
 import { IViewcountData } from "@/components/chat/viewcount";
 
-import { ConnectToChatroom, EnableSevenTV, SendChatMessage } from '@wailsjs/go/main/App'
-import { EventsOn, EventsOff, EventsEmit } from "@wailsjs/runtime/runtime";
+import { ConnectToChatroom, EnableSevenTV, SendChatMessage } from '@wailsjs/chatter-wails/appservice';
+import { Events } from "@wailsio/runtime";
 
 import { useEffect, useState } from "react";
 
@@ -70,6 +70,7 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
         if(!channel) return;
 
         ConnectToChatroom(channel)
+            // @ts-ignore
             .then(d => setChatroomData(d))
             .catch(err => console.error(err));
     }, [channel, user]);
@@ -82,6 +83,7 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
         EnableSevenTV(subId).then(e => setEmotes(curEmotes => {
             const newEmotes: TChatroomEmotes = {};
             Object.assign(newEmotes, curEmotes);
+            // @ts-ignore
             newEmotes['seventv'] = new Map(Object.entries(e));
 
             return newEmotes;
@@ -97,31 +99,31 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
 
         setChatMessages([]);
 
-        EventsOn(subId, appendChatMessage);
+        Events.On(subId, (d) => appendChatMessage(d.data));
         const viewcountEventName = `viewcount:${channel?.toLowerCase()}`;
         if(channel) {
-            EventsOn(viewcountEventName, setViewcountData);
+            Events.On(viewcountEventName, (d) => setViewcountData(d.data));
 
             const chatOpenData: IChatOpenData = {
                 channel,
                 accessToken: user.access_token,
                 open: true
             }
-            EventsEmit("chatopen",  chatOpenData);
+            Events.Emit("chatopen",  chatOpenData);
         }
 
         
         return () => {
-            EventsOff(subId);
+            Events.Off(subId);
             if(channel) {
-                EventsOff(viewcountEventName);
+                Events.Off(viewcountEventName);
 
                 const chatOpenData: IChatOpenData = {
                     channel,
                     accessToken: user.access_token,
                     open: false,
                 }
-                EventsEmit("chatopen",  chatOpenData);
+                Events.Emit("chatopen",  chatOpenData);
 
             }
         }
