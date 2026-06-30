@@ -8,6 +8,7 @@ import useChat from '@/hooks/chat';
 import { GlobalContext } from '@/contexts/global-context';
 import ChatControls from '@/components/chat/chat-controls';
 import { listToMap } from '@/util/map';
+import Viewcount from '@/components/chat/viewcount';
 
 interface IChatroomProps {
 }
@@ -25,7 +26,7 @@ export default function Chatroom({
     const { channel } = useParams();
 
     const MAX_MESSAGES = 200;
-    const { chatMessages, sendChatMessage, emotes } = useChat({
+    const { chatMessages, sendChatMessage, emotes, viewcountData } = useChat({
                          channel,
                          user,
                          maxMessages: MAX_MESSAGES,
@@ -128,6 +129,11 @@ export default function Chatroom({
                 onShowUserPopup={showUserPopup}
                 onReplyClosed={handleChatReplyClose}
             />
+            <div className="absolute right-5 top-2.5 z-4999">
+                <Viewcount 
+                    viewcountData={viewcountData}
+                />
+            </div>
             {shouldShowUserPopup &&
             <UserPopup
                 user={curPopupUser}

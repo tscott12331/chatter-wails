@@ -310,22 +310,46 @@ func (c *Client) ToggleChatSubscriptionFromChannelName(accessToken, channel stri
 
 const CHAT_SUB_POLL_DURATION = 30 * time.Second
 func pollChatSubscription(ctx context.Context, accessToken, channel string) {
-	log.Printf("STARTED POLL FOR %s", channel)
 	ticker := time.NewTicker(CHAT_SUB_POLL_DURATION)
+
+	// poll initial data
+	pollViewcount(ctx, accessToken, channel)
 	for {
 		select {
 		case <-ctx.Done():
-			log.Printf("STOP POLLING %s", channel)
 			return
 		case <-ticker.C:
-			log.Printf("POLL SUBSCRIPTION %s", channel)
-			res, _ := api.ApiGetStreams(accessToken, map[string][]string{
-				"user_login": {channel},
-				"first": {"1"},
-			})
-			fmt.Printf("streams: %+v\n\n", res)
+			pollViewcount(ctx, accessToken, channel)
 		}
 	}
+}
+
+
+type ViewcountData struct{
+	Live bool			`json:"live"`
+	ViewCount int		`json:"viewCount"`
+}
+
+func pollViewcount(ctx context.Context, accessToken, channel string) {
+	res, err := api.ApiGetStreams(accessToken, map[string][]string{
+		"user_login": {channel},
+		"first": {"1"},
+	})
+	if err != nil {
+		log.Printf("ERROR: recieved while polling viewcount %v", err)
+		return
+	}
+
+	var viewCountData ViewcountData
+	if len(res.Body.Data) > 0 {
+		streamData := res.Body.Data[0]
+		viewCountData = ViewcountData{
+			Live: streamData.Type == "live",
+			ViewCount: streamData.Viewer_count,
+		}
+	}
+
+	runtime.EventsEmit(ctx, fmt.Sprintf("viewcount:%s", channel), viewCountData)
 }
 
 type ChatroomData struct{

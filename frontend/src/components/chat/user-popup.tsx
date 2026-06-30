@@ -61,7 +61,7 @@ export default function UserPopup({
     }, []);
 
     return (
-        <div className='absolute w-75 h-100 bg-bg-09/80 backdrop-blur-xs rounded-sm z-2000'
+        <div className='absolute w-75 h-100 bg-bg-09/80 backdrop-blur-xs rounded-sm z-5000'
             style={{
                 left: `${pos.x}px`,
                 top: `${pos.y}px`,
