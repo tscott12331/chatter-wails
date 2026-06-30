@@ -39,6 +39,7 @@ func main() {
 		Width:  1024,
 		Height: 768,
 		BackgroundColour: application.NewRGBA(27, 38, 54, 1),
+		BackgroundType: application.BackgroundTypeSolid,
 	})
 
 	err := app.Run()
