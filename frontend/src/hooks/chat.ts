@@ -2,11 +2,18 @@ import { TChatroomEmotes } from "@/api/emote";
 import { IAppEmote } from "@/api/native-emote";
 import { TUser } from "@/App";
 import { TChatMessage } from "@/components/chat/chat-message";
+import { IViewcountData } from "@/components/chat/viewcount";
 
 import { ConnectToChatroom, EnableSevenTV, SendChatMessage } from '@wailsjs/go/main/App'
-import { EventsOn, EventsOff } from "@wailsjs/runtime/runtime";
+import { EventsOn, EventsOff, EventsEmit } from "@wailsjs/runtime/runtime";
 
 import { useEffect, useState } from "react";
+
+interface IChatOpenData {
+    channel: string;
+    accessToken: string;
+    open: boolean;
+}
 
 interface IChatroomData {
     subId: string|null;
@@ -30,6 +37,8 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
     })
 
     const [emotes, setEmotes] = useState<TChatroomEmotes>(emoteRecord);
+
+    const [viewcountData, setViewcountData] = useState<IViewcountData>({live: false, viewCount: 0});
     
 
     const appendChatMessage = (message: TChatMessage) => {
@@ -89,11 +98,34 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
         setChatMessages([]);
 
         EventsOn(subId, appendChatMessage);
+        const viewcountEventName = `viewcount:${channel?.toLowerCase()}`;
+        if(channel) {
+            EventsOn(viewcountEventName, setViewcountData);
+
+            const chatOpenData: IChatOpenData = {
+                channel,
+                accessToken: user.access_token,
+                open: true
+            }
+            EventsEmit("chatopen",  chatOpenData);
+        }
+
         
         return () => {
             EventsOff(subId);
+            if(channel) {
+                EventsOff(viewcountEventName);
+
+                const chatOpenData: IChatOpenData = {
+                    channel,
+                    accessToken: user.access_token,
+                    open: false,
+                }
+                EventsEmit("chatopen",  chatOpenData);
+
+            }
         }
     }, [chatroomData]);
 
-    return { chatMessages, sendChatMessage, emotes }
+    return { chatMessages, sendChatMessage, emotes, viewcountData }
 }

@@ -17,8 +17,8 @@ import (
 	"chatter-wails/internal/user"
 	"chatter-wails/internal/util"
 
-	"chatter-wails/services/emote"
 	"chatter-wails/services/badge"
+	"chatter-wails/services/emote"
 )
 
 const (
@@ -202,6 +202,9 @@ type ESChatSubscriptionSevenTVData struct{
 }
 
 type ESChatSubscriptionData struct{
+	ChatOpen bool
+	PollCancel context.CancelFunc
+
 	BroadcasterId string
 	Channel string
 	ChannelBadgeSets *util.SingleWriteMutex[[]api.ApiBadgeSet]
@@ -284,6 +287,71 @@ func (c *Client) AddChatSubscription(data *ESSubscription[*ESChatSubscriptionDat
 	})
 }
 
+func (c *Client) ToggleChatSubscriptionFromChannelName(accessToken, channel string, open bool) {
+	c.ChatSubscriptions.Update(func(cs **ChatSubscriptions) {
+		sub, exists := (*cs).GetSubFromChannelName(channel)
+		if !exists { return }
+
+		if sub.Data.PollCancel != nil {
+			sub.Data.PollCancel()
+		}
+
+		if open && !sub.Data.ChatOpen {
+			pollCxt, pollCancel := context.WithCancel(c.ctx)
+
+			go pollChatSubscription(pollCxt, accessToken, channel)
+
+			sub.Data.PollCancel = pollCancel
+		}
+
+		sub.Data.ChatOpen = open
+	})
+}
+
+const CHAT_SUB_POLL_DURATION = 30 * time.Second
+func pollChatSubscription(ctx context.Context, accessToken, channel string) {
+	ticker := time.NewTicker(CHAT_SUB_POLL_DURATION)
+
+	// poll initial data
+	pollViewcount(ctx, accessToken, channel)
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			pollViewcount(ctx, accessToken, channel)
+		}
+	}
+}
+
+
+type ViewcountData struct{
+	Live bool			`json:"live"`
+	ViewCount int		`json:"viewCount"`
+}
+
+func pollViewcount(ctx context.Context, accessToken, channel string) {
+	res, err := api.ApiGetStreams(accessToken, map[string][]string{
+		"user_login": {channel},
+		"first": {"1"},
+	})
+	if err != nil {
+		log.Printf("ERROR: recieved while polling viewcount %v", err)
+		return
+	}
+
+	var viewCountData ViewcountData
+	if len(res.Body.Data) > 0 {
+		streamData := res.Body.Data[0]
+		viewCountData = ViewcountData{
+			Live: streamData.Type == "live",
+			ViewCount: streamData.Viewer_count,
+		}
+	}
+
+	runtime.EventsEmit(ctx, fmt.Sprintf("viewcount:%s", channel), viewCountData)
+}
+
 type ChatroomData struct{
 	SubId string					`json:"subId"`
 	BroadcasterId string			`json:"broadcasterId"`
@@ -311,6 +379,56 @@ func NewEventSubService() *EventSubService {
 	return es
 }
 
+func (es *EventSubService) handleChatOpenEvent(data ...any) {
+	if len(data) == 0 { return }
+
+	chatOpenData, castOk := (data[0]).(map[string]any)
+	if !castOk {
+		log.Printf("ERROR: failed to cast chat open event data\nData: %+v", data[0])
+		return
+	}
+
+	
+	accessTokenAny, exists := chatOpenData["accessToken"]
+	if !exists { 
+		log.Printf("ERROR: access token field doesn't exists on incoming ChatOpenData\nData: %+v", data[0])
+		return 
+	}
+
+	accessToken, castOk := accessTokenAny.(string)
+	if !castOk {
+		log.Printf("ERROR: failed to cast channel field on channel open data\nData: %+v", data[0])
+		return
+	}
+
+	channelAny, exists := chatOpenData["channel"]
+	if !exists { 
+		log.Printf("ERROR: channel field doesn't exists on incoming ChatOpenData\nData: %+v", data[0])
+		return 
+	}
+
+	channel, castOk := channelAny.(string)
+	if !castOk {
+		log.Printf("ERROR: failed to cast channel field on channel open data\nData: %+v", data[0])
+		return
+	}
+
+	openAny, exists := chatOpenData["open"]
+	if !exists {
+		log.Printf("ERROR: open field doesn't exist on incoming ChatOpenData\nData: %+v", data[0])
+		return
+	}
+
+	open, castOk := openAny.(bool)
+	if !castOk {
+		log.Printf("ERROR: failed to cast open field on channel open data\nData: %+v", data[0])
+		return
+	}
+
+
+	es.Client.ToggleChatSubscriptionFromChannelName(accessToken, channel, open)
+}
+
 func (es *EventSubService) Connect() {
 	ready := es.Client.ready
 
@@ -330,6 +448,7 @@ func (es *EventSubService) Connect() {
 				if !es.Client.connected {
 					log.Printf("[Connect]: Connecting to eventsub web server\n\n")
 					var err error
+					runtime.EventsOn(esCtx, "chatopen", es.handleChatOpenEvent)
 					es.Client.socket, err = util.NewSocket(esCtx, twitchESURL.String(), es.Client.handleESMessage)
 					if err != nil {
 						log.Fatal(err.Error())
@@ -342,6 +461,7 @@ func (es *EventSubService) Connect() {
 			} else {
 				log.Printf("[Connect]: Ready is false, setting connected to false\n\n")
 				es.Client.connected = false
+				runtime.EventsOff(esCtx, "chatopen")
 			}
 
 		case id := <-newSessionIdChan:
@@ -354,6 +474,7 @@ func (es *EventSubService) Connect() {
 		case <-es.Ctx.Done():
 			log.Printf("[Connect]: Parent context cancelled, aborting\n\n")
 			es.Client.connected = false
+			runtime.EventsOff(esCtx, "chatopen")
 			return
 		case <-esCtx.Done():
 			es.Client.ready <- false
@@ -376,7 +497,7 @@ func (c *Client) handleESNotification(message ESMessage) {
 		subId := notification.Payload.Subscription.Id
 
 		sub, ok := c.ChatSubscriptions.Read().GetSubFromId(subId)
-		if !ok {
+		if !ok || !sub.Data.ChatOpen {
 			return
 		}
 
@@ -538,8 +659,6 @@ func (es *EventSubService) DeleteSubscription(accessToken string, subId string) 
 		return &api.StatusError[any]{Res: res}
 	}
 
-	fmt.Printf("Deleted subscription %s\nres: %+v\n", subId, res)
-
 	return nil
 }
 
@@ -573,11 +692,8 @@ func (es *EventSubService) DeleteChatSubscriptionFromSubId(accessToken, subId st
 func (es *EventSubService) DeleteChatSubscriptionFromChannelName(accessToken, channelName string) error {
 	sub, exists := es.Client.ChatSubscriptions.Read().GetSubFromChannelName(channelName)
 	if !exists {
-		log.Printf("subscription for %s doesn't exist", channelName)
 		return nil
 	}
-
-	log.Printf("deleting subscription %+v", sub)
 
 	subId := sub.SubId
 	return es.deleteChatSubscription(accessToken, subId, channelName)
@@ -585,6 +701,9 @@ func (es *EventSubService) DeleteChatSubscriptionFromChannelName(accessToken, ch
 
 func (es *EventSubService) deleteChatSubscription(accessToken, subId, channelName string) error {
 	es.Client.ChatSubscriptions.Update(func(cs **ChatSubscriptions) {
+		pollCancel := (*cs).fromSubId[subId].Data.PollCancel
+		if pollCancel != nil { pollCancel() }
+
 		delete((*cs).fromSubId, subId)
 		delete((*cs).fromChannelName, channelName)
 	})
