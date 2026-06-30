@@ -1,4 +1,4 @@
-import { TQueryParamRecord } from "@renderer/api/api";
+import { TQueryParamRecord } from "@api/api";
 
 export type TParamReturn = Record<string, string|string[]|boolean>;
 

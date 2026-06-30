@@ -1,10 +1,11 @@
 import { TUser } from "@/App";
 import { createContext, useEffect, useState } from "react";
-import { Login } from '@wailsjs/go/auth/AuthService';
-import { GetGlobalBadgeSets } from "@wailsjs/go/badge/BadgeService";
-import { GetGlobalEmotes, GetUserEmotes } from "@wailsjs/go/emote/EmoteService";
 import { IAppEmote } from "@/api/native-emote";
-import { DeleteAllSubscriptions } from "@wailsjs/go/eventsub/EventSubService";
+
+import { Login } from "@wailsjs/chatter-wails/services/auth/authservice";
+import { GetGlobalBadgeSets } from "@wailsjs/chatter-wails/services/badge/badgeservice";
+import { GetGlobalEmotes, GetUserEmotes } from "@wailsjs/chatter-wails/services/emote/emoteservice";
+import { DeleteAllSubscriptions } from "@wailsjs/chatter-wails/services/eventsub/eventsubservice";
 
 
 export interface IBadgeSet {
@@ -70,16 +71,19 @@ export function GlobalContextProvider({
     const initData = (accessToken: string) => {
         if(globalBadgeSets.length === 0) {
             GetGlobalBadgeSets(accessToken)
+                // @ts-ignore
                 .then(gbs => setGlobalBadgeSets(gbs))
                 .catch(e => console.error(e));
         }
         if(globalEmotes.length === 0) {
             GetGlobalEmotes(accessToken)
+                // @ts-ignore
                 .then(ge => setGlobalEmotes(ge))
                 .catch(e => console.error(e));
         }
         if(userEmotes.length === 0) {
             GetUserEmotes(accessToken)
+                // @ts-ignore
                 .then(ue => setUserEmotes(ue))
                 .catch(e => console.error(e));
         }

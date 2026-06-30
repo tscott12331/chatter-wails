@@ -1,6 +1,6 @@
 import { useContext } from 'react';
 import { GlobalContext } from '@/contexts/global-context';
-import { BrowserOpenURL } from '@wailsjs/runtime/runtime'
+import { Browser } from '@wailsio/runtime'
 
 interface IHomePageProps {
 }
@@ -37,7 +37,7 @@ export default function HomePage({
                 <h1 className="w-1/2 text-center">
                     <a 
                     className="underline text-blue-200 cursor-pointer"
-                    onClick={() => BrowserOpenURL(authURL)}
+                    onClick={() => Browser.OpenURL(authURL)}
                     >
                         Connect to twitch</a> to get your access token
                 </h1>

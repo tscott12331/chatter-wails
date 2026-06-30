@@ -8,6 +8,8 @@ import (
 	"log"
 	"sync"
 	"time"
+
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 type AppUser struct {
@@ -26,6 +28,8 @@ type AppUser struct {
 }
 
 type AuthService struct {
+	app *application.App
+
 	Ctx context.Context
 	User *AppUser
 
@@ -34,8 +38,9 @@ type AuthService struct {
 	validationMutex sync.Mutex
 }
 
-func NewAuthService() *AuthService {
+func NewAuthService(app *application.App) *AuthService {
 	return &AuthService{
+		app: app,
 		cancelValidation: make(chan struct{}),
 	}
 }

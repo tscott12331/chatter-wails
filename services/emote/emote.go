@@ -9,16 +9,19 @@ import (
 	"log"
 	"slices"
 	"strings"
+
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 type EmoteService struct {
+	app *application.App
 	Ctx context.Context
 	GlobalEmotes *[]AppEmote
 	UserEmotes *[]AppEmote
 }
 
-func NewEmoteService() *EmoteService {
-	return &EmoteService{}
+func NewEmoteService(app *application.App) *EmoteService {
+	return &EmoteService{app: app}
 }
 
 func (es *EmoteService) GetUserEmotes(access_token string) (*[]AppEmote, error) {
