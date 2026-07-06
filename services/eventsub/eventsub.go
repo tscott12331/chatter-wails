@@ -314,13 +314,13 @@ func (c *Client) pollChatSubscription(ctx context.Context, accessToken, channel 
 	ticker := time.NewTicker(CHAT_SUB_POLL_DURATION)
 
 	// poll initial data
-	c.pollViewcount(ctx, accessToken, channel)
+	c.pollViewcount(accessToken, channel)
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			c.pollViewcount(ctx, accessToken, channel)
+			c.pollViewcount(accessToken, channel)
 		}
 	}
 }
@@ -331,7 +331,7 @@ type ViewcountData struct{
 	ViewCount int		`json:"viewCount"`
 }
 
-func (c *Client) pollViewcount(ctx context.Context, accessToken, channel string) {
+func (c *Client) pollViewcount(accessToken, channel string) {
 	res, err := api.ApiGetStreams(accessToken, map[string][]string{
 		"user_login": {channel},
 		"first": {"1"},
@@ -730,7 +730,7 @@ func (es *EventSubService) CreateChatSubscription(accessToken, userId, channelNa
 
 		broadcaster, broadcasterErr := user.GetUserByLogin(accessToken, channelName)
 		if broadcasterErr != nil {
-			log.Printf("[ConnectToChatroom]: An error occurred fetching the broadcaster info, aborting")
+			log.Printf("[CreateChatSubscription]: An error occurred fetching the broadcaster info, aborting")
 			err = broadcasterErr
 			return
 		}
@@ -769,7 +769,7 @@ func (es *EventSubService) CreateChatSubscription(accessToken, userId, channelNa
 			chatroomData.ChannelEmotes = channelEmotes
 			sub.Data.ChannelEmotes = channelEmotes
 		case err := <-channelEmotesErr:
-			log.Printf("[ConnectToChatroom]: Failed to get channel emotes\n%+v\n\n", err)
+			log.Printf("[CreateChatSubscription]: Failed to get channel emotes\n%+v\n\n", err)
 		}
 
 		(*cs).SetSubData(sub)
