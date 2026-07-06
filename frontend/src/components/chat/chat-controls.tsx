@@ -1,5 +1,4 @@
 import { TChatroomEmotes } from "@/api/emote";
-import { IAppEmote } from "@/api/native-emote";
 import { getCursorPos, moveCursorTo, moveCursorToEnd } from "@/util/rte";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import EmoteIcon from "../svg/emote-icon";
@@ -7,6 +6,7 @@ import EmoteCarousel, { IEmoteCarouselData } from "./carousel";
 import { TChatMessage } from "./chat-message";
 import EmoteMenu from "./emote-menu";
 import ReplyPopup from "./reply-popup";
+import { AppEmote } from "@wailsjs/chatter-wails/services/emote";
 
 interface IChatControlsProps {
     isReplying: boolean;
@@ -102,8 +102,8 @@ export default function ChatControls({
     }
 
     // TODO: change emoteMap structure to trie to improve lookup on completion
-    function getEmoteMatches(potentialEmote: string): IAppEmote[] {
-        const matches: IAppEmote[] = [];
+    function getEmoteMatches(potentialEmote: string): AppEmote[] {
+        const matches: AppEmote[] = [];
         for(const emoteMap of Object.values(emotes)) {
             for(const [emoteName, emote] of emoteMap) {
                 if(emoteName.toLowerCase().startsWith(potentialEmote.toLowerCase())) {
@@ -144,7 +144,7 @@ export default function ChatControls({
 
     interface CompletionOpts {
         node: ChildNode;
-        match: IAppEmote;
+        match: AppEmote;
         cursorOffset: number;
         wordStart: number;
         wordEnd: number;
@@ -169,7 +169,7 @@ export default function ChatControls({
         const { word: potentialEmote, wordStart, wordEnd }  = getWordFromCursorPos(text, cursorOffset);
         if(potentialEmote.length === 0) return 0;
 
-        let matches: IAppEmote[] = [];
+        let matches: AppEmote[] = [];
         let index = 0;
 
         if(carouselData === null) {
@@ -208,7 +208,7 @@ export default function ChatControls({
         return 0;
     }
 
-    function handleEmoteSelect(emote: IAppEmote) {
+    function handleEmoteSelect(emote: AppEmote) {
         if(!messageInputRef.current) return;
 
         const childNodes = messageInputRef.current.childNodes;
@@ -236,7 +236,7 @@ export default function ChatControls({
         const filtered: TChatroomEmotes = {};
 
         for(const [emoteType, emoteMap] of Object.entries(emotes)) {
-            filtered[emoteType] = new Map<string, IAppEmote>()
+            filtered[emoteType] = new Map<string, AppEmote>()
             for(const [emoteName, emote] of emoteMap) {
                 if(!(emote.id in idHash)) {
                     idHash[emote.id] = emote.id;

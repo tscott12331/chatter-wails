@@ -1,11 +1,11 @@
 import { TUser } from "@/App";
 import { createContext, useEffect, useState } from "react";
-import { IAppEmote } from "@/api/native-emote";
 
 import { Login } from "@wailsjs/chatter-wails/services/auth/authservice";
 import { GetGlobalBadgeSets } from "@wailsjs/chatter-wails/services/badge/badgeservice";
 import { GetGlobalEmotes, GetUserEmotes } from "@wailsjs/chatter-wails/services/emote/emoteservice";
 import { DeleteAllSubscriptions } from "@wailsjs/chatter-wails/services/eventsub/eventsubservice";
+import { AppEmote } from "@wailsjs/chatter-wails/services/emote";
 
 
 export interface IBadgeSet {
@@ -25,8 +25,8 @@ export interface IBadgeSet {
 interface IGlobalContext {
     user: TUser|null;
     globalBadgeSets: IBadgeSet[];
-    globalEmotes: IAppEmote[];
-    userEmotes: IAppEmote[];
+    globalEmotes: AppEmote[];
+    userEmotes: AppEmote[];
     submitAccessToken?: (accessToken: string) => Promise<boolean>;
 }
 
@@ -37,8 +37,8 @@ export function GlobalContextProvider({
 }: { children: React.ReactNode }) {
     const [user, setUser] = useState<TUser|null>(null);
     const [globalBadgeSets, setGlobalBadgeSets] = useState<IBadgeSet[]>([]);
-    const [globalEmotes, setGlobalEmotes] = useState<IAppEmote[]>([]);
-    const [userEmotes, setUserEmotes] = useState<IAppEmote[]>([]);
+    const [globalEmotes, setGlobalEmotes] = useState<AppEmote[]>([]);
+    const [userEmotes, setUserEmotes] = useState<AppEmote[]>([]);
 
     const submitAccessToken = async (accessToken: string) => {
         try {

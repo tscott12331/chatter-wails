@@ -1,5 +1,4 @@
 import { TChatroomEmotes } from "@/api/emote";
-import { IAppEmote } from "@/api/native-emote";
 import { TUser } from "@/App";
 import { TChatMessage } from "@/components/chat/chat-message";
 import { IViewcountData } from "@/components/chat/viewcount";
@@ -8,6 +7,7 @@ import { ConnectToChatroom, EnableSevenTV, SendChatMessage } from '@wailsjs/chat
 import { Events } from "@wailsio/runtime";
 
 import { useEffect, useState } from "react";
+import { AppEmote } from "@wailsjs/chatter-wails/services/emote";
 
 interface IChatOpenData {
     channel: string;
@@ -18,7 +18,7 @@ interface IChatOpenData {
 interface IChatroomData {
     subId: string|null;
     broadcasterId: string|null;
-    channelEmotes: Record<string, IAppEmote>;
+    channelEmotes: Record<string, AppEmote>;
 }
 
 export default function useChat({ channel, user, emoteRecord, maxMessages = 200 }: {
