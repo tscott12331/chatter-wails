@@ -1,5 +1,4 @@
 import { TChatroomEmotes } from "@/api/emote";
-import { TUser } from "@/App";
 import { TChatMessage } from "@/components/chat/chat-message";
 import { IViewcountData } from "@/components/chat/viewcount";
 
@@ -7,7 +6,8 @@ import { ConnectToChatroom, EnableSevenTV, SendChatMessage } from '@wailsjs/chat
 import { Events } from "@wailsio/runtime";
 
 import { useEffect, useState } from "react";
-import { AppEmote } from "@wailsjs/chatter-wails/services/emote";
+import { AppUser } from "@wailsjs/chatter-wails/services/auth";
+import { ChatroomData } from "@wailsjs/chatter-wails/services/eventsub";
 
 interface IChatOpenData {
     channel: string;
@@ -15,26 +15,16 @@ interface IChatOpenData {
     open: boolean;
 }
 
-interface IChatroomData {
-    subId: string|null;
-    broadcasterId: string|null;
-    channelEmotes: Record<string, AppEmote>;
-}
-
 export default function useChat({ channel, user, emoteRecord, maxMessages = 200 }: {
     channel: string|undefined,
-    user: TUser,
+    user: AppUser,
     emoteRecord: TChatroomEmotes,
     maxMessages?: number,
 }) {
 
     const [chatMessages, setChatMessages] = useState<TChatMessage[]>([]);
 
-    const [chatroomData, setChatroomData] = useState<IChatroomData>({
-        subId: null,
-        broadcasterId: null,
-        channelEmotes: {},
-    })
+    const [chatroomData, setChatroomData] = useState<ChatroomData>();
 
     const [emotes, setEmotes] = useState<TChatroomEmotes>(emoteRecord);
 
@@ -53,7 +43,7 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
     }
 
     const sendChatMessage = async (message: string, replyId?: string) => {
-        if(!chatroomData.subId) return false;
+        if(!chatroomData) return false;
         const trimmed = message.trim();
         if(trimmed.length === 0 || !chatroomData.broadcasterId) return false;
 
@@ -70,20 +60,18 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
         if(!channel) return;
 
         ConnectToChatroom(channel)
-            // @ts-ignore
             .then(d => setChatroomData(d))
             .catch(err => console.error(err));
     }, [channel, user]);
 
     useEffect(() => {
+        if(!chatroomData) return;
         const subId = chatroomData.subId;
-        if(!subId) return;
 
         // TODO: make optional?
         EnableSevenTV(subId).then(e => setEmotes(curEmotes => {
             const newEmotes: TChatroomEmotes = {};
             Object.assign(newEmotes, curEmotes);
-            // @ts-ignore
             newEmotes['seventv'] = new Map(Object.entries(e));
 
             return newEmotes;
