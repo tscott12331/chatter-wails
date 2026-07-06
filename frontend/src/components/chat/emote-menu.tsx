@@ -1,13 +1,13 @@
 import { TChatroomEmotes } from "@/api/emote"
-import { IAppEmote } from "@/api/native-emote";
 import { useEffect, useState } from "react";
 import { preload } from "react-dom";
 import Tooltip from "../util/tooltip";
+import { AppEmote } from "@wailsjs/chatter-wails/services/emote";
 
 interface IEmoteMenuProps {
     emotes: TChatroomEmotes;
     open: boolean;
-    handleEmoteSelect: (emote: IAppEmote) => void;
+    handleEmoteSelect: (emote: AppEmote) => void;
     ref?: React.Ref<HTMLDivElement>;
 }
 

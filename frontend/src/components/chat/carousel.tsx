@@ -1,8 +1,8 @@
-import { IAppEmote } from "@/api/native-emote";
+import { AppEmote } from "@wailsjs/chatter-wails/services/emote";
 import Tooltip from "../util/tooltip";
 
 export interface IEmoteCarouselData { 
-    emotes: IAppEmote[]; 
+    emotes: AppEmote[]; 
     index: number 
 }
 
@@ -13,7 +13,7 @@ interface IEmoteCarouselProps {
 export default function EmoteCarousel({
     data
 }: IEmoteCarouselProps) {
-    let trio: IAppEmote[] = [];
+    let trio: AppEmote[] = [];
     let highlightIndex = 0;
     if(data.emotes.length < 3) {
         trio.push(data.emotes[data.index]);

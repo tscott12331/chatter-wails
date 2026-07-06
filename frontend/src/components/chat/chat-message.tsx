@@ -1,6 +1,6 @@
-import { IAppEmote } from '@api/native-emote';
 import ReplyIcon from '@components/svg/reply-icon';
 import Tooltip from '@components/util/tooltip';
+import { AppEmote } from '@wailsjs/chatter-wails/services/emote';
 import React from 'react';
 
 export interface IChatMessageFragment {
@@ -11,7 +11,7 @@ export interface IChatMessageFragment {
         bits: number;
         tier: number;
     }|null;
-    emote: IAppEmote|null;
+    emote: AppEmote|null;
     mention: {
         user_id: string;
         user_name: string;

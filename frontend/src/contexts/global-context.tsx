@@ -1,32 +1,19 @@
-import { TUser } from "@/App";
 import { createContext, useEffect, useState } from "react";
-import { IAppEmote } from "@/api/native-emote";
 
 import { Login } from "@wailsjs/chatter-wails/services/auth/authservice";
 import { GetGlobalBadgeSets } from "@wailsjs/chatter-wails/services/badge/badgeservice";
 import { GetGlobalEmotes, GetUserEmotes } from "@wailsjs/chatter-wails/services/emote/emoteservice";
 import { DeleteAllSubscriptions } from "@wailsjs/chatter-wails/services/eventsub/eventsubservice";
+import { AppEmote } from "@wailsjs/chatter-wails/services/emote";
+import { AppUser } from "@wailsjs/chatter-wails/services/auth";
+import { ApiBadgeSet } from "@wailsjs/chatter-wails/internal/api";
 
-
-export interface IBadgeSet {
-    set_id: string;
-    versions: {
-        id: string;
-        image_url_1x: string;
-        image_url_2x: string;
-        image_url_4x: string;
-        title: string;
-        description: string;
-        click_action: string|null;
-        click_url: string|null;
-    }[];
-}
 
 interface IGlobalContext {
-    user: TUser|null;
-    globalBadgeSets: IBadgeSet[];
-    globalEmotes: IAppEmote[];
-    userEmotes: IAppEmote[];
+    user: AppUser|null;
+    globalBadgeSets: ApiBadgeSet[];
+    globalEmotes: AppEmote[];
+    userEmotes: AppEmote[];
     submitAccessToken?: (accessToken: string) => Promise<boolean>;
 }
 
@@ -35,10 +22,10 @@ export const GlobalContext = createContext<IGlobalContext>({ user: null, globalB
 export function GlobalContextProvider({
     children
 }: { children: React.ReactNode }) {
-    const [user, setUser] = useState<TUser|null>(null);
-    const [globalBadgeSets, setGlobalBadgeSets] = useState<IBadgeSet[]>([]);
-    const [globalEmotes, setGlobalEmotes] = useState<IAppEmote[]>([]);
-    const [userEmotes, setUserEmotes] = useState<IAppEmote[]>([]);
+    const [user, setUser] = useState<AppUser|null>(null);
+    const [globalBadgeSets, setGlobalBadgeSets] = useState<ApiBadgeSet[]>([]);
+    const [globalEmotes, setGlobalEmotes] = useState<AppEmote[]>([]);
+    const [userEmotes, setUserEmotes] = useState<AppEmote[]>([]);
 
     const submitAccessToken = async (accessToken: string) => {
         try {
@@ -71,19 +58,16 @@ export function GlobalContextProvider({
     const initData = (accessToken: string) => {
         if(globalBadgeSets.length === 0) {
             GetGlobalBadgeSets(accessToken)
-                // @ts-ignore
                 .then(gbs => setGlobalBadgeSets(gbs))
                 .catch(e => console.error(e));
         }
         if(globalEmotes.length === 0) {
             GetGlobalEmotes(accessToken)
-                // @ts-ignore
                 .then(ge => setGlobalEmotes(ge))
                 .catch(e => console.error(e));
         }
         if(userEmotes.length === 0) {
             GetUserEmotes(accessToken)
-                // @ts-ignore
                 .then(ue => setUserEmotes(ue))
                 .catch(e => console.error(e));
         }
