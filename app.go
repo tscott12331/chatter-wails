@@ -3,7 +3,6 @@ package main
 import (
 	"chatter-wails/internal/api"
 	"chatter-wails/internal/api/seventv"
-	"chatter-wails/internal/message"
 	"chatter-wails/services/auth"
 	"chatter-wails/services/badge"
 	"chatter-wails/services/emote"
@@ -67,8 +66,8 @@ func (a *AppService) ConnectToChatroom(channelName string) (*eventsub.ChatroomDa
 	return a.esService.CreateChatSubscription(accessToken, a.authService.User.Id, channelName, a.badgeService.GlobalBadgeSets)
 }
 
-func (a *AppService) EnableSevenTV(subId string) (map[string]*emote.AppEmote, error) {
-	sub, subExists := a.esService.Client.ChatSubscriptions.Read().GetSubFromId(subId)
+func (a *AppService) EnableSevenTV(channelName string) (map[string]*emote.AppEmote, error) {
+	sub, subExists := a.esService.Client.ChatSubscriptions.Read().GetSubFromChannelName(channelName)
 
 	if !subExists {
 		return nil, errors.New("Cannot enable 7tv on nonexistent chat subscription")
@@ -118,26 +117,14 @@ func (a *AppService) goGetChannelBadgeSets(
 	}
 }
 
-func (a *AppService) SendChatMessage(chatSubId string, messageContent string, replyId *string) (*api.ApiPostMessagesData, error) {
+func (a *AppService) SendChatMessage(channelName string, messageContent string, replyId *string) (*api.ApiPostMessagesData, error) {
 	user := a.authService.User
 	if user == nil {
 		log.Printf("[SendChatMessage]: User not logged int, cannot send message, aborting\n\n")
 		return nil, &NotLoggedInError{}
 	}
 
-	subData, ok := a.esService.Client.ChatSubscriptions.Read().GetSubFromId(chatSubId)
-	if !ok {
-		log.Printf("[SendChatMessage]: Failed to find chat subscription data, aborting\n\n")
-		return nil, errors.New("Failed to find chat subscription data")
-	}
-
-	res, err := message.SendMessage(user.Id, user.Access_token, subData.Data.BroadcasterId, messageContent, replyId)
-	if err != nil {
-		log.Printf("[SendChatMessage]: An error occurred sending the chat message, aborting\n%+v\n\n", err)
-		return nil, err
-	}
-
-	return res, nil
+	return a.esService.SendChatMessageFromChannelName(user.Access_token, user.Id, channelName, messageContent, replyId)
 }
 
 func (a *AppService) DisconnectFromChatroom(channelName string) error {

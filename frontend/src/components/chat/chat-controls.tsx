@@ -3,14 +3,14 @@ import { getCursorPos, moveCursorTo, moveCursorToEnd } from "@/util/rte";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import EmoteIcon from "../svg/emote-icon";
 import EmoteCarousel, { IEmoteCarouselData } from "./carousel";
-import { TChatMessage } from "./chat-message";
 import EmoteMenu from "./emote-menu";
 import ReplyPopup from "./reply-popup";
 import { AppEmote } from "@wailsjs/chatter-wails/services/emote";
+import { ESChatMessage } from "@wailsjs/chatter-wails/services/eventsub";
 
 interface IChatControlsProps {
     isReplying: boolean;
-    replyingToMessage: TChatMessage|undefined;
+    replyingToMessage: ESChatMessage|undefined;
     emotes: TChatroomEmotes;
     getChatterColor: (username: string) => string;
     onSendMessage: (message: string) => Promise<boolean>;

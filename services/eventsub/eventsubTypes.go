@@ -76,6 +76,7 @@ type ESMessageReply struct{
 type ESChatMessage struct{
 	Id string							`json:"id"`
 	Username string						`json:"username"`
+	Channel string						`json:"channel"`
 	Text string							`json:"text"`
 	Fragments []*AppChatMessageFragment	`json:"fragments"`
 	Color string						`json:"color"`
@@ -320,6 +321,7 @@ func esNotificationToEsChatMessage(notification *ESNotification, chatSubscriptio
 	return &ESChatMessage{
 		Id: notification.Payload.Event.Message_id,
 		Username: notification.Payload.Event.Chatter_user_name,
+		Channel: notification.Payload.Event.Broadcaster_user_login,
 		Text: notification.Payload.Event.Message.Text,
 		Fragments: fragments,
 		Color: notification.Payload.Event.Color,

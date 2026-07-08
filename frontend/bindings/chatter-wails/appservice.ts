@@ -28,10 +28,10 @@ export function DisconnectFromChatroom(channelName: string): $CancellablePromise
     return $Call.ByID(3340004225, channelName);
 }
 
-export function EnableSevenTV(subId: string): $CancellablePromise<{ [_ in string]?: emote$0.AppEmote | null } | null> {
-    return $Call.ByID(1975072532, subId);
+export function EnableSevenTV(channelName: string): $CancellablePromise<{ [_ in string]?: emote$0.AppEmote | null } | null> {
+    return $Call.ByID(1975072532, channelName);
 }
 
-export function SendChatMessage(chatSubId: string, messageContent: string, replyId: string | null): $CancellablePromise<api$0.ApiPostMessagesData | null> {
-    return $Call.ByID(2462501357, chatSubId, messageContent, replyId);
+export function SendChatMessage(channelName: string, messageContent: string, replyId: string | null): $CancellablePromise<api$0.ApiPostMessagesData | null> {
+    return $Call.ByID(2462501357, channelName, messageContent, replyId);
 }

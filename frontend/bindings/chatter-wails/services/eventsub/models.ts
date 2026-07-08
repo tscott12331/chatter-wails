@@ -5,10 +5,60 @@
 // @ts-ignore: Unused imports
 import * as emote$0 from "../emote/models.js";
 
+export interface AppChatMessageFragment {
+    "type": string;
+    "text": string;
+    "cheermote"?: {"prefix": string, "bits": number, "tier": number} | null;
+    "emote": emote$0.AppEmote | null;
+    "mention"?: {"user_id": string, "user_name": string, "user_login": string} | null;
+}
+
+export interface ChatOpenData {
+    "channel": string;
+    "accessToken": string;
+    "open": boolean;
+}
+
 export interface ChatroomData {
     "subId": string;
     "broadcasterId": string;
     "channelEmotes": { [_ in string]?: emote$0.AppEmote | null } | null;
 }
 
+export interface ESChatMessage {
+    "id": string;
+    "username": string;
+    "channel": string;
+    "text": string;
+    "fragments": (AppChatMessageFragment | null)[] | null;
+    "color": string;
+    "badges": ESMessageBadge[] | null;
+    "reply"?: ESMessageReply | null;
+}
+
+export interface ESMessageBadge {
+    "srcSet": string;
+    "info": string;
+    "title": string;
+}
+
+export interface ESMessageReply {
+    "parent_message_body": string;
+    "parent_message_id": string;
+    "parent_user_id": string;
+    "parent_user_login": string;
+    "parent_user_name": string;
+    "thread_message_id": string;
+    "thread_user_id": string;
+    "thread_user_login": string;
+    "thread_user_name": string;
+}
+
 export type ESSubscriptionCondition = { [_ in string]?: string } | null;
+
+export interface StreamData {
+    "channel": string;
+    "live": boolean;
+    "viewCount": number;
+    "title": string;
+}

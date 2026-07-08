@@ -3,7 +3,7 @@ package eventsub
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"log"
 	"net/url"
 	"strings"
@@ -12,6 +12,7 @@ import (
 	"unicode"
 
 	"chatter-wails/internal/api"
+	"chatter-wails/internal/message"
 	"chatter-wails/internal/user"
 	"chatter-wails/internal/util"
 
@@ -288,24 +289,24 @@ func (c *Client) AddChatSubscription(data *ESSubscription[*ESChatSubscriptionDat
 	})
 }
 
-func (c *Client) ToggleChatSubscriptionFromChannelName(accessToken, channel string, open bool) {
+func (c *Client) ToggleChatSubscriptionFromChannelName(data *ChatOpenData) {
 	c.ChatSubscriptions.Update(func(cs **ChatSubscriptions) {
-		sub, exists := (*cs).GetSubFromChannelName(channel)
+		sub, exists := (*cs).GetSubFromChannelName(data.Channel)
 		if !exists { return }
 
 		if sub.Data.PollCancel != nil {
 			sub.Data.PollCancel()
 		}
 
-		if open && !sub.Data.ChatOpen {
+		if data.Open && !sub.Data.ChatOpen {
 			pollCxt, pollCancel := context.WithCancel(c.ctx)
 
-			go c.pollChatSubscription(pollCxt, accessToken, channel)
+			go c.pollChatSubscription(pollCxt, data.AccessToken, data.Channel)
 
 			sub.Data.PollCancel = pollCancel
 		}
 
-		sub.Data.ChatOpen = open
+		sub.Data.ChatOpen = data.Open
 	})
 }
 
@@ -314,24 +315,25 @@ func (c *Client) pollChatSubscription(ctx context.Context, accessToken, channel 
 	ticker := time.NewTicker(CHAT_SUB_POLL_DURATION)
 
 	// poll initial data
-	c.pollViewcount(accessToken, channel)
+	c.pollStreamData(accessToken, channel)
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			c.pollViewcount(accessToken, channel)
+			c.pollStreamData(accessToken, channel)
 		}
 	}
 }
 
-
-type ViewcountData struct{
+type StreamData struct{
+	Channel string 		`json:"channel"`
 	Live bool			`json:"live"`
 	ViewCount int		`json:"viewCount"`
+	Title string		`json:"title"`
 }
 
-func (c *Client) pollViewcount(accessToken, channel string) {
+func (c *Client) pollStreamData(accessToken, channel string) {
 	res, err := api.ApiGetStreams(accessToken, map[string][]string{
 		"user_login": {channel},
 		"first": {"1"},
@@ -341,16 +343,18 @@ func (c *Client) pollViewcount(accessToken, channel string) {
 		return
 	}
 
-	var viewCountData ViewcountData
+	var viewCountData StreamData
 	if len(res.Body.Data) > 0 {
 		streamData := res.Body.Data[0]
-		viewCountData = ViewcountData{
+		viewCountData = StreamData{
+			Channel: channel,
 			Live: streamData.Type == "live",
 			ViewCount: streamData.Viewer_count,
+			Title: streamData.Title,
 		}
 	}
 
-	c.app.Event.Emit(fmt.Sprintf("viewcount:%s", channel), viewCountData)
+	c.app.Event.Emit("common:stream-data", viewCountData)
 }
 
 type ChatroomData struct{
@@ -383,54 +387,64 @@ func NewEventSubService(app *application.App) *EventSubService {
 	return es
 }
 
+type ChatOpenData struct{
+	Channel string		`json:"channel"`
+	AccessToken string 	`json:"accessToken"`
+	Open bool			`json:"open"`
+}
+
 func (es *EventSubService) handleChatOpenEvent(event *application.CustomEvent) {
-	data := event.Data
-
-	chatOpenData, castOk := (data).(map[string]any)
-	if !castOk {
-		log.Printf("ERROR: failed to cast chat open event data\nData: %+v", data)
+	data, ok := event.Data.(ChatOpenData)
+	if !ok {
+		log.Printf("ERROR: failed to cast chat open data\nData: %+v\n", data)
 		return
 	}
 
-	
-	accessTokenAny, exists := chatOpenData["accessToken"]
-	if !exists { 
-		log.Printf("ERROR: access token field doesn't exists on incoming ChatOpenData\nData: %+v", data)
-		return 
-	}
+	// chatOpenData, castOk := (data).(map[string]any)
+	// if !castOk {
+	// 	log.Printf("ERROR: failed to cast chat open event data\nData: %+v", data)
+	// 	return
+	// }
+	//
+	//
+	// accessTokenAny, exists := chatOpenData["accessToken"]
+	// if !exists { 
+	// 	log.Printf("ERROR: access token field doesn't exists on incoming ChatOpenData\nData: %+v", data)
+	// 	return 
+	// }
+	//
+	// accessToken, castOk := accessTokenAny.(string)
+	// if !castOk {
+	// 	log.Printf("ERROR: failed to cast channel field on channel open data\nData: %+v", data)
+	// 	return
+	// }
+	//
+	// channelAny, exists := chatOpenData["channel"]
+	// if !exists { 
+	// 	log.Printf("ERROR: channel field doesn't exists on incoming ChatOpenData\nData: %+v", data)
+	// 	return 
+	// }
+	//
+	// channel, castOk := channelAny.(string)
+	// if !castOk {
+	// 	log.Printf("ERROR: failed to cast channel field on channel open data\nData: %+v", data)
+	// 	return
+	// }
+	//
+	// openAny, exists := chatOpenData["open"]
+	// if !exists {
+	// 	log.Printf("ERROR: open field doesn't exist on incoming ChatOpenData\nData: %+v", data)
+	// 	return
+	// }
+	//
+	// open, castOk := openAny.(bool)
+	// if !castOk {
+	// 	log.Printf("ERROR: failed to cast open field on channel open data\nData: %+v", data)
+	// 	return
+	// }
 
-	accessToken, castOk := accessTokenAny.(string)
-	if !castOk {
-		log.Printf("ERROR: failed to cast channel field on channel open data\nData: %+v", data)
-		return
-	}
 
-	channelAny, exists := chatOpenData["channel"]
-	if !exists { 
-		log.Printf("ERROR: channel field doesn't exists on incoming ChatOpenData\nData: %+v", data)
-		return 
-	}
-
-	channel, castOk := channelAny.(string)
-	if !castOk {
-		log.Printf("ERROR: failed to cast channel field on channel open data\nData: %+v", data)
-		return
-	}
-
-	openAny, exists := chatOpenData["open"]
-	if !exists {
-		log.Printf("ERROR: open field doesn't exist on incoming ChatOpenData\nData: %+v", data)
-		return
-	}
-
-	open, castOk := openAny.(bool)
-	if !castOk {
-		log.Printf("ERROR: failed to cast open field on channel open data\nData: %+v", data)
-		return
-	}
-
-
-	es.Client.ToggleChatSubscriptionFromChannelName(accessToken, channel, open)
+	es.Client.ToggleChatSubscriptionFromChannelName(&data)
 }
 
 func (es *EventSubService) Connect() {
@@ -452,7 +466,7 @@ func (es *EventSubService) Connect() {
 				if !es.Client.connected {
 					log.Printf("[Connect]: Connecting to eventsub web server\n\n")
 					var err error
-					es.app.Event.On("chatopen", es.handleChatOpenEvent)
+					es.app.Event.On("common:chat-open", es.handleChatOpenEvent)
 					es.Client.socket, err = util.NewSocket(esCtx, twitchESURL.String(), es.Client.handleESMessage)
 					if err != nil {
 						log.Fatal(err.Error())
@@ -465,7 +479,7 @@ func (es *EventSubService) Connect() {
 			} else {
 				log.Printf("[Connect]: Ready is false, setting connected to false\n\n")
 				es.Client.connected = false
-				es.app.Event.Off("chatopen")
+				es.app.Event.Off("common:chat-open")
 			}
 
 		case id := <-newSessionIdChan:
@@ -506,7 +520,7 @@ func (c *Client) handleESNotification(message ESMessage) {
 		}
 
 		chatMessage := esNotificationToEsChatMessage(notification, sub.Data)
-		c.app.Event.Emit(notification.Payload.Subscription.Id, chatMessage)
+		c.app.Event.Emit("common:chat-message", chatMessage)
 	}
 }
 
@@ -715,10 +729,25 @@ func (es *EventSubService) deleteChatSubscription(accessToken, subId, channelNam
 	return es.DeleteSubscription(accessToken, subId)
 }
 
+func (es *EventSubService) SendChatMessageFromChannelName(accessToken, userId, channelName string, messageContent string, replyId *string) (*api.ApiPostMessagesData, error) {
+	subData, ok := es.Client.ChatSubscriptions.Read().GetSubFromChannelName(channelName)
+	if !ok {
+		log.Printf("[SendChatMessage]: Failed to find chat subscription data, aborting\n\n")
+		return nil, errors.New("Failed to find chat subscription data")
+	}
+
+	res, err := message.SendMessage(userId, accessToken, subData.Data.BroadcasterId, messageContent, replyId)
+	if err != nil {
+		log.Printf("[SendChatMessage]: An error occurred sending the chat message, aborting\n%+v\n\n", err)
+		return nil, err
+	}
+
+	return res, nil
+}
+
 
 
 func (es *EventSubService) CreateChatSubscription(accessToken, userId, channelName string, globalBadgeSets *[]api.ApiBadgeSet) (*ChatroomData, error) {
-	// maybe this could return (sub, exists, fetching)
 	var chatroomData *ChatroomData
 	var err error
 	es.Client.ChatSubscriptions.Update(func(cs **ChatSubscriptions) {

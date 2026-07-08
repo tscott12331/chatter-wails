@@ -1,6 +1,7 @@
 package main
 
 import (
+	"chatter-wails/services/eventsub"
 	"embed"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -10,6 +11,11 @@ import (
 var assets embed.FS
 
 func main() {
+	// Register events
+	application.RegisterEvent[*eventsub.ESChatMessage]("common:chat-message")
+	application.RegisterEvent[eventsub.StreamData]("common:stream-data")
+	application.RegisterEvent[eventsub.ChatOpenData]("common:chat-open")
+
 	// Create an instance of the app structure
 	// Create application with options
 	app := application.New(application.Options{
