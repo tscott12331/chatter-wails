@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from 'react-router-dom';
-import ChatMessage, { TChatMessage } from '@components/chat/chat-message';
+import ChatMessage from '@components/chat/chat-message';
 import { useContext, useState } from 'react';
 import AutoScroller from '@components/util/auto-scroller';
 import JumpToRecentPopup from '@components/chat/jump-to-recent-popup';
@@ -8,7 +8,8 @@ import useChat from '@/hooks/chat';
 import { GlobalContext } from '@/contexts/global-context';
 import ChatControls from '@/components/chat/chat-controls';
 import { listToMap } from '@/util/map';
-import Viewcount from '@/components/chat/viewcount';
+import StreamDataIsland from '@/components/chat/stream-data-island';
+import { ESChatMessage } from '@wailsjs/chatter-wails/services/eventsub';
 
 interface IChatroomProps {
 }
@@ -26,7 +27,7 @@ export default function Chatroom({
     const { channel } = useParams();
 
     const MAX_MESSAGES = 200;
-    const { chatMessages, sendChatMessage, emotes, viewcountData } = useChat({
+    const { chatMessages, sendChatMessage, emotes, streamData } = useChat({
                          channel,
                          user,
                          maxMessages: MAX_MESSAGES,
@@ -37,7 +38,7 @@ export default function Chatroom({
                     });
 
     const [isReplying, setIsReplying] = useState<boolean>(false);
-    const [replyingToMessage, setReplyingToMessage] = useState<TChatMessage|undefined>();
+    const [replyingToMessage, setReplyingToMessage] = useState<ESChatMessage|undefined>();
 
 
     const [shouldShowUserPopup, setShouldShowUserPopup] = useState<boolean>(false);
@@ -62,7 +63,7 @@ export default function Chatroom({
         })
     }
 
-    const handleChatReplyClick = (message: TChatMessage) => {
+    const handleChatReplyClick = (message: ESChatMessage) => {
         setIsReplying(true);
         setReplyingToMessage(message);
     }
@@ -130,8 +131,8 @@ export default function Chatroom({
                 onReplyClosed={handleChatReplyClose}
             />
             <div className="absolute right-5 top-2.5 z-4999">
-                <Viewcount 
-                    viewcountData={viewcountData}
+                <StreamDataIsland 
+                    streamData={streamData}
                 />
             </div>
             {shouldShowUserPopup &&

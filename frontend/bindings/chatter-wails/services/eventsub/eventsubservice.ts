@@ -44,3 +44,7 @@ export function DeleteSubscription(accessToken: string, subId: string): $Cancell
 export function GetSubscriptions(accessToken: string): $CancellablePromise<api$0.ApiSubscription[] | null> {
     return $Call.ByID(331411654, accessToken);
 }
+
+export function SendChatMessageFromChannelName(accessToken: string, userId: string, channelName: string, messageContent: string, replyId: string | null): $CancellablePromise<api$0.ApiPostMessagesData | null> {
+    return $Call.ByID(933703621, accessToken, userId, channelName, messageContent, replyId);
+}

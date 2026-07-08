@@ -7,6 +7,12 @@ export {
 };
 
 export type {
+    AppChatMessageFragment,
+    ChatOpenData,
     ChatroomData,
-    ESSubscriptionCondition
+    ESChatMessage,
+    ESMessageBadge,
+    ESMessageReply,
+    ESSubscriptionCondition,
+    StreamData
 } from "./models.js";

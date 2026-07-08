@@ -1,6 +1,7 @@
 import ReplyIcon from '@components/svg/reply-icon';
 import Tooltip from '@components/util/tooltip';
 import { AppEmote } from '@wailsjs/chatter-wails/services/emote';
+import { AppChatMessageFragment, ESChatMessage } from '@wailsjs/chatter-wails/services/eventsub';
 import React from 'react';
 
 export interface IChatMessageFragment {
@@ -37,19 +38,9 @@ export interface IMessageReply {
     thread_user_name: string;
 }
 
-export type TChatMessage = {
-    id: string;
-    username: string;
-    text: string;
-    fragments: IChatMessageFragment[];
-    color: string;
-    badges: IMessageBadge[];
-    reply: IMessageReply|null;
-}
-
 interface ChatMessageProps {
-    message: TChatMessage;
-    onChatReplyClick?: (message: TChatMessage) => void;
+    message: ESChatMessage;
+    onChatReplyClick?: (message: ESChatMessage) => void;
     showChatReplyButton?: boolean;
     getChatterColor: (username: string) => string;
     showUserPopup: (username: string|undefined, mouseX: number, mouseY: number) => void;
@@ -62,7 +53,7 @@ export default function ChatMessage({
     getChatterColor,
     showUserPopup,
 }: ChatMessageProps) {
-    const fragmentToNode = (fragment: IChatMessageFragment, index: number): React.ReactNode => {
+    const fragmentToNode = (fragment: AppChatMessageFragment, index: number): React.ReactNode => {
         switch(fragment.type) {
             case 'emote':
                 if(!fragment.emote) return fragment.text;
@@ -110,7 +101,7 @@ export default function ChatMessage({
         }
     }
 
-    const defragmentMessage = (fragments: IChatMessageFragment[]): React.ReactNode => {
+    const defragmentMessage = (fragments: AppChatMessageFragment[]): React.ReactNode => {
         return fragments.map((fragment, i) => fragmentToNode(fragment, i));
     }
 
