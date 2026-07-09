@@ -19,7 +19,7 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
 
     const [emotes, setEmotes] = useState<TChatroomEmotes>(emoteRecord);
 
-    const [streamData, setStreamData] = useState<StreamData>({channel: "", live: false, viewCount: 0, title: "" });
+    const [streamData, setStreamData] = useState<StreamData>({channel: "", live: false, viewCount: 0, title: "", gameName: "" });
     
 
     const appendChatMessage = (message: ESChatMessage) => {

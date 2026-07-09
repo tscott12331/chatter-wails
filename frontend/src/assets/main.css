@@ -5,6 +5,8 @@
 
     color-scheme: light dark;
 
+    interpolate-size: allow-keywords;
+
     font-synthesis: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
