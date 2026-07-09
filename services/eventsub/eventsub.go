@@ -331,6 +331,7 @@ type StreamData struct{
 	Live bool			`json:"live"`
 	ViewCount int		`json:"viewCount"`
 	Title string		`json:"title"`
+	GameName string 	`json:"gameName"`
 }
 
 func (c *Client) pollStreamData(accessToken, channel string) {
@@ -351,6 +352,7 @@ func (c *Client) pollStreamData(accessToken, channel string) {
 			Live: streamDataRes.Type == "live",
 			ViewCount: streamDataRes.Viewer_count,
 			Title: streamDataRes.Title,
+			GameName: streamDataRes.Game_name,
 		}
 	}
 

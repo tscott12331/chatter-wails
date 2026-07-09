@@ -61,4 +61,5 @@ export interface StreamData {
     "live": boolean;
     "viewCount": number;
     "title": string;
+    "gameName": string;
 }
