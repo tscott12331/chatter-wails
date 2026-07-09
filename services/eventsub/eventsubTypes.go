@@ -110,7 +110,7 @@ type ESEvent struct {
 	Channel_points_custom_reward_id *string			`json:"channel_points_custom_reward_id,omitempty"`
 	Source_broadcaster_user_id *string				`json:"source_broadcaster_user_id,omitempty"`
 	Source_broadcaster_user_name *string			`json:"source_broadcaster_user_name,omitempty"`
-	Source_braodcaster_user_login *string			`json:"source_broadcaster_user_login,omitempty"`
+	Source_broadcaster_user_login *string			`json:"source_broadcaster_user_login,omitempty"`
 	Source_message_id *string						`json:"source_message_id,omitempty"`
 	Source_badges *[]ESBadge						`json:"source_badges,omitempty"`
 	Is_source_only *bool							`json:"is_source_only,omitempty"`
@@ -360,7 +360,7 @@ func esNotificationToEsChatMessageNotification(notification *ESNotification) *ES
 				Channel_points_custom_reward_id: notification.Payload.Event.Channel_points_custom_reward_id,
 				Source_broadcaster_user_id: notification.Payload.Event.Source_broadcaster_user_id,
 				Source_broadcaster_user_name: notification.Payload.Event.Source_broadcaster_user_name,
-				Source_braodcaster_user_login: notification.Payload.Event.Source_braodcaster_user_login,
+				Source_braodcaster_user_login: notification.Payload.Event.Source_broadcaster_user_login,
 				Source_message_id: notification.Payload.Event.Source_message_id,
 				Source_badges: notification.Payload.Event.Source_badges,
 				Is_source_only: notification.Payload.Event.Is_source_only,

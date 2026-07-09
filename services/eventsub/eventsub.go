@@ -202,6 +202,11 @@ type ESChatSubscriptionSevenTVData struct{
 	Enabled bool
 }
 
+type SharedChatParticipant struct{
+	Name string					`json:"name"`
+	ProfileImageURL string		`json:"profileImageURL"`
+}
+
 type ESChatSubscriptionData struct{
 	ChatOpen bool
 	PollCancel context.CancelFunc
@@ -210,6 +215,10 @@ type ESChatSubscriptionData struct{
 	Channel string
 	ChannelBadgeSets *util.SingleWriteMutex[[]api.ApiBadgeSet]
 	ChannelEmotes map[string]*emote.AppEmote
+
+	SharedChatSubId string
+	SharedChatParticipants []*SharedChatParticipant
+	
 	SevenTV *ESChatSubscriptionSevenTVData
 }
 type ESSubscription[T any] struct{
@@ -748,6 +757,29 @@ func (es *EventSubService) SendChatMessageFromChannelName(accessToken, userId, c
 }
 
 
+func (es *EventSubService) createSharedChatSubscription(accessToken, broadcasterId, subId string) {
+	subId, err := es.CreateSubscription(accessToken, map[string]string{
+		"broadcaster_user_id": broadcasterId,
+	}, "channel.shared_chat.begin")
+	if err != nil {
+		log.Printf("ERROR: Failed to subscribe to shared chat begin event")
+		return
+	}
+
+	es.Client.ChatSubscriptions.Update(func(cs **ChatSubscriptions) {
+		sub, exists := (*cs).GetSubFromId(subId)
+		if !exists {
+			log.Printf("ERROR: Cannot create shared chat subscription on non existant chat subscription")
+			return
+		}
+
+		sub.Data.SharedChatSubId = subId
+	})
+}
+
+func (es *EventSubService) createAuxiliaryChatSubscriptions(accessToken, broadcasterId, subId string) {
+	go es.createSharedChatSubscription(accessToken, broadcasterId, subId)
+}
 
 func (es *EventSubService) CreateChatSubscription(accessToken, userId, channelName string, globalBadgeSets *[]api.ApiBadgeSet) (*ChatroomData, error) {
 	var chatroomData *ChatroomData
@@ -834,6 +866,7 @@ func (es *EventSubService) fetchAndInitChatSubscription(accessToken, userId, cha
 
 	// fetch channel badge sets in goroutine
 	go es.goGetChannelBadgeSets(accessToken, broadcasterId, subId, globalBadgeSets)
+	es.createAuxiliaryChatSubscriptions(accessToken, broadcasterId, subId)
 
 	return newSub, nil
 }
