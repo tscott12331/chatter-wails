@@ -343,18 +343,18 @@ func (c *Client) pollStreamData(accessToken, channel string) {
 		return
 	}
 
-	var viewCountData StreamData
+	var streamData StreamData
 	if len(res.Body.Data) > 0 {
-		streamData := res.Body.Data[0]
-		viewCountData = StreamData{
+		streamDataRes := res.Body.Data[0]
+		streamData = StreamData{
 			Channel: channel,
-			Live: streamData.Type == "live",
-			ViewCount: streamData.Viewer_count,
-			Title: streamData.Title,
+			Live: streamDataRes.Type == "live",
+			ViewCount: streamDataRes.Viewer_count,
+			Title: streamDataRes.Title,
 		}
 	}
 
-	c.app.Event.Emit("common:stream-data", viewCountData)
+	c.app.Event.Emit("common:stream-data", streamData)
 }
 
 type ChatroomData struct{
