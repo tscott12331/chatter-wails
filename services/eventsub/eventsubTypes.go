@@ -3,7 +3,9 @@ package eventsub
 import (
 	"chatter-wails/internal/api"
 	"chatter-wails/services/emote"
+	"encoding/json"
 	"fmt"
+	"log"
 	"slices"
 	"strings"
 )
@@ -119,7 +121,7 @@ type ESEvent struct {
 
 type ESChatMessageEventMessage struct{
 	Text string							`json:"text"`
-	Fragments []*AppChatMessageFragment	`json:"fragments"`
+	Fragments []*ESChatMessageFragment	`json:"fragments"`
 }
 type ESChatMessageEvent = struct{
 	Broadcaster_user_id string				`json:"broadcaster_user_id"`
@@ -129,7 +131,7 @@ type ESChatMessageEvent = struct{
 	Chatter_user_login string				`json:"chatter_user_login"`
 	Chatter_user_name string				`json:"chatter_user_name"`
 	Message_id string						`json:"message_id"`
-	Message ESChatMessageEventMessage		`json:"message"`
+	Message ESChatMessageEventMessage 		`json:"message"`
 	Color string							`json:"color"`
 	Badges []ESBadge						`json:"badges"`
 	Message_type string						`json:"message_type"`
@@ -140,7 +142,7 @@ type ESChatMessageEvent = struct{
 	Channel_points_custom_reward_id *string			`json:"channel_points_custom_reward_id,omitempty"`
 	Source_broadcaster_user_id *string				`json:"source_broadcaster_user_id,omitempty"`
 	Source_broadcaster_user_name *string			`json:"source_broadcaster_user_name,omitempty"`
-	Source_braodcaster_user_login *string			`json:"source_broadcaster_user_login,omitempty"`
+	Source_broadcaster_user_login *string			`json:"source_broadcaster_user_login,omitempty"`
 	Source_message_id *string						`json:"source_message_id,omitempty"`
 	Source_badges *[]ESBadge						`json:"source_badges,omitempty"`
 	Is_source_only *bool							`json:"is_source_only,omitempty"`
@@ -183,7 +185,7 @@ type ESNotificationPayloadSubscription = ESMessagePayloadSubscription
 
 type ESNotificationPayload struct {
 	Subscription ESNotificationPayloadSubscription 	`json:"subscription"`
-	Event *ESEvent									`json:"event,omitempty"`
+	Event *json.RawMessage									`json:"event,omitempty"`
 }
 
 type ESNotification struct {
@@ -233,7 +235,7 @@ type ESMessagePayloadSubscription struct {
 
 type ESMessagePayload struct {
 	Subscription ESMessagePayloadSubscription 	`json:"subscription"`
-	Event *ESEvent					`json:"event,omitempty"`
+	Event *json.RawMessage				`json:"event,omitempty"`
 	Session ESWelcomePayloadSession				`json:"session"`
 }
 
@@ -313,60 +315,29 @@ func esBadgesToMessageBadges(esBadges []ESBadge, badgeSets []api.ApiBadgeSet) []
 func esNotificationToEsChatMessage(notification *ESNotification, chatSubscriptionData *ESChatSubscriptionData) *ESChatMessage {
 	channelBadges, _ := chatSubscriptionData.ChannelBadgeSets.Read()
 	seventvEmotes := chatSubscriptionData.SevenTV.SevenTVEmotes
+
+	var chatMessageEvent ESChatMessageEvent
+	if notification.Payload.Event == nil { 
+		log.Printf("WARNING: recieved empty chat message event payload")
+		return nil
+	}
+
+	json.Unmarshal(*notification.Payload.Event, &chatMessageEvent)
+
 	var fragments = []*AppChatMessageFragment{}
-	for _, fragment := range notification.Payload.Event.Message.Fragments {
-		fragments = append(fragments, esChatMessageFragmentToAppMessageFragment(&fragment, seventvEmotes)...)
+	for _, fragment := range chatMessageEvent.Message.Fragments {
+		fragments = append(fragments, esChatMessageFragmentToAppMessageFragment(fragment, seventvEmotes)...)
 	}
 
 	return &ESChatMessage{
-		Id: notification.Payload.Event.Message_id,
-		Username: notification.Payload.Event.Chatter_user_name,
-		Channel: notification.Payload.Event.Broadcaster_user_login,
-		Text: notification.Payload.Event.Message.Text,
+		Id: chatMessageEvent.Message_id,
+		Username: chatMessageEvent.Chatter_user_name,
+		Channel: chatMessageEvent.Broadcaster_user_login,
+		Text: chatMessageEvent.Message.Text,
 		Fragments: fragments,
-		Color: notification.Payload.Event.Color,
-		Badges: esBadgesToMessageBadges(notification.Payload.Event.Badges, channelBadges),
-		Reply: notification.Payload.Event.Reply,
-	}
-}
-
-func esNotificationToEsChatMessageNotification(notification *ESNotification) *ESChatMessageNotification {
-	var fragments = []*AppChatMessageFragment{}
-	for _, fragment := range notification.Payload.Event.Message.Fragments {
-		fragments = append(fragments, esChatMessageFragmentToAppMessageFragment(&fragment, map[string]*emote.AppEmote{})...)
-	}
-
-	return &ESChatMessageNotification{
-		Metadata: notification.Metadata,
-		Payload: ESChatMessageNotificationPayload{
-			Subscription: notification.Payload.Subscription,
-			Event: &ESChatMessageEvent{
-				Broadcaster_user_id: notification.Payload.Event.Broadcaster_user_id,
-				Broadcaster_user_login: notification.Payload.Event.Broadcaster_user_login,
-				Broadcaster_user_name: notification.Payload.Event.Broadcaster_user_name,
-				Chatter_user_id: notification.Payload.Event.Chatter_user_id,
-				Chatter_user_login: notification.Payload.Event.Chatter_user_login,
-				Chatter_user_name: notification.Payload.Event.Chatter_user_name,
-				Message_id: notification.Payload.Event.Message_id,
-				Message: ESChatMessageEventMessage{
-					Text: notification.Payload.Event.Message.Text,
-					Fragments: fragments,
-				},
-				Color: notification.Payload.Event.Color,
-				Badges: notification.Payload.Event.Badges,
-				Message_type: notification.Payload.Event.Message_type,
-				Cheer: notification.Payload.Event.Cheer,
-				Reply: notification.Payload.Event.Reply,
-				Channel_points_custom_reward_id: notification.Payload.Event.Channel_points_custom_reward_id,
-				Source_broadcaster_user_id: notification.Payload.Event.Source_broadcaster_user_id,
-				Source_broadcaster_user_name: notification.Payload.Event.Source_broadcaster_user_name,
-				Source_braodcaster_user_login: notification.Payload.Event.Source_broadcaster_user_login,
-				Source_message_id: notification.Payload.Event.Source_message_id,
-				Source_badges: notification.Payload.Event.Source_badges,
-				Is_source_only: notification.Payload.Event.Is_source_only,
-				
-			},
-		},
+		Color: chatMessageEvent.Color,
+		Badges: esBadgesToMessageBadges(chatMessageEvent.Badges, channelBadges),
+		Reply: chatMessageEvent.Reply,
 	}
 }
 
