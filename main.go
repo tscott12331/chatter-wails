@@ -1,6 +1,7 @@
 package main
 
 import (
+	"chatter-wails/services/auth"
 	"chatter-wails/services/eventsub"
 	"embed"
 
@@ -15,6 +16,8 @@ func main() {
 	application.RegisterEvent[*eventsub.ESChatMessage]("common:chat-message")
 	application.RegisterEvent[eventsub.StreamData]("common:stream-data")
 	application.RegisterEvent[eventsub.ChatOpenData]("common:chat-open")
+	application.RegisterEvent[*auth.AppUser]("common:user-login")
+	application.RegisterEvent[map[string]*eventsub.SharedChatParticipant]("common:shared-chat-begin")
 
 	// Create an instance of the app structure
 	// Create application with options

@@ -133,7 +133,7 @@ func (as *AuthService) Login(accessToken string) (*AppUser, error) {
 
 	user := apiUserToAppUser(apiUser, accessToken)
 	as.User = user
-
+	as.app.Event.Emit("common:user-login", as.User)
 
 	return user, nil
 }

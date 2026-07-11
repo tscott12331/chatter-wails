@@ -90,39 +90,11 @@ type ESChatMessage struct{
 
 /* EVENTSUB EVENT TYPES */
 
-type ESEvent struct {
-	Broadcaster_user_id string				`json:"broadcaster_user_id"`
-	Broadcaster_user_login string			`json:"broadcaster_user_login"`
-	Broadcaster_user_name string			`json:"broadcaster_user_name"`
-	Chatter_user_id string					`json:"chatter_user_id"`
-	Chatter_user_login string				`json:"chatter_user_login"`
-	Chatter_user_name string				`json:"chatter_user_name"`
-	Message_id string						`json:"message_id"`
-	Message struct {
-		Text string							`json:"text"`
-		Fragments []ESChatMessageFragment	`json:"fragments"`
-	}										`json:"message"`
-	Color string							`json:"color"`
-	Badges []ESBadge						`json:"badges"`
-	Message_type string						`json:"message_type"`
-	Cheer *struct {
-		Bits int							`json:"bits"`
-	}										`json:"cheer,omitempty"`
-	Reply *ESMessageReply							`json:"reply,omitempty"`
-	Channel_points_custom_reward_id *string			`json:"channel_points_custom_reward_id,omitempty"`
-	Source_broadcaster_user_id *string				`json:"source_broadcaster_user_id,omitempty"`
-	Source_broadcaster_user_name *string			`json:"source_broadcaster_user_name,omitempty"`
-	Source_broadcaster_user_login *string			`json:"source_broadcaster_user_login,omitempty"`
-	Source_message_id *string						`json:"source_message_id,omitempty"`
-	Source_badges *[]ESBadge						`json:"source_badges,omitempty"`
-	Is_source_only *bool							`json:"is_source_only,omitempty"`
-
-}
-
 type ESChatMessageEventMessage struct{
 	Text string							`json:"text"`
 	Fragments []*ESChatMessageFragment	`json:"fragments"`
 }
+
 type ESChatMessageEvent = struct{
 	Broadcaster_user_id string				`json:"broadcaster_user_id"`
 	Broadcaster_user_login string			`json:"broadcaster_user_login"`
@@ -146,6 +118,23 @@ type ESChatMessageEvent = struct{
 	Source_message_id *string						`json:"source_message_id,omitempty"`
 	Source_badges *[]ESBadge						`json:"source_badges,omitempty"`
 	Is_source_only *bool							`json:"is_source_only,omitempty"`
+}
+
+type ESSharedChatParticipant struct{
+	Broadcaster_user_id string			`json:"broadcaster_user_id"`
+	Broadcaster_user_name string			`json:"broadcaster_user_name"`
+	Broadcaster_user_login string			`json:"broadcaster_user_login"`
+}
+
+type ESSharedChatBeginEvent struct{
+	Session_id string			`json:"session_id"`
+	Broadcaster_user_id string			`json:"broadcaster_user_id"`
+	Broadcaster_user_name string			`json:"broadcaster_user_name"`
+	Broadcaster_user_login string			`json:"broadcaster_user_login"`
+	Host_broadcaster_user_id string			`json:"host_broadcaster_user_id"`
+	Host_broadcaster_user_name string			`json:"host_broadcaster_user_name"`
+	Host_broadcaster_user_login string			`json:"host_broadcaster_user_login"`
+	Participants []ESSharedChatParticipant			`json:"participants"`
 }
 
 
@@ -312,6 +301,26 @@ func esBadgesToMessageBadges(esBadges []ESBadge, badgeSets []api.ApiBadgeSet) []
     return messageBadges;
 }
 
+func extractSharedChatBadge(chatMessageEvent *ESChatMessageEvent, chatSubscriptionData *ESChatSubscriptionData) []ESMessageBadge {
+	res := []ESMessageBadge{}
+	if chatMessageEvent.Source_broadcaster_user_login == nil {
+		return res
+	}
+
+	participant, exists := chatSubscriptionData.SharedChatParticipants[*chatMessageEvent.Source_broadcaster_user_login]
+	if !exists {
+		return res
+	}
+
+	res = append(res, ESMessageBadge{
+		SrcSet: fmt.Sprintf("%s 1x", participant.ProfileImageURL),
+		Info: "Shared chat",
+		Title: participant.Name,
+	})
+
+	return res
+}
+
 func esNotificationToEsChatMessage(notification *ESNotification, chatSubscriptionData *ESChatSubscriptionData) *ESChatMessage {
 	channelBadges, _ := chatSubscriptionData.ChannelBadgeSets.Read()
 	seventvEmotes := chatSubscriptionData.SevenTV.SevenTVEmotes
@@ -329,6 +338,8 @@ func esNotificationToEsChatMessage(notification *ESNotification, chatSubscriptio
 		fragments = append(fragments, esChatMessageFragmentToAppMessageFragment(fragment, seventvEmotes)...)
 	}
 
+	sharedChatBadge := extractSharedChatBadge(&chatMessageEvent, chatSubscriptionData)
+
 	return &ESChatMessage{
 		Id: chatMessageEvent.Message_id,
 		Username: chatMessageEvent.Chatter_user_name,
@@ -336,7 +347,7 @@ func esNotificationToEsChatMessage(notification *ESNotification, chatSubscriptio
 		Text: chatMessageEvent.Message.Text,
 		Fragments: fragments,
 		Color: chatMessageEvent.Color,
-		Badges: esBadgesToMessageBadges(chatMessageEvent.Badges, channelBadges),
+		Badges: append(sharedChatBadge, esBadgesToMessageBadges(chatMessageEvent.Badges, channelBadges)...),
 		Reply: chatMessageEvent.Reply,
 	}
 }
