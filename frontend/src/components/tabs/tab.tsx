@@ -71,7 +71,7 @@ export default function Tab({
             zIndex: isDragging ? '5000' : 'initial',
         }}
         >
-            <p className='text-ellipsis grow-2'>{tab.tabName}</p>
+            <p className='text-ellipsis whitespace-nowrap overflow-hidden grow-2'>{tab.tabName}</p>
             <div
             className={'w-3 h-3 flex justify-center items-center [&_svg]:fill-red-200 hover:[&_svg]:fill-red-300 [&_svg]:rotate-45 [&_svg]:hidden'}
             onClick={handleTabRemove}

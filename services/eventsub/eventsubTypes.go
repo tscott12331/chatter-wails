@@ -303,11 +303,14 @@ func esBadgesToMessageBadges(esBadges []ESBadge, badgeSets []api.ApiBadgeSet) []
 
 func extractSharedChatBadge(chatMessageEvent *ESChatMessageEvent, chatSubscriptionData *ESChatSubscriptionData) []ESMessageBadge {
 	res := []ESMessageBadge{}
-	if chatMessageEvent.Source_broadcaster_user_login == nil {
-		return res
+
+	broadcaster_login := chatMessageEvent.Broadcaster_user_login
+
+	if chatMessageEvent.Source_broadcaster_user_login != nil {
+		broadcaster_login = *chatMessageEvent.Source_broadcaster_user_login
 	}
 
-	participant, exists := chatSubscriptionData.SharedChatParticipants[*chatMessageEvent.Source_broadcaster_user_login]
+	participant, exists := chatSubscriptionData.SharedChatParticipants[broadcaster_login]
 	if !exists {
 		return res
 	}
