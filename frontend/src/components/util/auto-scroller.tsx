@@ -19,6 +19,15 @@ export default function AutoScroller({
     const [shouldShowPopup, setShouldShowPopup] = useState<boolean>(false);
     const [newItems, setNewItems] = useState<number>(0);
 
+    /*
+    Children gets updated in useEffect every time
+    popup is opened.
+    Keeping track of the previous last child prevents
+    us incrementing the newItems count when the last item
+    doesn't change
+    */
+    const [prevChild, setPrevChild] = useState<Element>(null);
+
     const scrollerRef = useRef<HTMLDivElement>(null);
 
 
@@ -35,8 +44,7 @@ export default function AutoScroller({
             const scrollTop = e.currentTarget.scrollTop;
             const wrapperHeight = e.currentTarget.offsetHeight;
 
-            const passedThresh = scrollHeight - (scrollTop + wrapperHeight)
-            >= scrollThresh;
+            const passedThresh = scrollHeight - (scrollTop + wrapperHeight) >= scrollThresh;
             setShouldShowPopup(passedThresh);
             if(!shouldShowPopup) {
                 setNewItems(0);
@@ -45,26 +53,25 @@ export default function AutoScroller({
     }
 
     useEffect(() => {
-        if(scrollerRef.current && Array.isArray(children)) {
-            if(scrollerRef.current && children.length > 0) {
-                const scrollHeight = scrollerRef.current.scrollHeight;
-                const scrollTop = scrollerRef.current.scrollTop;
-                const wrapperHeight = scrollerRef.current.offsetHeight;
-                const itemHeight = scrollerRef.current.children.item(children.length - 1)?.clientHeight;
+        if(!scrollerRef.current) return;
+        if(Array.isArray(children) && children.length > 0) {
+            const scrollHeight = scrollerRef.current.scrollHeight;
+            const scrollTop = scrollerRef.current.scrollTop;
+            const wrapperHeight = scrollerRef.current.offsetHeight;
+            const lastChild = scrollerRef.current.children.item(children.length-1);
+            if(!lastChild || lastChild === prevChild) return;
+            setPrevChild(lastChild);
 
-                if(itemHeight &&
-                   (scrollHeight - itemHeight) -
-                       (scrollTop + wrapperHeight) <
-                    scrollThresh
-                  ) {
-                      setShouldShowPopup(false);
-                      scrollToBottom('auto');
-                      setNewItems(0);
-                  } else {
-                      setShouldShowPopup(true);
-                      setNewItems((items) => items + 1);
-                  }
-            }
+            const itemHeight = lastChild.clientHeight;
+
+            if((scrollHeight - itemHeight) - (scrollTop + wrapperHeight) < scrollThresh) {
+                  setShouldShowPopup(false);
+                  scrollToBottom('auto');
+                  setNewItems(0);
+              } else {
+                  setShouldShowPopup(true);
+                  setNewItems((items) => items + 1);
+              }
         }
 
     }, [children]);
@@ -78,21 +85,19 @@ export default function AutoScroller({
             >
                 {children}
             </div>
-            {shouldShowPopup &&
-                <div className='w-full absolute flex justify-center items-center'
-                    style={{
-                        top: `calc(${scrollerRef.current?.offsetHeight.toString().concat('px') ?? '100%'} * 0.925)`
-                    }}
-                >
-                    {jumpToRecentPopup?.({
-                        newItems,
-                        onClick: () => scrollToBottom(),
-                        style: {
-                            zIndex: 300,
-                        }
-                    }) as React.ReactNode}
-                </div>
-            }
+            <div className={`w-full absolute flex justify-center items-center ${shouldShowPopup ? 'visible' : 'invisible'}`}
+                style={{
+                    top: `calc(${scrollerRef.current?.offsetHeight.toString().concat('px') ?? '100%'} * 0.925)`
+                }}
+            >
+                {jumpToRecentPopup?.({
+                    newItems,
+                    onClick: () => scrollToBottom(),
+                    style: {
+                        zIndex: 300,
+                    }
+                }) as React.ReactNode}
+            </div>
         </>
     )
 }
