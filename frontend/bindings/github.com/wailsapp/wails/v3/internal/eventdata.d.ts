@@ -7,6 +7,9 @@ import type { Events } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import type * as auth$0 from "../../../../../chatter-wails/services/auth/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import type * as eventsub$0 from "../../../../../chatter-wails/services/eventsub/models.js";
 
 declare module "@wailsio/runtime" {
@@ -14,7 +17,11 @@ declare module "@wailsio/runtime" {
         interface CustomEvents {
             "common:chat-message": eventsub$0.ESChatMessage | null;
             "common:chat-open": eventsub$0.ChatOpenData;
+            "common:shared-chat-begin": eventsub$0.SharedChatBeginEventData;
+            "common:shared-chat-end": eventsub$0.SharedChatEndEventData;
+            "common:shared-chat-update": eventsub$0.SharedChatBeginEventData;
             "common:stream-data": eventsub$0.StreamData;
+            "common:user-login": auth$0.AppUser | null;
         }
     }
 }

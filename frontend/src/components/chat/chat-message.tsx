@@ -107,7 +107,7 @@ export default function ChatMessage({
 
     const badgeToNode = (badge: IMessageBadge, index: number): React.ReactNode => {
         return <Tooltip text={badge.title} hoverTime={0} key={index}>
-                    <img className="inline mr-1" srcSet={badge.srcSet} />
+                    <img className="inline mr-1 max-w-4.5" srcSet={badge.srcSet} />
                </Tooltip>
     }
 

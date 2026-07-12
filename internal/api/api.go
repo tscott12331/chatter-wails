@@ -95,6 +95,12 @@ var (
 		Host: "api.twitch.tv",
 		Path: "/helix/streams",
 	}
+
+	SHARED_CHAT_SESSION_ENDPOINT = url.URL{
+		Scheme: "https",
+		Host: "api.twitch.tv",
+		Path: "/helix/shared_chat/session",
+	}
 )
 
 var CLIENT_ID string
@@ -623,6 +629,33 @@ func ApiGetStreams(
 	) (*ApiResponse[ApiGetStreamsRes], error) {
 	return ApiGet[ApiGetStreamsRes](
 		STREAMS_ENDPOINT,
+		apiStreamsHeaders(access_token),
+		params,
+	)
+}
+
+type ApiSharedChatSessionParticipant struct{
+	Broadcaster_id string		`json:"broadcaster_id"`
+}
+
+type ApiSharedChatSession struct{
+	Session_id string		`json:"session_id"`
+	Host_broadcaster_id string		`json:"host_broadcaster_id"`
+	Participants []ApiSharedChatSessionParticipant		`json:"participants"`
+	Created_at string		`json:"created_at"`
+	Updated_at string		`json:"updated_at"`
+}
+
+type ApiGetSharedChatSessionRes struct{
+	Data []ApiSharedChatSession		`json:"data"`
+}
+
+func ApiGetSharedChatSession(
+	access_token string,
+	params map[string][]string,
+	) (*ApiResponse[ApiGetSharedChatSessionRes], error) {
+	return ApiGet[ApiGetSharedChatSessionRes](
+		SHARED_CHAT_SESSION_ENDPOINT,
 		apiStreamsHeaders(access_token),
 		params,
 	)

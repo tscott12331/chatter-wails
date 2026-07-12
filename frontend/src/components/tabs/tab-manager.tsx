@@ -5,6 +5,7 @@ import PlusIcon from '../svg/plus-icon';
 import { useNavigate } from 'react-router-dom';
 import { rotateArr } from '@util/arr';
 import { DisconnectFromChatroom } from '@wailsjs/chatter-wails/appservice'
+import { Events } from "@wailsio/runtime";
 export type TTab = {
     tabRoute: string;
     tabName: string;
@@ -38,36 +39,74 @@ export default function TabManager({
     }
 
     const handleTabRemove = (tab: TTab) => {
-        if(tab.tabRoute == HOME_TAB.tabRoute) return; // can't remove home tab :)
+        if(tab.tabRoute.toLowerCase() == HOME_TAB.tabRoute.toLowerCase()) return; // can't remove home tab :)
 
-        if(tab.tabRoute === currentTabRoute) {
+        if(tab.tabRoute.toLowerCase() === currentTabRoute.toLowerCase()) {
             setCurrentTabRoute(HOME_TAB.tabRoute);
             navigate(HOME_TAB.tabRoute);
         }
 
-        DisconnectFromChatroom(tab.tabName).catch(e => console.error(e));
+        DisconnectFromChatroom(tab.tabRoute.split('/chatroom/')[1]).catch(e => console.error(e));
 
         setTabs((curTabs) => curTabs.filter(t => t.tabRoute !== tab.tabRoute));
         delete tabsRef.current[tab.tabRoute];
     }
 
     const handleAddTab = (tab: TTab) => {
-        if(tabs.find(t => t.tabRoute === tab.tabRoute)) {
+        if(tabs.find(t => t.tabRoute.toLowerCase() === tab.tabRoute.toLowerCase())) {
             return handleTabSelect(tab)
         }
 
         setTabs((curTabs) => [...curTabs, tab]);
     }
 
+    const handleSharedChatBegin = (event: Events.WailsEvent<"common:shared-chat-begin">) => {
+        const eventRoute = `/chatroom/${event.data.channel.toLowerCase()}`;
+        setTabs(tabs => {
+            const tabToChangeIndex = tabs.findIndex(t => t.tabRoute.toLowerCase() === eventRoute);
+            if(tabToChangeIndex === -1) return tabs;
+
+            const changed: TTab = {
+                ...tabs[tabToChangeIndex],
+                tabName: Object.values(event.data.participant)
+                            .map(p => p.name)
+                            .reduce((p, c) => `${p}, ${c}`),
+            };
+
+            const newTabs = [...tabs.slice(0, tabToChangeIndex), changed, ...tabs.slice(tabToChangeIndex+1)];
+            return newTabs;
+        });
+    }
+
+    const handleSharedChatUpdate = handleSharedChatBegin;
+
+    const handleSharedChatEnd = (event: Events.WailsEvent<"common:shared-chat-end">) => {
+        const eventRoute = `/chatroom/${event.data.channel.toLowerCase()}`;
+        setTabs(tabs => {
+            const tabToChangeIndex = tabs.findIndex(t => t.tabRoute.toLowerCase() === eventRoute);
+            if(tabToChangeIndex === -1) return tabs;
+
+            const changed: TTab = {
+                ...tabs[tabToChangeIndex],
+                tabName: eventRoute.split('/chatroom/')[1],
+            };
+
+            const newTabs = [...tabs.slice(0, tabToChangeIndex), changed, ...tabs.slice(tabToChangeIndex+1)];
+            return newTabs;
+        })
+    }
+
     const handleAddTabKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if(e.key === 'Enter') {
-            const trimmedTabName = newTabText.trim();
-            if(!trimmedTabName.includes(' ') && trimmedTabName.length >= 3
-               && trimmedTabName.length <= 25) {
+            const tabName = newTabText.trim();
+            if(!tabName.includes(' ') && tabName.length >= 3
+               && tabName.length <= 25) {
+                   const tabRoute = `/chatroom/${tabName.toLowerCase()}`;
                    const newTab: TTab = {
-                        tabRoute: `/chatroom/${trimmedTabName.toLowerCase()}`,
-                        tabName: trimmedTabName
+                        tabRoute,
+                        tabName: tabName,
                    };
+
                    handleAddTab(newTab);
                    setIsAddingTab(false);
                    setNewTabText('');
@@ -121,8 +160,17 @@ export default function TabManager({
         setTabs(newTabs);
     }
 
+    const listenersOn = () => {
+        const offFns: (() => void)[] = [];
+        offFns.push(Events.On('common:shared-chat-begin', handleSharedChatBegin));
+        offFns.push(Events.On('common:shared-chat-update', handleSharedChatUpdate));
+        offFns.push(Events.On('common:shared-chat-end', handleSharedChatEnd));
+    }
+
     useEffect(() => {
         if(location.hash.slice(1) !== currentTabRoute) navigate(currentTabRoute);
+
+        return listenersOn();
     }, []);
 
     return (

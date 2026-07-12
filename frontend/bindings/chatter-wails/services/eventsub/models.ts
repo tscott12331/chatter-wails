@@ -56,6 +56,20 @@ export interface ESMessageReply {
 
 export type ESSubscriptionCondition = { [_ in string]?: string } | null;
 
+export interface SharedChatBeginEventData {
+    "channel": string;
+    "participant": { [_ in string]?: SharedChatParticipant | null } | null;
+}
+
+export interface SharedChatEndEventData {
+    "channel": string;
+}
+
+export interface SharedChatParticipant {
+    "name": string;
+    "profileImageURL": string;
+}
+
 export interface StreamData {
     "channel": string;
     "live": boolean;
