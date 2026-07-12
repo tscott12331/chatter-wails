@@ -9,7 +9,6 @@ import { Events } from "@wailsio/runtime";
 export type TTab = {
     tabRoute: string;
     tabName: string;
-    destroySharedChatListener: () => void;
 }
 
 interface ITabManagerProps {
@@ -22,7 +21,6 @@ export default function TabManager({
     const HOME_TAB: TTab = {
         tabRoute: '/',
         tabName: 'home',
-        destroySharedChatListener: () => {}
     };
 
     const [tabs, setTabs] = useState<TTab[]>([HOME_TAB]);
@@ -48,7 +46,6 @@ export default function TabManager({
             navigate(HOME_TAB.tabRoute);
         }
 
-        tab.destroySharedChatListener();
         DisconnectFromChatroom(tab.tabRoute.split('/chatroom/')[1]).catch(e => console.error(e));
 
         setTabs((curTabs) => curTabs.filter(t => t.tabRoute !== tab.tabRoute));
@@ -63,23 +60,40 @@ export default function TabManager({
         setTabs((curTabs) => [...curTabs, tab]);
     }
 
-    const handleSharedChatBegin = (event: Events.WailsEvent<"common:shared-chat-begin">, tabRoute: string) => {
+    const handleSharedChatBegin = (event: Events.WailsEvent<"common:shared-chat-begin">) => {
+        const eventRoute = `/chatroom/${event.data.channel.toLowerCase()}`;
         setTabs(tabs => {
-            const tabToChangeIndex = tabs.findIndex(t => t.tabRoute.toLowerCase() === tabRoute.toLowerCase());
+            const tabToChangeIndex = tabs.findIndex(t => t.tabRoute.toLowerCase() === eventRoute);
             if(tabToChangeIndex === -1) return tabs;
 
             const changed: TTab = {
                 ...tabs[tabToChangeIndex],
-                tabName: Object.values(event.data)
+                tabName: Object.values(event.data.participant)
                             .map(p => p.name)
                             .reduce((p, c) => `${p}, ${c}`),
             };
 
             const newTabs = [...tabs.slice(0, tabToChangeIndex), changed, ...tabs.slice(tabToChangeIndex+1)];
-            console.log(newTabs);
-
             return newTabs;
         });
+    }
+
+    const handleSharedChatUpdate = handleSharedChatBegin;
+
+    const handleSharedChatEnd = (event: Events.WailsEvent<"common:shared-chat-end">) => {
+        const eventRoute = `/chatroom/${event.data.channel.toLowerCase()}`;
+        setTabs(tabs => {
+            const tabToChangeIndex = tabs.findIndex(t => t.tabRoute.toLowerCase() === eventRoute);
+            if(tabToChangeIndex === -1) return tabs;
+
+            const changed: TTab = {
+                ...tabs[tabToChangeIndex],
+                tabName: eventRoute.split('/chatroom/')[1],
+            };
+
+            const newTabs = [...tabs.slice(0, tabToChangeIndex), changed, ...tabs.slice(tabToChangeIndex+1)];
+            return newTabs;
+        })
     }
 
     const handleAddTabKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -91,12 +105,7 @@ export default function TabManager({
                    const newTab: TTab = {
                         tabRoute,
                         tabName: tabName,
-                        destroySharedChatListener: () => {},
                    };
-
-                   const destroyListener = Events.On('common:shared-chat-begin', (e) => handleSharedChatBegin(e, tabRoute));
-
-                   newTab.destroySharedChatListener = destroyListener;
 
                    handleAddTab(newTab);
                    setIsAddingTab(false);
@@ -151,8 +160,17 @@ export default function TabManager({
         setTabs(newTabs);
     }
 
+    const listenersOn = () => {
+        const offFns: (() => void)[] = [];
+        offFns.push(Events.On('common:shared-chat-begin', handleSharedChatBegin));
+        offFns.push(Events.On('common:shared-chat-update', handleSharedChatUpdate));
+        offFns.push(Events.On('common:shared-chat-end', handleSharedChatEnd));
+    }
+
     useEffect(() => {
         if(location.hash.slice(1) !== currentTabRoute) navigate(currentTabRoute);
+
+        return listenersOn();
     }, []);
 
     return (

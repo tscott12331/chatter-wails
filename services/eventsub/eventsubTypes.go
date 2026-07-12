@@ -137,6 +137,18 @@ type ESSharedChatBeginEvent struct{
 	Participants []ESSharedChatParticipant			`json:"participants"`
 }
 
+type ESSharedChatUpdateEvent ESSharedChatBeginEvent
+
+type ESSharedChatEndEvent struct{
+	Session_id string			`json:"session_id"`
+	Broadcaster_user_id string			`json:"broadcaster_user_id"`
+	Broadcaster_user_name string			`json:"broadcaster_user_name"`
+	Broadcaster_user_login string			`json:"broadcaster_user_login"`
+	Host_broadcaster_user_id string			`json:"host_broadcaster_user_id"`
+	Host_broadcaster_user_name string			`json:"host_broadcaster_user_name"`
+	Host_broadcaster_user_login string			`json:"host_broadcaster_user_login"`
+}
+
 
 
 /* WELCOME MESSAGE TYPES */

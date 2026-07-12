@@ -14,6 +14,8 @@ export type {
     ESMessageBadge,
     ESMessageReply,
     ESSubscriptionCondition,
+    SharedChatBeginEventData,
+    SharedChatEndEventData,
     SharedChatParticipant,
     StreamData
 } from "./models.js";

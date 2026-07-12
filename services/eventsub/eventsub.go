@@ -217,7 +217,7 @@ type ESChatSubscriptionData struct{
 	ChannelBadgeSets *util.SingleWriteMutex[[]api.ApiBadgeSet]
 	ChannelEmotes map[string]*emote.AppEmote
 
-	SharedChatSubId string
+	AuxiliarySubIds []string
 	SharedChatParticipants map[string]*SharedChatParticipant
 	
 	SevenTV *ESChatSubscriptionSevenTVData
@@ -505,19 +505,71 @@ func (c *Client) handleESNotification(message ESMessage) {
 		c.app.Event.Emit("common:chat-message", chatMessage)
 	case "channel.shared_chat.begin":
 		c.handleSharedChatBegin(notification)
+	case "channel.shared_chat.update":
+		c.handleSharedChatUpdate(notification)
+	case "channel.shared_chat.end":
+
 	}
+}
+
+func (c *Client) handleSharedChatEnd(notification *ESNotification) {
+	var sharedChatEndEvent ESSharedChatEndEvent
+	json.Unmarshal(*notification.Payload.Event, &sharedChatEndEvent)
+
+	c.ChatSubscriptions.Update(func(cs **ChatSubscriptions) {
+		sub, exists := (*cs).GetSubFromChannelName(sharedChatEndEvent.Broadcaster_user_login)
+		if !exists { return }
+
+		clear(sub.Data.SharedChatParticipants)
+	})
+	
+	c.app.Event.Emit("common:shared-chat-end", SharedChatEndEventData{
+		Channel: sharedChatEndEvent.Broadcaster_user_login,
+	})
+}
+
+func (c *Client) handleSharedChatUpdate(notification *ESNotification) {
+		var sharedChatUpdateEvent ESSharedChatUpdateEvent
+		json.Unmarshal(*notification.Payload.Event, &sharedChatUpdateEvent)
+
+		sub, exists := c.ChatSubscriptions.Read().GetSubFromChannelName(sharedChatUpdateEvent.Broadcaster_user_login)
+		if !exists { return }
+
+		var wg sync.WaitGroup
+		for _, esParticipant := range sharedChatUpdateEvent.Participants {
+			_, exists := sub.Data.SharedChatParticipants[esParticipant.Broadcaster_user_login]
+			if !exists {
+				wg.Add(1)
+				go c.fetchAndSetSharedParticipantProfileImage(sharedChatUpdateEvent.Broadcaster_user_name, esParticipant.Broadcaster_user_id, &wg)
+			}
+		}
+
+		wg.Wait()
+		sub, _ = c.ChatSubscriptions.Read().GetSubFromChannelName(sharedChatUpdateEvent.Broadcaster_user_name)
+		if !exists { return }
+
+		participants := sub.Data.SharedChatParticipants
+		c.app.Event.Emit("common:shared-chat-update", SharedChatUpdateEventData{
+			Channel: sharedChatUpdateEvent.Broadcaster_user_login,
+			Participants: participants,
+		})
 }
 
 func (c *Client) handleSharedChatBegin(notification *ESNotification) {
 		var sharedChatBeginEvent ESSharedChatBeginEvent
 		json.Unmarshal(*notification.Payload.Event, &sharedChatBeginEvent)
-		c.ChatSubscriptions.Update(func(cs **ChatSubscriptions) {
-			sub, exists := (*cs).GetSubFromChannelName(sharedChatBeginEvent.Host_broadcaster_user_login)
-			if !exists { return }
-			
-			sub.Data.SharedChatSubId = notification.Payload.Subscription.Id
-			go c.fetchSharedChatProfileImages(&sharedChatBeginEvent)
-		})
+		go c.fetchSharedChatProfileImages(&sharedChatBeginEvent)
+}
+
+type SharedChatUpdateEventData SharedChatBeginEventData
+
+type SharedChatBeginEventData struct{
+	Channel string 		`json:"channel"`
+	Participants map[string]*SharedChatParticipant		`json:"participant"`
+}
+
+type SharedChatEndEventData struct{
+	Channel string 		`json:"channel"`
 }
 
 func (c *Client) fetchSharedChatProfileImages(sharedChatBeginEvent *ESSharedChatBeginEvent) {
@@ -532,8 +584,11 @@ func (c *Client) fetchSharedChatProfileImages(sharedChatBeginEvent *ESSharedChat
 	sub, exists := c.ChatSubscriptions.Read().GetSubFromChannelName(sharedChatBeginEvent.Host_broadcaster_user_name)
 	if !exists { return }
 
-	data := sub.Data.SharedChatParticipants
-	c.app.Event.Emit("common:shared-chat-begin", data)
+	participants := sub.Data.SharedChatParticipants
+	c.app.Event.Emit("common:shared-chat-begin", SharedChatBeginEventData{
+		Channel: sharedChatBeginEvent.Broadcaster_user_login,
+		Participants: participants,
+	})
 }
 
 func (c *Client) fetchAndSetSharedParticipantProfileImage(mainBroadcaster string, participant_user_id string, wg *sync.WaitGroup) {
@@ -752,7 +807,9 @@ func (es *EventSubService) deleteChatSubscription(accessToken, subId, channelNam
 		sub := (*cs).fromSubId[subId]
 
 		// delete auxiliary subscriptions
-		go es.DeleteSubscription(accessToken, sub.Data.SharedChatSubId)
+		for _, id := range sub.Data.AuxiliarySubIds {
+			go es.DeleteSubscription(accessToken, id)
+		}
 
 		pollCancel := sub.Data.PollCancel
 		if pollCancel != nil { pollCancel() }
@@ -781,10 +838,10 @@ func (es *EventSubService) SendChatMessageFromChannelName(accessToken, userId, c
 }
 
 
-func (es *EventSubService) createSharedChatSubscription(accessToken, broadcasterId, subId string) {
+func (es *EventSubService) createSharedChatSubscription(accessToken, broadcasterId, subId, eventType string) {
 	sharedSubId, err := es.CreateSubscription(accessToken, map[string]string{
 		"broadcaster_user_id": broadcasterId,
-	}, "channel.shared_chat.begin")
+	}, eventType)
 	if err != nil {
 		log.Printf("ERROR: Failed to subscribe to shared chat begin event")
 		return
@@ -797,12 +854,14 @@ func (es *EventSubService) createSharedChatSubscription(accessToken, broadcaster
 			return
 		}
 
-		sub.Data.SharedChatSubId = sharedSubId
+		sub.Data.AuxiliarySubIds = append(sub.Data.AuxiliarySubIds, sharedSubId)
 	})
 }
 
 func (es *EventSubService) createAuxiliaryChatSubscriptions(accessToken, broadcasterId, subId string) {
-	go es.createSharedChatSubscription(accessToken, broadcasterId, subId)
+	go es.createSharedChatSubscription(accessToken, broadcasterId, subId, "channel.shared_chat.begin")
+	go es.createSharedChatSubscription(accessToken, broadcasterId, subId, "channel.shared_chat.update")
+	go es.createSharedChatSubscription(accessToken, broadcasterId, subId, "channel.shared_chat.end")
 }
 
 func (es *EventSubService) CreateChatSubscription(accessToken, userId, channelName string, globalBadgeSets *[]api.ApiBadgeSet) (*ChatroomData, error) {
@@ -927,8 +986,11 @@ func (es *EventSubService) goGetSharedChatSession(
 	sub, exists := es.Client.ChatSubscriptions.Read().GetSubFromChannelName(channelName)
 	if !exists { return }
 
-	sharedChatEventData := sub.Data.SharedChatParticipants
-	es.app.Event.Emit("common:shared-chat-begin", sharedChatEventData)
+	participants := sub.Data.SharedChatParticipants
+	es.app.Event.Emit("common:shared-chat-begin", SharedChatBeginEventData{
+		Channel: channelName,
+		Participants: participants,
+	})
 
 }
 
