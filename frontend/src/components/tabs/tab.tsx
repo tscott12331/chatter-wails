@@ -62,7 +62,7 @@ export default function Tab({
 
     return (
         <div
-        className={`${selected ? 'bg-bg-5' : ''} ${isDragging ? 'bg-bg-5/50' : 'hover:bg-bg-6'} max-w-50 min-w-25 border border-outline-1 rounded-sm text-sm p-1 h-7 gap-1 select-none flex items-center justify-between relative hover:[&_svg]:inline-block cursor-pointer`}
+        className={`${selected ? 'bg-bg-5' : ''} ${isDragging ? 'bg-bg-5/70 backdrop-blur-xs' : 'hover:bg-bg-6'} max-w-50 min-w-25 border border-outline-1 rounded-sm text-sm p-1 h-7 gap-1 select-none flex items-center justify-between relative hover:[&_svg]:inline-block cursor-pointer`}
         onMouseDown={handleMouseDown}
         onMouseUp={() => onTabPlace(tab)}
         ref={ref}
