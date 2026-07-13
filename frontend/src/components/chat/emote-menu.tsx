@@ -56,7 +56,7 @@ export default function EmoteMenu({
                  key={emote.id}
                  >
                      <div
-                         className='flex justify-center items-center cursor-pointer w-10 h-10 p-0.5 rounded-xs opacity-90 hover:bg-bg-5 transition-all transition-discrete'
+                         className='flex justify-center items-center cursor-pointer w-10 h-10 p-0.5 rounded-xs opacity-90 hover:bg-bg-5 transition-all duration-150'
                          onClick={() => handleEmoteSelect(emote)}
                      >
                          <img

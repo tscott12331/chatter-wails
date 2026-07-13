@@ -70,6 +70,11 @@ export interface SharedChatParticipant {
     "profileImageURL": string;
 }
 
+export interface SharedChatUpdateEventData {
+    "channel": string;
+    "participant": { [_ in string]?: SharedChatParticipant | null } | null;
+}
+
 export interface StreamData {
     "channel": string;
     "live": boolean;

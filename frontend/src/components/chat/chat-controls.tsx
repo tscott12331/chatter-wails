@@ -281,16 +281,16 @@ export default function ChatControls({
             handleEmoteSelect={handleEmoteSelect}
             ref={emotePopupRef}
         />
+        <div className={`${!(isReplying && replyingToMessage) && 'invisible opacity-0'} transition-all transition-discrete ease-in-out duration-75`}>
         {isReplying && replyingToMessage &&
-        <div>
             <ReplyPopup
                 onCloseClicked={onReplyClosed}
                 message={replyingToMessage}
                 getChatterColor={getChatterColor}
                 showUserPopup={onShowUserPopup}
             />
-        </div>
         }
+        </div>
 
         <div className={'flex items-center justify-between flex-wrap g-0.5 h-37.5'}>
             <div
