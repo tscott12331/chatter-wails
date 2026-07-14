@@ -145,7 +145,7 @@ export default function ChatMessage({
                 className='chat-controls absolute -top-1 right-5 invisible flex justify-end items-center'
             >
                 {showChatReplyButton &&
-                <div className="w-6 h-6 p-0.5 rounded-xs bg-bg-3/60 backdrop-blur-xs contrast-100 hover:outline hover:outline-outline-2 hover:contrast-200 hover:brightness-120 [&_svg]:fill-text-1 [&_svg]:contrast-200 cursor-pointer"
+                <div className="w-6 h-6 p-1 rounded-xs bg-bg-3/60 backdrop-blur-xs contrast-100 hover:outline hover:outline-outline-2 hover:contrast-200 hover:brightness-120 [&_svg]:fill-text-1 [&_svg]:contrast-200 cursor-pointer"
                     onClick={() => onChatReplyClick(message)}
                 >
                     <ReplyIcon />

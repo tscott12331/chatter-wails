@@ -18,7 +18,7 @@ func main() {
 	application.RegisterEvent[eventsub.ChatOpenData]("common:chat-open")
 	application.RegisterEvent[*auth.AppUser]("common:user-login")
 	application.RegisterEvent[eventsub.SharedChatBeginEventData]("common:shared-chat-begin")
-	application.RegisterEvent[eventsub.SharedChatBeginEventData]("common:shared-chat-update")
+	application.RegisterEvent[eventsub.SharedChatUpdateEventData]("common:shared-chat-update")
 	application.RegisterEvent[eventsub.SharedChatEndEventData]("common:shared-chat-end")
 
 	// Create an instance of the app structure

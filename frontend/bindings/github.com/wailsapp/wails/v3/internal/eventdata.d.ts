@@ -19,7 +19,7 @@ declare module "@wailsio/runtime" {
             "common:chat-open": eventsub$0.ChatOpenData;
             "common:shared-chat-begin": eventsub$0.SharedChatBeginEventData;
             "common:shared-chat-end": eventsub$0.SharedChatEndEventData;
-            "common:shared-chat-update": eventsub$0.SharedChatBeginEventData;
+            "common:shared-chat-update": eventsub$0.SharedChatUpdateEventData;
             "common:stream-data": eventsub$0.StreamData;
             "common:user-login": auth$0.AppUser | null;
         }

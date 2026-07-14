@@ -17,5 +17,6 @@ export type {
     SharedChatBeginEventData,
     SharedChatEndEventData,
     SharedChatParticipant,
+    SharedChatUpdateEventData,
     StreamData
 } from "./models.js";
