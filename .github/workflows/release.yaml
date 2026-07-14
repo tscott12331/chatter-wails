@@ -16,11 +16,19 @@ jobs:
             goos: darwin
           - os: windows-latest
             goos: windows
+      # remove
+      fail-fast: false
 
     runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install Linux Packages
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-4-dev pkg-config
 
       - uses: actions/setup-go@v5
         with:
