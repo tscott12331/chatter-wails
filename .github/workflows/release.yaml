@@ -20,6 +20,8 @@ jobs:
       fail-fast: false
 
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
 
     steps:
       - uses: actions/checkout@v4
