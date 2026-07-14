@@ -28,7 +28,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgtk-4-dev pkg-config
+          sudo apt-get install -y libgtk-4-dev libwebkitgtk-6.0-dev pkg-config build-essential
 
       - uses: actions/setup-go@v5
         with:
@@ -47,7 +47,12 @@ jobs:
       - name: Build
         run: wails3 build
 
-      - uses: actions/upload-artifact@v4
+      # - uses: actions/upload-artifact@v4
+      #   with:
+      #     name: chatter-${{ matrix.goos }}
+      #     path: bin/
+
+      - name: Release
+        uses: softprops/action-gh-release@v3
         with:
-          name: app-${{ matrix.goos }}
-          path: bin/
+          files: bin/*
