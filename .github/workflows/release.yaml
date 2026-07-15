@@ -20,6 +20,7 @@ jobs:
       fail-fast: false
 
     runs-on: ${{ matrix.os }}
+    environment: Release
     permissions:
       contents: write
 
@@ -50,7 +51,7 @@ jobs:
         run: wails3 build
         env:
           VITE_CLIENT_ID: ${{ secrets.CLIENT_ID }}
-          VITE_OAUTH_REDIRECT: ${{ secrets.OAUTH_REDIRECT }}
+          VITE_OAUTH_REDIRECT: ${{ vars.OAUTH_REDIRECT }}
 
       - name: Rename Binary
         if: matrix.os == 'windows-latest'
