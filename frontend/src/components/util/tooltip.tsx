@@ -17,7 +17,7 @@ export default function Tooltip({
     const [shouldShow, setShouldShow] = useState<boolean>(false);
     const [pos, setPos] = useState<{x: number, y: number}>({x: 0, y: 0});
 
-    let timeout: NodeJS.Timeout;
+    let timeout: ReturnType<typeof setTimeout>;
 
     const showPopup = (x: number, y: number) => {
         setShouldShow(true);
