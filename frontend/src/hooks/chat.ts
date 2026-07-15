@@ -3,10 +3,12 @@ import { TChatroomEmotes } from "@/api/emote";
 import { ConnectToChatroom, EnableSevenTV, SendChatMessage } from '@wailsjs/chatter-wails/appservice';
 import { Events } from "@wailsio/runtime";
 
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { AppUser } from "@wailsjs/chatter-wails/services/auth";
 import { ESChatMessage, StreamData } from "@wailsjs/chatter-wails/services/eventsub";
 import { AppEmote } from "@wailsjs/chatter-wails/services/emote";
+import { assertDefined, isDefined } from "@/util/assert";
+import { GlobalContext } from "@/contexts/global-context";
 
 export default function useChat({ channel, user, emoteRecord, maxMessages = 200 }: {
     channel: string|undefined,
@@ -20,6 +22,8 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
     const [emotes, setEmotes] = useState<TChatroomEmotes>(emoteRecord);
 
     const [streamData, setStreamData] = useState<StreamData>({channel: "", live: false, viewCount: 0, title: "", gameName: "" });
+
+    const { broadcastError } = useContext(GlobalContext);
     
 
     const appendChatMessage = (message: ESChatMessage) => {
@@ -34,30 +38,38 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
     }
 
     const handleChatMessageEvent = (event: Events.WailsEvent<"common:chat-message">) => {
-        if(channel === event.data.channel) {
+        if(event.data?.channel && channel === event.data.channel) {
             appendChatMessage(event.data);
         }
     }
 
-    const sendChatMessage = async (message: string, replyId?: string) => {
+    const sendChatMessage = async (message: string, replyId: string|null|undefined) => {
         if(!channel) return false;
         const trimmed = message.trim();
         if(trimmed.length === 0) return false;
 
         try {
-            await SendChatMessage(channel, trimmed, replyId);
+            await SendChatMessage(channel, trimmed, replyId ?? null);
             return true;
         } catch(err) {
-            console.error(err);
+            broadcastError(err);
             return false;
         }
     }
     
-    const addEmoteSet = (set: Record<string, AppEmote>, setName: string) => {
+    const addEmoteSet = (set: Record<string, AppEmote|null|undefined>, setName: string) => {
         setEmotes(curEmotes => {
             const newEmotes: TChatroomEmotes = {};
             Object.assign(newEmotes, curEmotes);
-            newEmotes[setName] = new Map(Object.entries(set));
+
+            if(!(setName in newEmotes)) {
+                newEmotes[setName] = new Map();
+            }
+
+            for(const [name, emote] of Object.entries(set)) {
+                if(!isDefined(emote)) continue;
+                newEmotes[setName][name] = emote;
+            }
 
             return newEmotes;
         })
@@ -88,13 +100,19 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
         setChatMessages([]);
 
         ConnectToChatroom(channel)
-            .then(d => addEmoteSet(d.channelEmotes, 'channel'))
+            .then(d => {
+                assertDefined(d?.channelEmotes)
+                addEmoteSet(d.channelEmotes, 'channel')
+            })
             .then(() => emitChatOpenState(channel, user.access_token, true))
             // TODO: make optional?
             .then(() => EnableSevenTV(channel))
-            .then(e => addEmoteSet(e, 'seventv'))
+            .then(e => {
+                assertDefined(e)
+                addEmoteSet(e, 'seventv')
+            })
             .cancelOn(abortController.signal)
-            .catch(err => console.error(err));
+            .catch(broadcastError);
 
         const listenersOff = listenersOn();
         

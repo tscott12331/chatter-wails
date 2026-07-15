@@ -9,7 +9,7 @@ interface ITabProps {
     onTabSelect: (tab: TTab) => void;
     onTabRemove: (tab: TTab) => void;
     onTabPlace: (tab: TTab) => void;
-    ref?: React.RefObject<HTMLDivElement>;
+    ref?: React.RefObject<HTMLDivElement|null>;
 }
 
 export default function Tab({
