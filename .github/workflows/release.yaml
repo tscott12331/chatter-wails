@@ -1,0 +1,69 @@
+name: Build
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            goos: linux
+          - os: macos-latest
+            goos: darwin
+          - os: windows-latest
+            goos: windows
+      # remove
+      fail-fast: false
+
+    runs-on: ${{ matrix.os }}
+    environment: Release
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux Packages
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-4-dev libwebkitgtk-6.0-dev pkg-config build-essential
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Install Wails CLI
+        run: go install github.com/wailsapp/wails/v3/cmd/wails3@latest
+
+      - name: Install Task
+        uses: arduino/setup-task@v2
+
+      - name: Build
+        run: wails3 build
+        env:
+          VITE_CLIENT_ID: ${{ secrets.CLIENT_ID }}
+          VITE_OAUTH_REDIRECT: ${{ vars.OAUTH_REDIRECT }}
+
+      - name: Rename Binary
+        if: matrix.os == 'windows-latest'
+        run: mv bin/chatter-wails.exe bin/windows-chatter.exe
+      - name: Rename Binary
+        if: matrix.os == 'macos-latest'
+        run: mv bin/chatter-wails bin/macos-chatter
+      - name: Rename Binary
+        if: matrix.os == 'ubuntu-latest'
+        run: mv bin/chatter-wails bin/ubuntu-chatter
+
+      - name: Release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: bin/*
