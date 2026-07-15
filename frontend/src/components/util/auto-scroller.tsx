@@ -26,7 +26,7 @@ export default function AutoScroller({
     us incrementing the newItems count when the last item
     doesn't change
     */
-    const [prevChild, setPrevChild] = useState<Element>(null);
+    const [prevChild, setPrevChild] = useState<Element|null>(null);
 
     const scrollerRef = useRef<HTMLDivElement>(null);
 

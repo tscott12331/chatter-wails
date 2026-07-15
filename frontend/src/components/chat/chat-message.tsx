@@ -72,6 +72,7 @@ export default function ChatMessage({
                             />
                             {
                             fragment.emote.emoteStack?.map(e =>
+                                e &&
                                 <img
                                     className="row-1 col-1"
                                     srcSet={e.darkSrcSet.length > 0 ? e.darkSrcSet : e.lightSrcSet}
@@ -101,8 +102,8 @@ export default function ChatMessage({
         }
     }
 
-    const defragmentMessage = (fragments: AppChatMessageFragment[]): React.ReactNode => {
-        return fragments.map((fragment, i) => fragmentToNode(fragment, i));
+    const defragmentMessage = (fragments: (AppChatMessageFragment|null)[]): React.ReactNode => {
+        return fragments.map((fragment, i) => fragment && fragmentToNode(fragment, i));
     }
 
     const badgeToNode = (badge: IMessageBadge, index: number): React.ReactNode => {
@@ -128,7 +129,7 @@ export default function ChatMessage({
             </Tooltip>
             }
             <div>
-                {badgesToNodes(message.badges)}
+                {message.badges && badgesToNodes(message.badges)}
                 <span
                     className="contrast-300 font-medium my-0 mr-0.5 cursor-pointer"
                     style={{
@@ -139,7 +140,7 @@ export default function ChatMessage({
                     {message.username}
                 </span>
                 <span>: </span>
-                {defragmentMessage(message.fragments)}
+                {message.fragments && defragmentMessage(message.fragments)}
             </div>
             <div
                 className='chat-controls absolute -top-1 right-5 invisible flex justify-end items-center'

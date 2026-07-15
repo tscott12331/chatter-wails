@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import Tab from './tab';
 import HomeIcon from '../svg/home-icon';
 import PlusIcon from '../svg/plus-icon';
@@ -6,6 +6,8 @@ import { useNavigate } from 'react-router-dom';
 import { rotateArr } from '@util/arr';
 import { DisconnectFromChatroom } from '@wailsjs/chatter-wails/appservice'
 import { Events } from "@wailsio/runtime";
+import { SharedChatParticipant } from '@wailsjs/chatter-wails/services/eventsub';
+import { GlobalContext } from '@/contexts/global-context';
 export type TTab = {
     tabRoute: string;
     tabName: string;
@@ -30,6 +32,8 @@ export default function TabManager({
     const [isAddingTab, setIsAddingTab] = useState<boolean>(false);
     const [newTabText, setNewTabText] = useState<string>("");
 
+    const { broadcastError } = useContext(GlobalContext);
+
     const navigate = useNavigate();
 
     const handleTabSelect = (tab: TTab) => {
@@ -46,7 +50,7 @@ export default function TabManager({
             navigate(HOME_TAB.tabRoute);
         }
 
-        DisconnectFromChatroom(tab.tabRoute.split('/chatroom/')[1]).catch(e => console.error(e));
+        DisconnectFromChatroom(tab.tabRoute.split('/chatroom/')[1]).catch(broadcastError);
 
         setTabs((curTabs) => curTabs.filter(t => t.tabRoute !== tab.tabRoute));
         delete tabsRef.current[tab.tabRoute];
@@ -60,16 +64,17 @@ export default function TabManager({
         setTabs((curTabs) => [...curTabs, tab]);
     }
 
-    const handleSharedChatBegin = (event: Events.WailsEvent<"common:shared-chat-begin">) => {
-        const eventRoute = `/chatroom/${event.data.channel.toLowerCase()}`;
+    const addParticipantsToTabName = (channel: string, participants: Record<string, SharedChatParticipant|null|undefined>) => {
+        const eventRoute = `/chatroom/${channel.toLowerCase()}`;
         setTabs(tabs => {
             const tabToChangeIndex = tabs.findIndex(t => t.tabRoute.toLowerCase() === eventRoute);
             if(tabToChangeIndex === -1) return tabs;
 
+
             const changed: TTab = {
                 ...tabs[tabToChangeIndex],
-                tabName: Object.values(event.data.participant)
-                            .map(p => p.name)
+                tabName: Object.values(participants)
+                            .map(p => p?.name ?? "unknown")
                             .reduce((p, c) => `${p}, ${c}`),
             };
 
@@ -78,7 +83,15 @@ export default function TabManager({
         });
     }
 
-    const handleSharedChatUpdate = handleSharedChatBegin;
+    const handleSharedChatBegin = (event: Events.WailsEvent<"common:shared-chat-begin">) => {
+        if(!event.data.participant) return tabs;
+        addParticipantsToTabName(event.data.channel, event.data.participant);
+    }
+
+    const handleSharedChatUpdate = (event: Events.WailsEvent<"common:shared-chat-update">) => {
+        if(!event.data.participant) return tabs;
+        addParticipantsToTabName(event.data.channel, event.data.participant);
+    }
 
     const handleSharedChatEnd = (event: Events.WailsEvent<"common:shared-chat-end">) => {
         const eventRoute = `/chatroom/${event.data.channel.toLowerCase()}`;
@@ -199,7 +212,7 @@ export default function TabManager({
                 <input
                     className="max-w-50 min-w-25 h-full bg-transparent! border-none!"
                     type='text'
-                    ref={(node) => node && node.focus()}
+                    ref={(node: HTMLInputElement|null) => {node && node.focus()}}
                     onKeyDown={handleAddTabKeyDown}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewTabText(e.currentTarget.value)}
                     onBlur={() => setIsAddingTab(false)}
