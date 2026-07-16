@@ -13,6 +13,16 @@ export interface AppChatMessageFragment {
     "mention"?: {"user_id": string, "user_name": string, "user_login": string} | null;
 }
 
+export interface BanEventData {
+    "userLogin": string;
+    "isPermanent": boolean;
+
+    /**
+     * seconds
+     */
+    "duration": number | null;
+}
+
 export interface ChatOpenData {
     "channel": string;
     "accessToken": string;

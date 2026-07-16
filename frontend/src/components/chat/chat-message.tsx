@@ -1,7 +1,8 @@
+import { IAppChatMessage } from '@/hooks/chat';
 import ReplyIcon from '@components/svg/reply-icon';
 import Tooltip from '@components/util/tooltip';
 import { AppEmote } from '@wailsjs/chatter-wails/services/emote';
-import { AppChatMessageFragment, ESChatMessage } from '@wailsjs/chatter-wails/services/eventsub';
+import { AppChatMessageFragment } from '@wailsjs/chatter-wails/services/eventsub';
 import React from 'react';
 
 export interface IChatMessageFragment {
@@ -39,8 +40,8 @@ export interface IMessageReply {
 }
 
 interface ChatMessageProps {
-    message: ESChatMessage;
-    onChatReplyClick?: (message: ESChatMessage) => void;
+    message: IAppChatMessage;
+    onChatReplyClick?: (message: IAppChatMessage) => void;
     showChatReplyButton?: boolean;
     getChatterColor: (username: string) => string;
     showUserPopup: (username: string|undefined, mouseX: number, mouseY: number) => void;

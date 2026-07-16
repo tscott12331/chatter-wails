@@ -10,6 +10,28 @@ import { AppEmote } from "@wailsjs/chatter-wails/services/emote";
 import { assertDefined, isDefined } from "@/util/assert";
 import { GlobalContext } from "@/contexts/global-context";
 
+export type TBanTypeInfo = 
+    | {
+        isPermanent: false,
+        duration: number
+      }
+    | {
+        isPermanent: true,
+      }
+
+export type TBanInfo = 
+    | {
+        isBanned: true,
+        banTypeInfo: TBanTypeInfo,
+      }
+    | {
+        isBanned: false,
+      }
+
+export interface IAppChatMessage extends ESChatMessage {
+    banInfo: TBanInfo;
+}
+
 export default function useChat({ channel, user, emoteRecord, maxMessages = 200 }: {
     channel: string|undefined,
     user: AppUser,
@@ -17,7 +39,7 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
     maxMessages?: number,
 }) {
 
-    const [chatMessages, setChatMessages] = useState<ESChatMessage[]>([]);
+    const [chatMessages, setChatMessages] = useState<IAppChatMessage[]>([]);
 
     const [emotes, setEmotes] = useState<TChatroomEmotes>(emoteRecord);
 
@@ -27,12 +49,16 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
     
 
     const appendChatMessage = (message: ESChatMessage) => {
+        const appMessage: IAppChatMessage = {
+            ...message,
+            banInfo: { isBanned: false }
+        }
         setChatMessages(curMessages => {
             const numExtraMessages = curMessages.length - maxMessages;
             if(numExtraMessages >= 0) {
-                return [...curMessages.slice(numExtraMessages + 1), message];
+                return [...curMessages.slice(numExtraMessages + 1), appMessage];
             } else {
-                return [...curMessages, message];
+                return [...curMessages, appMessage];
             }
         })
     }
@@ -41,6 +67,32 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
         if(event.data?.channel && channel === event.data.channel) {
             appendChatMessage(event.data);
         }
+    }
+
+    const handleBanEvent = (event: Events.WailsEvent<"common:ban">) => {
+        const banTypeInfo: TBanTypeInfo = event.data.isPermanent
+        ? {
+            isPermanent: true,
+          }
+        : {
+            isPermanent: false,
+            duration: event.data.duration ?? 0,
+          }
+        const banInfo: TBanInfo = {
+            isBanned: true,
+            banTypeInfo,
+        }
+
+        setChatMessages(cur => {
+            const matchedIndices = cur.flatMap((mes, i) => mes.channel.toLowerCase() === event.data.userLogin ? [i] : []);
+            const newMessages = [...cur];
+            
+            for(const i of matchedIndices) {
+                newMessages[i] = { ...newMessages[i], banInfo }
+            }
+
+            return newMessages;
+        })
     }
 
     const sendChatMessage = async (message: string, replyId: string|null|undefined) => {
@@ -87,6 +139,7 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
         const offFns: (() => void)[] = [];
         offFns.push(Events.On('common:chat-message', handleChatMessageEvent));
         offFns.push(Events.On('common:stream-data', (e) => setStreamData(e.data)));
+        offFns.push(Events.On('common:ban', handleBanEvent));
 
         return () => {
             offFns.forEach(fn => fn());

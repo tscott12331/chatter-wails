@@ -1,9 +1,9 @@
 import ChatMessage from './chat-message';
 import PlusIcon from '../svg/plus-icon';
-import { ESChatMessage } from '@wailsjs/chatter-wails/services/eventsub';
+import { IAppChatMessage } from '@/hooks/chat';
 
 interface IReplyPopupProps {
-    message: ESChatMessage;
+    message: IAppChatMessage;
     onCloseClicked?: () => void;
     getChatterColor: (username: string) => string;
     showUserPopup: (username: string|undefined, mouseX: number, mouseY: number) => void;

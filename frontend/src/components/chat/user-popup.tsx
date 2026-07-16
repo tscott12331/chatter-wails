@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import ChatMessage from './chat-message';
 import PlusIcon from '../svg/plus-icon';
-import { ESChatMessage } from '@wailsjs/chatter-wails/services/eventsub';
+import { IAppChatMessage } from '@/hooks/chat';
 
 export interface IPopupUser {
     username: string;
-    messages: ESChatMessage[];
+    messages: IAppChatMessage[];
 }
 
 interface IUserPopupProps {
@@ -14,7 +14,7 @@ interface IUserPopupProps {
     showChatReplyButton?: boolean;
     getChatterColor: (username: string) => string;
     showUserPopup: (username: string|undefined, mouseX: number, mouseY: number) => void;
-    onChatReplyClick?: (message: ESChatMessage) => void;
+    onChatReplyClick?: (message: IAppChatMessage) => void;
     onPopupClose?: () => any;
 }
 

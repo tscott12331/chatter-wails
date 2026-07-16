@@ -151,6 +151,23 @@ type ESSharedChatEndEvent struct{
 
 
 
+type ESBanEvent struct{
+	User_id string			`json:"user_id"`
+	User_login string			`json:"user_login"`
+	User_name string			`json:"user_name"`
+	Broadcaster_user_id string			`json:"broadcaster_user_id"`
+	Broadcaster_user_login string			`json:"broadcaster_user_login"`
+	Broadcaster_user_name string			`json:"broadcaster_user_name"`
+	Moderator_user_id string			`json:"moderator_user_id"`
+	Moderator_user_login string			`json:"moderator_user_login"`
+	Moderator_user_name string			`json:"moderator_user_name"`
+	Reason string			`json:"reason"`
+	Banned_at string			`json:"banned_at"`
+	Ends_at string			`json:"ends_at"`
+	Is_permanent bool			`json:"is_permanent"`
+}
+
+
 /* WELCOME MESSAGE TYPES */
 
 type ESWelcomeMetadata struct {
