@@ -128,5 +128,6 @@ func (a *AppService) SendChatMessage(channelName string, messageContent string, 
 }
 
 func (a *AppService) DisconnectFromChatroom(channelName string) error {
+	a.esService.Client.IrcListener.PartChannel(channelName)
 	return a.esService.DeleteChatSubscriptionFromChannelName(a.authService.User.Access_token, channelName)
 }
