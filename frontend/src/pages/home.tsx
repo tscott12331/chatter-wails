@@ -2,13 +2,23 @@ import { useContext } from 'react';
 import { GlobalContext } from '@/contexts/global-context';
 import { Browser } from '@wailsio/runtime'
 
+const scopes = [
+    "user:read:chat",
+    "user:write:chat",
+    "user:read:emotes",
+    "channel:moderate",
+    "chat:read",
+    "chat:edit",
+];
+const scopeParamVal = scopes.map(s => encodeURI(s)).join("+");
+
 interface IHomePageProps {
 }
 
 export default function HomePage({
 }: IHomePageProps) {
     const { user, submitAccessToken } = useContext(GlobalContext);
-    const authURL = `https://id.twitch.tv/oauth2/authorize?response_type=token&client_id=${import.meta.env.VITE_CLIENT_ID}&redirect_uri=${import.meta.env.VITE_OAUTH_REDIRECT}&scope=user%3Aread%3Achat+user%3Awrite%3Achat+user%3Aread%3Aemotes+chat%3Aread+chat%3Aedit`;
+    const authURL = `https://id.twitch.tv/oauth2/authorize?response_type=token&client_id=${import.meta.env.VITE_CLIENT_ID}&redirect_uri=${import.meta.env.VITE_OAUTH_REDIRECT}&scope=${scopeParamVal}`;
 
 
     const handleTokenSubmit = (e: React.FormEvent<HTMLFormElement>) => {

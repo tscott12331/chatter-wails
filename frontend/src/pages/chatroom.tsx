@@ -4,12 +4,11 @@ import { useContext, useState } from 'react';
 import AutoScroller from '@components/util/auto-scroller';
 import JumpToRecentPopup from '@components/chat/jump-to-recent-popup';
 import UserPopup, { IPopupUser } from '@components/chat/user-popup';
-import useChat from '@/hooks/chat';
+import useChat, { IAppChatMessage } from '@/hooks/chat';
 import { GlobalContext } from '@/contexts/global-context';
 import ChatControls from '@/components/chat/chat-controls';
 import { listToMap } from '@/util/map';
 import StreamDataIsland from '@/components/chat/stream-data-island';
-import { ESChatMessage } from '@wailsjs/chatter-wails/services/eventsub';
 
 interface IChatroomProps {
 }
@@ -38,7 +37,7 @@ export default function Chatroom({
                     });
 
     const [isReplying, setIsReplying] = useState<boolean>(false);
-    const [replyingToMessage, setReplyingToMessage] = useState<ESChatMessage|undefined>();
+    const [replyingToMessage, setReplyingToMessage] = useState<IAppChatMessage|undefined>();
 
 
     const [shouldShowUserPopup, setShouldShowUserPopup] = useState<boolean>(false);
@@ -63,7 +62,7 @@ export default function Chatroom({
         })
     }
 
-    const handleChatReplyClick = (message: ESChatMessage) => {
+    const handleChatReplyClick = (message: IAppChatMessage) => {
         setIsReplying(true);
         setReplyingToMessage(message);
     }
