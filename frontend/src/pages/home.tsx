@@ -8,7 +8,7 @@ interface IHomePageProps {
 export default function HomePage({
 }: IHomePageProps) {
     const { user, submitAccessToken } = useContext(GlobalContext);
-    const authURL = `https://id.twitch.tv/oauth2/authorize?response_type=token&client_id=${import.meta.env.VITE_CLIENT_ID}&redirect_uri=${import.meta.env.VITE_OAUTH_REDIRECT}&scope=user%3Aread%3Achat+user%3Awrite%3Achat+user%3Aread%3Aemotes`;
+    const authURL = `https://id.twitch.tv/oauth2/authorize?response_type=token&client_id=${import.meta.env.VITE_CLIENT_ID}&redirect_uri=${import.meta.env.VITE_OAUTH_REDIRECT}&scope=user%3Aread%3Achat+user%3Awrite%3Achat+user%3Aread%3Aemotes+chat%3Aread+chat%3Aedit`;
 
 
     const handleTokenSubmit = (e: React.FormEvent<HTMLFormElement>) => {

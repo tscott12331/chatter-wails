@@ -19,6 +19,7 @@ import (
 	"chatter-wails/services/auth"
 	"chatter-wails/services/badge"
 	"chatter-wails/services/emote"
+	"chatter-wails/services/irc"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
@@ -280,6 +281,7 @@ type Client struct {
 	user *auth.AppUser
 
 	socket *util.Socket
+	IrcListener *irc.IRCListener
 
 	connected bool
 
@@ -414,6 +416,12 @@ func (es *EventSubService) handleChatOpenEvent(event *application.CustomEvent) {
 		return
 	}
 
+	if data.Open {
+		es.Client.IrcListener.JoinChannel(data.Channel)
+	} else {
+		es.Client.IrcListener.PartChannel(data.Channel)
+	}
+
 	es.Client.ToggleChatSubscriptionFromChannelName(&data)
 }
 
@@ -439,6 +447,9 @@ func (es *EventSubService) Connect() {
 
 	es.app.Event.On("common:user-login", es.handleUserLoginEvent)
 
+	ircListener := irc.NewIRCListener()
+	es.Client.IrcListener = ircListener
+
 	for {
 		select {
 		case r, ok := <-ready:
@@ -449,7 +460,11 @@ func (es *EventSubService) Connect() {
 					log.Printf("[Connect]: Connecting to eventsub web server\n\n")
 					var err error
 					es.app.Event.On("common:chat-open", es.handleChatOpenEvent)
+
 					es.Client.socket, err = util.NewSocket(esCtx, twitchESURL.String(), es.Client.handleESMessage)
+
+					es.Client.IrcListener.Connect(es.Client.user.Access_token, es.Client.user.Login, true, false, true)
+
 					if err != nil {
 						log.Fatal(err.Error())
 					}
