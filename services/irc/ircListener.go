@@ -20,16 +20,17 @@ const TAGS_CAPABILITY = "twitch.tv/tags"
 
 type IRCListener struct {
 	// event -> funcs
-	handlers map[string]map[*func()]struct{}
+	handlers map[string]map[*func(*IRCMessage)]struct{}
 	socket   *util.Socket
 }
 
 func NewIRCListener() *IRCListener {
-	return &IRCListener{
-		handlers: map[string]map[*func()]struct{}{
+	listener := &IRCListener{
+		handlers: map[string]map[*func(*IRCMessage)]struct{}{
 			"CLEARCHAT": {},
 			"CLEARMSG": {},
 			"GLOBALUSERSTATE": {},
+			"USERSTATE": {},
 			"NOTICE": {},
 			"PART": {},
 			"PING": {},
@@ -40,6 +41,11 @@ func NewIRCListener() *IRCListener {
 			"USERSTAT": {},
 		},
 	}
+
+	pingHandler := listener.handlePing
+	listener.handlers["PING"][&pingHandler] = struct{}{}
+
+	return listener
 }
 
 func (irc *IRCListener) Connect(accessToken, userLogin string, commands, membership, tags bool) error {
@@ -89,7 +95,7 @@ func (irc *IRCListener) PartChannel(channelName string) {
 }
 
 // returns func to remove listener
-func (irc *IRCListener) AddEventListener(event string, handler func()) (func(), error) {
+func (irc *IRCListener) AddEventListener(event string, handler func(*IRCMessage)) (func(), error) {
 	if _, exists := irc.handlers[event]; !exists {
 		return nil, fmt.Errorf("Event %s doesn't exist in IRC", event)
 	}
@@ -106,15 +112,115 @@ func (irc *IRCListener) AddEventListener(event string, handler func()) (func(), 
 
 func (irc *IRCListener) handleSocketMessage(message []byte) {
 	mStr := string(message)
-	
-	words := strings.Split(mStr, " ")
-	if words[0] == "PING" {
-		pong := "PONG "
-		if len(words) > 1 {
-			pong += words[1]
-		}
-		irc.socket.SendMessage([]byte(pong))
+	// [@tags(comma-seperated) ] :sender COMMAND #channel :data
+	ircMessage := parseIRCMessage(mStr)
+
+	irc.dispatchHandlers(ircMessage)
+}
+
+func (irc *IRCListener) handlePing(message *IRCMessage) {
+	irc.socket.SendMessage(fmt.Appendf([]byte{}, "PONG :%s", message.Data))
+}
+
+func (irc *IRCListener) dispatchHandlers(message *IRCMessage) {
+	handlers := irc.handlers[message.Command]
+	if handlers == nil { 
+		log.Printf("[irc.dispatchHandlers]: Not handling %s", message.Command)
+		return 
 	}
 
-	log.Printf("[IRC]: %s", mStr)
+	for fn := range handlers {
+		(*fn)(message)
+	}
+}
+
+type IRCMessage struct{
+	Tags map[string]string
+	Sender string
+	Command string
+	Channel string
+	Data string
+}
+
+func parseIRCMessage(message string) *IRCMessage {
+	tags, nextIndex := parseTags(message, 0)
+	sender, nextIndex := parseSender(message, nextIndex)
+	command, nextIndex := parseCommand(message, nextIndex)
+	channel, nextIndex := parseChannel(message, nextIndex)
+	data, _ := parseData(message, nextIndex)
+
+	return &IRCMessage{
+		Tags: tags,
+		Sender: sender,
+		Command: command,
+		Channel: channel,
+		Data: data,
+	}
+}
+
+func parseTags(message string, start int) (map[string]string, int) {
+	tags := map[string]string{}
+	if start >= len(message) || message[start] != '@' {
+		return tags, start
+	}
+
+	nextSpaceIndex := getNextSpace(message, start)
+
+	for kvstr := range strings.SplitSeq(message[start+1:nextSpaceIndex], ";") {
+		kv := strings.Split(kvstr, "=")
+		key := kv[0]
+		var val string
+		if len(kv) > 1 {
+			val = kv[1]
+		}
+
+		tags[key] = val
+	}
+
+	return tags, nextSpaceIndex+1
+}
+
+func parseSender(message string, start int) (string, int) {
+	if start >= len(message) || message[start] != ':' {
+		return "", start
+	}
+
+	nextSpaceIndex := getNextSpace(message, start)
+	return message[start:nextSpaceIndex], nextSpaceIndex+1
+}
+
+func parseCommand(message string, start int) (string, int) {
+	if start >= len(message) {
+		return "", start
+	}
+
+	nextSpaceIndex := getNextSpace(message, start)
+	return message[start:nextSpaceIndex], nextSpaceIndex+1
+}
+
+func parseChannel(message string, start int) (string, int) {
+	if start >= len(message) || message[start] != '#' {
+		return "", start
+	}
+
+	nextSpaceIndex := getNextSpace(message, start)
+
+	return message[start+1:nextSpaceIndex], nextSpaceIndex+1
+}
+
+func parseData(message string, start int) (string, int) {
+	if start >= len(message) || message[start] != ':' {
+		return "", start
+	}
+
+	return message[start+1:], len(message)
+}
+
+func getNextSpace(message string, start int) int {
+	nextSpaceIndex := strings.Index(message[start:], " ")
+	if nextSpaceIndex == -1 {
+		return len(message)
+	}
+
+	return start + nextSpaceIndex
 }

@@ -26,7 +26,7 @@ const (
 )
 
 var (
-	newline = []byte{'\n'}
+	newline = []byte{'\n', '\r'}
 	space   = []byte{' '}
 )
 
@@ -134,6 +134,7 @@ func (s *Socket) writePump() {
 			}
 
 			w.Write(message)
+			w.Write(newline)
 			log.Printf("[writePump]: wrote %s\n\n", message)
 
 			// Add queued chat messages to the current websocket message.
