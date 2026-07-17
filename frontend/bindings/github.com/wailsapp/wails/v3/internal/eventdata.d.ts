@@ -15,6 +15,7 @@ import type * as eventsub$0 from "../../../../../chatter-wails/services/eventsub
 declare module "@wailsio/runtime" {
     namespace Events {
         interface CustomEvents {
+            "common:ban": eventsub$0.BanEventData;
             "common:chat-message": eventsub$0.ESChatMessage | null;
             "common:chat-open": eventsub$0.ChatOpenData;
             "common:shared-chat-begin": eventsub$0.SharedChatBeginEventData;

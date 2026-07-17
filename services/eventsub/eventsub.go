@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log"
 	"net/url"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -449,6 +450,7 @@ func (es *EventSubService) Connect() {
 
 	ircListener := irc.NewIRCListener()
 	es.Client.IrcListener = ircListener
+	es.Client.IrcListener.AddEventListener("CLEARCHAT", es.handleClearChatEvent)
 
 	for {
 		select {
@@ -498,6 +500,24 @@ func (es *EventSubService) Connect() {
 
 }
 
+func (es *EventSubService) handleClearChatEvent(message *irc.IRCMessage) {
+	d, notPermanent := message.Tags["ban-duration"]
+	isPermanent := !notPermanent
+	var duration *int
+	if notPermanent {
+		convDur, err := strconv.Atoi(d)
+		if err == nil {
+			duration = &convDur
+		}
+	}
+
+	es.Client.app.Event.Emit("common:ban", BanEventData{
+		UserLogin: message.Data,
+		IsPermanent: isPermanent,
+		Duration: duration,
+	})
+}
+
 func (c *Client) handleESNotification(message ESMessage) {
 	notification := esMessageToESNotification(&message)
 	if notification == nil {
@@ -523,8 +543,41 @@ func (c *Client) handleESNotification(message ESMessage) {
 	case "channel.shared_chat.update":
 		c.handleSharedChatUpdate(notification)
 	case "channel.shared_chat.end":
-
+		c.handleSharedChatEnd(notification)
 	}
+}
+
+type BanEventData struct{
+	UserLogin string		`json:"userLogin"`
+	IsPermanent bool		`json:"isPermanent"`
+	// seconds
+	Duration *int			`json:"duration"`
+}
+
+func (c *Client) handleBan(notification *ESNotification) {
+	var esBanEvent ESBanEvent
+	json.Unmarshal(*notification.Payload.Event, &esBanEvent)
+	
+	var duration *int = nil
+
+	if !esBanEvent.Is_permanent {
+		start, err := time.ParseDuration(esBanEvent.Banned_at)
+		end, err := time.ParseDuration(esBanEvent.Ends_at)
+		diff := -1
+		if err != nil {
+			diff = int(end-start)
+		}
+
+		duration = &diff
+	}
+
+	banEventData := BanEventData{
+		UserLogin: esBanEvent.User_login,
+		IsPermanent: esBanEvent.Is_permanent,
+		Duration: duration,
+	}
+
+	c.app.Event.Emit("common:ban", banEventData)
 }
 
 func (c *Client) handleSharedChatEnd(notification *ESNotification) {
@@ -745,6 +798,11 @@ func (es *EventSubService) CreateSubscription(accessToken string, condition ESSu
 		return "", err
 	}
 	
+	if res.Status == 403 {
+		log.Printf("[CreateSubscription]: Missing required scope in access token")
+		return "", &api.StatusError[api.ApiPostSubscriptionsRes]{Res: res}
+	}
+
 	if res.Status != 202 {
 		log.Printf("[CreateSubscription]: Failed to make subscription\n\n")
 		return "", &api.StatusError[api.ApiPostSubscriptionsRes]{Res: res}
@@ -853,19 +911,19 @@ func (es *EventSubService) SendChatMessageFromChannelName(accessToken, userId, c
 }
 
 
-func (es *EventSubService) createSharedChatSubscription(accessToken, broadcasterId, subId, eventType string) {
+func (es *EventSubService) createBroadcasterIdConditionSubscription(accessToken, broadcasterId, subId, eventType string) {
 	sharedSubId, err := es.CreateSubscription(accessToken, map[string]string{
 		"broadcaster_user_id": broadcasterId,
 	}, eventType)
 	if err != nil {
-		log.Printf("ERROR: Failed to subscribe to shared chat begin event")
+		log.Printf("ERROR: Failed to subscribe to %s", eventType)
 		return
 	}
 
 	es.Client.ChatSubscriptions.Update(func(cs **ChatSubscriptions) {
 		sub, exists := (*cs).GetSubFromId(subId)
 		if !exists {
-			log.Printf("ERROR: Cannot create shared chat subscription on non existant chat subscription")
+			log.Printf("ERROR: Cannot create %s subscription on non existent chat subscription", eventType)
 			return
 		}
 
@@ -874,9 +932,9 @@ func (es *EventSubService) createSharedChatSubscription(accessToken, broadcaster
 }
 
 func (es *EventSubService) createAuxiliaryChatSubscriptions(accessToken, broadcasterId, subId string) {
-	go es.createSharedChatSubscription(accessToken, broadcasterId, subId, "channel.shared_chat.begin")
-	go es.createSharedChatSubscription(accessToken, broadcasterId, subId, "channel.shared_chat.update")
-	go es.createSharedChatSubscription(accessToken, broadcasterId, subId, "channel.shared_chat.end")
+	go es.createBroadcasterIdConditionSubscription(accessToken, broadcasterId, subId, "channel.shared_chat.begin")
+	go es.createBroadcasterIdConditionSubscription(accessToken, broadcasterId, subId, "channel.shared_chat.update")
+	go es.createBroadcasterIdConditionSubscription(accessToken, broadcasterId, subId, "channel.shared_chat.end")
 }
 
 func (es *EventSubService) CreateChatSubscription(accessToken, userId, channelName string, globalBadgeSets *[]api.ApiBadgeSet) (*ChatroomData, error) {

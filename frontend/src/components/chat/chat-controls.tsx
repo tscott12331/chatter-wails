@@ -6,11 +6,11 @@ import EmoteCarousel, { IEmoteCarouselData } from "./carousel";
 import EmoteMenu from "./emote-menu";
 import ReplyPopup from "./reply-popup";
 import { AppEmote } from "@wailsjs/chatter-wails/services/emote";
-import { ESChatMessage } from "@wailsjs/chatter-wails/services/eventsub";
+import { IAppChatMessage } from "@/hooks/chat";
 
 interface IChatControlsProps {
     isReplying: boolean;
-    replyingToMessage: ESChatMessage|undefined;
+    replyingToMessage: IAppChatMessage|undefined;
     emotes: TChatroomEmotes;
     getChatterColor: (username: string) => string;
     onSendMessage: (message: string) => Promise<boolean>;

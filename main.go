@@ -20,6 +20,7 @@ func main() {
 	application.RegisterEvent[eventsub.SharedChatBeginEventData]("common:shared-chat-begin")
 	application.RegisterEvent[eventsub.SharedChatUpdateEventData]("common:shared-chat-update")
 	application.RegisterEvent[eventsub.SharedChatEndEventData]("common:shared-chat-end")
+	application.RegisterEvent[eventsub.BanEventData]("common:ban")
 
 	// Create an instance of the app structure
 	// Create application with options
