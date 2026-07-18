@@ -14,6 +14,7 @@ export interface AppChatMessageFragment {
 }
 
 export interface BanEventData {
+    "channel": string;
     "userLogin": string;
     "isPermanent": boolean;
 
@@ -33,6 +34,11 @@ export interface ChatroomData {
     "subId": string;
     "broadcasterId": string;
     "channelEmotes": { [_ in string]?: emote$0.AppEmote | null } | null;
+}
+
+export interface ClearMsgEventData {
+    "channel": string;
+    "messageID": string;
 }
 
 export interface ESChatMessage {

@@ -451,6 +451,7 @@ func (es *EventSubService) Connect() {
 	ircListener := irc.NewIRCListener()
 	es.Client.IrcListener = ircListener
 	es.Client.IrcListener.AddEventListener("CLEARCHAT", es.handleClearChatEvent)
+	es.Client.IrcListener.AddEventListener("CLEARMSG", es.handleClearMsgEvent)
 
 	for {
 		select {
@@ -500,6 +501,20 @@ func (es *EventSubService) Connect() {
 
 }
 
+type ClearMsgEventData struct{
+	Channel string		`json:"channel"`
+	MessageID string	`json:"messageID"`
+}
+
+func (es *EventSubService) handleClearMsgEvent(message *irc.IRCMessage) {
+	data := ClearMsgEventData{
+		Channel: message.Channel,
+		MessageID: message.Tags["target-msg-id"],
+	}
+
+	es.app.Event.Emit("common:clear-msg", data)
+}
+
 func (es *EventSubService) handleClearChatEvent(message *irc.IRCMessage) {
 	d, notPermanent := message.Tags["ban-duration"]
 	isPermanent := !notPermanent
@@ -512,6 +527,7 @@ func (es *EventSubService) handleClearChatEvent(message *irc.IRCMessage) {
 	}
 
 	es.Client.app.Event.Emit("common:ban", BanEventData{
+		Channel: message.Channel,
 		UserLogin: message.Data,
 		IsPermanent: isPermanent,
 		Duration: duration,
@@ -548,6 +564,7 @@ func (c *Client) handleESNotification(message ESMessage) {
 }
 
 type BanEventData struct{
+	Channel string 			`json:"channel"`
 	UserLogin string		`json:"userLogin"`
 	IsPermanent bool		`json:"isPermanent"`
 	// seconds
