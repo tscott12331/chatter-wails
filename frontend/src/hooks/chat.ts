@@ -30,6 +30,7 @@ export type TBanInfo =
 
 export interface IAppChatMessage extends ESChatMessage {
     banInfo: TBanInfo;
+    deleted: boolean;
 }
 
 export default function useChat({ channel, user, emoteRecord, maxMessages = 200 }: {
@@ -52,6 +53,7 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
         const appMessage: IAppChatMessage = {
             ...message,
             banInfo: { isBanned: false },
+            deleted: false,
         }
         setChatMessages(curMessages => {
             const numExtraMessages = curMessages.length - maxMessages;
@@ -70,6 +72,8 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
     }
 
     const handleBanEvent = (event: Events.WailsEvent<"common:ban">) => {
+        if(event.data.channel !== channel) return;
+
         const banTypeInfo: TBanTypeInfo = event.data.isPermanent
         ? {
             isPermanent: true,
@@ -91,6 +95,19 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
                 newMessages[i] = { ...newMessages[i], banInfo }
             }
 
+            return newMessages;
+        })
+    }
+
+    const handleClearMsgEvent = (event: Events.WailsEvent<"common:clear-msg">) => {
+        if(event.data.channel !== channel) return;
+
+        setChatMessages(cur => {
+            const msgToDeleteIndex = cur.findIndex(m => m.id === event.data.messageID);
+            if(msgToDeleteIndex === -1) return cur;
+
+            const newMessages = [...cur];
+            newMessages[msgToDeleteIndex] = { ...newMessages[msgToDeleteIndex], deleted: true };
             return newMessages;
         })
     }
@@ -140,6 +157,7 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
         offFns.push(Events.On('common:chat-message', handleChatMessageEvent));
         offFns.push(Events.On('common:stream-data', (e) => setStreamData(e.data)));
         offFns.push(Events.On('common:ban', handleBanEvent));
+        offFns.push(Events.On('common:clear-msg', handleClearMsgEvent));
 
         return () => {
             offFns.forEach(fn => fn());

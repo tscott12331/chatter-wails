@@ -120,7 +120,7 @@ export default function ChatMessage({
     }
 
     return (
-        <div className="p-1.5 relative hover:bg-bg-1 hover:[&_.chat-controls]:visible">
+        <div className={`p-1.5 relative hover:bg-bg-1 hover:[&_.chat-controls]:visible ${message.deleted && 'line-through hover:no-underline'}`}>
             {message.reply &&
             <Tooltip
                 hoverTime={0}
@@ -154,16 +154,18 @@ export default function ChatMessage({
                 </div>
                 }
             </div>
-            {message.banInfo.isBanned &&
+            {(message.banInfo.isBanned || message.deleted) &&
             <>
             <div className="absolute inset-0 bg-bg-09/30 pointer-events-none">
             </div>
             <p className="text-right text-text-3 pe-2">
-                {message.banInfo.banTypeInfo.isPermanent
-                ?
-                "permanently banned"
-                :
-                `timed out (${message.banInfo.banTypeInfo.duration}s)`
+                {
+                message.banInfo.isBanned
+                ? message.banInfo.banTypeInfo.isPermanent
+                    ? "permanently banned"
+                    : `timed out (${message.banInfo.banTypeInfo.duration}s)`
+                : 'deleted'
+
                 }
             </p>
             </>

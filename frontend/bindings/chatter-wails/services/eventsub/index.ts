@@ -11,6 +11,7 @@ export type {
     BanEventData,
     ChatOpenData,
     ChatroomData,
+    ClearMsgEventData,
     ESChatMessage,
     ESMessageBadge,
     ESMessageReply,
