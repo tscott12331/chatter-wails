@@ -120,7 +120,7 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
 
             for(const [name, emote] of Object.entries(set)) {
                 if(!isDefined(emote)) continue;
-                newEmotes[setName][name] = emote;
+                newEmotes[setName].set(name, emote);
             }
 
             return newEmotes;
@@ -154,15 +154,15 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
 
         ConnectToChatroom(channel)
             .then(d => {
-                assertDefined(d?.channelEmotes)
-                addEmoteSet(d.channelEmotes, 'channel')
+                assertDefined(d?.channelEmotes);
+                addEmoteSet(d.channelEmotes, 'channel');
             })
             .then(() => emitChatOpenState(channel, user.access_token, true))
             // TODO: make optional?
             .then(() => EnableSevenTV(channel))
             .then(e => {
-                assertDefined(e)
-                addEmoteSet(e, 'seventv')
+                assertDefined(e);
+                addEmoteSet(e, 'seventv');
             })
             .cancelOn(abortController.signal)
             .catch(broadcastError);
