@@ -26,7 +26,8 @@ export default function EmoteCarousel({
     const { tooltipOn, tooltipOff } = useContext(TooltipContext);
 
     return (
-        <div className="max-w-50 h-10 flex gap-1 justify-around p-2 bg-bg-2/50 backdrop-blur-xs">
+        <div className="relative max-w-50 flex gap-1 justify-around p-2 bg-bg-2/50 outline outline-outline-2/50 shadow-md shadow-outline-2/50 backdrop-blur-xs">
+            <span className="text-xl text-shadow-sm text-shadow-outline-1 text-outline-2 content-center absolute h-full top-0 -left-2">{"<"}</span>
             {trio.map((e,i) => 
                 <div 
                     className={`w-10 h-10 flex justify-center items-center ${i === highlightIndex && "bg-bg-5"}`}
@@ -50,6 +51,7 @@ export default function EmoteCarousel({
                     />
                 </div>
             )}
+            <span className="text-xl text-shadow-sm text-shadow-outline-1 text-outline-2 content-center absolute h-full top-0 -right-2">{">"}</span>
         </div>
     )
 }
