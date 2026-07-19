@@ -168,6 +168,23 @@ type ESBanEvent struct{
 }
 
 
+type ESSpecialVoteData struct{
+	Is_enabled bool			`json:"is_enabled"`
+	Amount_per_vote int			`json:"amount_per_vote"`
+}
+type ESPollBeginEvent struct{
+	Id string			`json:"id"`
+	Broadcaster_user_id string			`json:"broadcaster_user_id"`
+	Broadcaster_user_login string			`json:"broadcaster_user_login"`
+	Broadcaster_user_name string			`json:"broadcaster_user_name"`
+	Title string			`json:"title"`
+	Choices []api.ApiPollChoice			`json:"choices"`
+	Bits_voting ESSpecialVoteData			`json:"bits_voting"`
+	Channel_points_voting ESSpecialVoteData			`json:"channel_points_voting"`
+	Started_at string			`json:"started_at"`
+	Ends_at string			`json:"ends_at"`
+}
+
 /* WELCOME MESSAGE TYPES */
 
 type ESWelcomeMetadata struct {

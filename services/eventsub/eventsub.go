@@ -344,7 +344,6 @@ func (c *Client) pollChatSubscription(ctx context.Context, accessToken, channel 
 
 type PollBeginEventData struct{
 	Channel string
-
 	Choices []api.ApiPollChoice
 	Duration int
 	StartedAt string
@@ -602,7 +601,33 @@ func (c *Client) handleESNotification(message ESMessage) {
 		c.handleSharedChatUpdate(notification)
 	case "channel.shared_chat.end":
 		c.handleSharedChatEnd(notification)
+	case "channel.poll.begin":
+		c.handlePollBeginEvent(notification)
 	}
+}
+
+func (c *Client) handlePollBeginEvent(notification *ESNotification) {
+	var esPollBeginEvent ESPollBeginEvent
+	json.Unmarshal(*notification.Payload.Event, &esPollBeginEvent)
+
+	var startTime, endTime time.Duration
+	startTime, err := time.ParseDuration(esPollBeginEvent.Started_at)
+	if err == nil {
+		endTime, err = time.ParseDuration(esPollBeginEvent.Ends_at)
+	}
+	var duration int
+	if err != nil {
+		duration = int(endTime.Seconds())-int(startTime.Seconds())
+	}
+
+	data := PollBeginEventData{
+		Channel: esPollBeginEvent.Broadcaster_user_name,
+		Choices: esPollBeginEvent.Choices,
+		Duration: duration,
+		StartedAt: esPollBeginEvent.Started_at,
+	}
+
+	c.app.Event.Emit("common:poll-begin", data)
 }
 
 type BanEventData struct{

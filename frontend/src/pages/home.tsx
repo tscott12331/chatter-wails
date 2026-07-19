@@ -10,6 +10,7 @@ const scopes = [
     "chat:read",
     "chat:edit",
     "channel:read:polls",
+    "channel:manage:polls",
 ];
 const scopeParamVal = scopes.map(s => encodeURI(s)).join("+");
 
