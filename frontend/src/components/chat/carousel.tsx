@@ -1,5 +1,6 @@
 import { AppEmote } from "@wailsjs/chatter-wails/services/emote";
-import Tooltip from "../util/tooltip";
+import { TooltipContext } from "@/contexts/tooltip-context";
+import { useContext } from "react";
 
 export interface IEmoteCarouselData { 
     emotes: AppEmote[]; 
@@ -22,22 +23,32 @@ export default function EmoteCarousel({
         highlightIndex = 1;
     }
 
+    const { tooltipOn, tooltipOff } = useContext(TooltipContext);
+
     return (
         <div className="max-w-50 h-10 flex gap-1 justify-around p-2 bg-bg-2/50 backdrop-blur-xs">
             {trio.map((e,i) => 
-                <Tooltip
-                    text={e.name}
-                    hoverTime={0}
+                <div 
+                    className={`w-10 h-10 flex justify-center items-center ${i === highlightIndex && "bg-bg-5"}`}
+                    onMouseEnter={me => {
+                        const rect= me.currentTarget.getBoundingClientRect();
+                        tooltipOn({
+                            type: "image",
+                            imageSrcSet: e.darkSrcSet,
+                            imageDesc: e.name,
+                            posX: rect.x + rect.width/2,
+                            posY: rect.y,
+                        }, e.id)
+                    }}
+                    onMouseLeave={() => tooltipOff(e.id)}
                     key={i}
-                    >
-                        <div className={`w-10 h-10 flex justify-center items-center ${i === highlightIndex && "bg-bg-5"}`}>
-                            <img
-                                className={`inline p-1`}
-                                srcSet={e.darkSrcSet}
-                                alt={e.name}
-                            />
-                        </div>
-                </Tooltip>
+                >
+                    <img
+                        className={`inline p-1`}
+                        srcSet={e.darkSrcSet}
+                        alt={e.name}
+                    />
+                </div>
             )}
         </div>
     )

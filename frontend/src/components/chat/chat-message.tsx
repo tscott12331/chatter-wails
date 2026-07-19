@@ -1,9 +1,9 @@
+import { TooltipContext } from '@/contexts/tooltip-context';
 import { IAppChatMessage } from '@/hooks/chat';
 import ReplyIcon from '@components/svg/reply-icon';
-import Tooltip from '@components/util/tooltip';
 import { AppEmote } from '@wailsjs/chatter-wails/services/emote';
 import { AppChatMessageFragment } from '@wailsjs/chatter-wails/services/eventsub';
-import React from 'react';
+import React, { useContext } from 'react';
 
 export interface IChatMessageFragment {
     type: 'text'|'cheermote'|'emote'|'mention';
@@ -54,35 +54,42 @@ export default function ChatMessage({
     getChatterColor,
     showUserPopup,
 }: ChatMessageProps) {
+    const { tooltipOn, tooltipOff } = useContext(TooltipContext);
     const fragmentToNode = (fragment: AppChatMessageFragment, index: number): React.ReactNode => {
         switch(fragment.type) {
             case 'emote':
                 if(!fragment.emote) return fragment.text;
 
                 return (
-                    <Tooltip
-                        text={fragment.text}
-                        hoverTime={0}
-                        key={index}
-                        >
-                        <div className="align-middle inline-grid place-items-center grid-cols-1 grid-rows-1">
+                    <div className="align-middle inline-grid place-items-center grid-cols-1 grid-rows-1" key={index}>
+                        <img
+                            className="row-1 col-1"
+                            srcSet={fragment.emote.darkSrcSet.length > 0 ? fragment.emote.darkSrcSet : fragment.emote.lightSrcSet}
+                            alt={fragment.text}
+                            onMouseEnter={e => {
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                tooltipOn({
+                                    type: "image",
+                                    imageSrcSet: fragment.emote ? (fragment.emote.darkSrcSet.length > 0 ? fragment.emote.darkSrcSet : fragment.emote.lightSrcSet) : '',
+                                    imageDesc: fragment.text,
+                                    posX: rect.x + rect.width/2,
+                                    posY: rect.y,
+                                }, fragment.text)
+                            }}
+                            onMouseLeave={() => tooltipOff(fragment.text)}
+                        />
+                        {
+                        fragment.emote.emoteStack?.map(e =>
+                            e &&
                             <img
                                 className="row-1 col-1"
-                                srcSet={fragment.emote.darkSrcSet.length > 0 ? fragment.emote.darkSrcSet : fragment.emote.lightSrcSet}
+                                srcSet={e.darkSrcSet.length > 0 ? e.darkSrcSet : e.lightSrcSet}
+                                key={e.id}
                                 alt={fragment.text}
                             />
-                            {
-                            fragment.emote.emoteStack?.map(e =>
-                                e &&
-                                <img
-                                    className="row-1 col-1"
-                                    srcSet={e.darkSrcSet.length > 0 ? e.darkSrcSet : e.lightSrcSet}
-                                    alt={fragment.text}
-                                />
-                             )
-                            }
-                        </div>
-                    </Tooltip>
+                         )
+                        }
+                    </div>
                 );
             case 'mention':
                 if(!fragment.mention) return fragment.text;
@@ -108,9 +115,22 @@ export default function ChatMessage({
     }
 
     const badgeToNode = (badge: IMessageBadge, index: number): React.ReactNode => {
-        return <Tooltip text={badge.title} hoverTime={0} key={index}>
-                    <img className="inline mr-1 max-w-4.5" srcSet={badge.srcSet} />
-               </Tooltip>
+        return <img 
+                    className="inline mr-1 max-w-4.5"
+                    srcSet={badge.srcSet}
+                    onMouseEnter={e => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        tooltipOn({
+                            type: "image",
+                            imageSrcSet: badge.srcSet,
+                            imageDesc: badge.title,
+                            posX: rect.x + rect.width/2,
+                            posY: rect.y,
+                        }, badge.title);
+                    }}
+                    onMouseLeave={() => tooltipOff(badge.title)}
+                    key={index} 
+                />
     }
 
     const badgesToNodes = (badges: IMessageBadge[]): React.ReactNode => {
@@ -122,12 +142,20 @@ export default function ChatMessage({
     return (
         <div className={`p-1.5 relative hover:bg-bg-1 hover:[&_.chat-controls]:visible ${message.deleted && 'line-through hover:no-underline'}`}>
             {message.reply &&
-            <Tooltip
-                hoverTime={0}
-                text={message.reply.parent_message_body}
-            >
-                <p className='w-full text-text-3 text-sm ellipsis'>replying to @{message.reply.parent_user_name}: {message.reply.parent_message_body}</p>
-            </Tooltip>
+            <p 
+                className='w-full text-text-3 text-sm ellipsis'
+                onMouseEnter={e => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    tooltipOn({
+                        type: "text",
+                        text: message.reply?.parent_message_body ?? "",
+                        posX: rect.x + rect.width/2,
+                        posY: rect.y,
+                    }, message.id + message.reply?.parent_message_id)
+                }}
+                onMouseLeave={() => tooltipOff(message.id + message.reply?.parent_message_id)}
+            >replying to @{message.reply.parent_user_name}: {message.reply.parent_message_body}
+            </p>
             }
             <div>
                 {message.badges && badgesToNodes(message.badges)}
@@ -165,7 +193,6 @@ export default function ChatMessage({
                     ? "permanently banned"
                     : `timed out (${message.banInfo.banTypeInfo.duration}s)`
                 : 'deleted'
-
                 }
             </p>
             </>
