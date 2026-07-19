@@ -3,6 +3,9 @@
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as api$0 from "../../internal/api/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as emote$0 from "../emote/models.js";
 
 export interface AppChatMessageFragment {
@@ -71,6 +74,13 @@ export interface ESMessageReply {
 }
 
 export type ESSubscriptionCondition = { [_ in string]?: string } | null;
+
+export interface PollBeginEventData {
+    "Channel": string;
+    "Choices": api$0.ApiPollChoice[] | null;
+    "Duration": number;
+    "StartedAt": string;
+}
 
 export interface SharedChatBeginEventData {
     "channel": string;

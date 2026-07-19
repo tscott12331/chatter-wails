@@ -16,6 +16,7 @@ export type {
     ESMessageBadge,
     ESMessageReply,
     ESSubscriptionCondition,
+    PollBeginEventData,
     SharedChatBeginEventData,
     SharedChatEndEventData,
     SharedChatParticipant,

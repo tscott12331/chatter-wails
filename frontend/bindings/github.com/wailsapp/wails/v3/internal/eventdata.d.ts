@@ -19,6 +19,7 @@ declare module "@wailsio/runtime" {
             "common:chat-message": eventsub$0.ESChatMessage | null;
             "common:chat-open": eventsub$0.ChatOpenData;
             "common:clear-msg": eventsub$0.ClearMsgEventData;
+            "common:poll-begin": eventsub$0.PollBeginEventData;
             "common:shared-chat-begin": eventsub$0.SharedChatBeginEventData;
             "common:shared-chat-end": eventsub$0.SharedChatEndEventData;
             "common:shared-chat-update": eventsub$0.SharedChatUpdateEventData;

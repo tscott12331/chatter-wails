@@ -22,6 +22,14 @@ export interface ApiMessageDropReason {
     "message": string;
 }
 
+export interface ApiPollChoice {
+    "id": string;
+    "title": string;
+    "votes": number;
+    "channel_points_votes": number;
+    "bits_votes": number;
+}
+
 export interface ApiPostMessagesData {
     "message_id": string;
     "is_sent": boolean;

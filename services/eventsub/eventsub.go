@@ -330,15 +330,57 @@ func (c *Client) pollChatSubscription(ctx context.Context, accessToken, channel 
 	ticker := time.NewTicker(CHAT_SUB_POLL_DURATION)
 
 	// poll initial data
-	c.pollStreamData(accessToken, channel)
+	go c.pollStreamData(accessToken, channel)
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			c.pollStreamData(accessToken, channel)
+			go c.pollStreamData(accessToken, channel)
 		}
 	}
+}
+
+
+type PollBeginEventData struct{
+	Channel string
+
+	Choices []api.ApiPollChoice
+	Duration int
+	StartedAt string
+}
+
+func (c *Client) pollPollData(accessToken, broadcasterId string) {
+	res, err := api.ApiGetPoll(accessToken, map[string][]string{
+		"broadcaster_id": {broadcasterId},
+		"first": {"1"},
+	})
+	if err != nil {
+		log.Printf("ERROR: recieved while polling poll data %v", err)
+		return
+	}
+
+	if res.Status != 200 {
+		log.Printf("ERROR: recieved status %d while fetching polld data", res.Status)
+		return
+	}
+
+	if len(res.Body.Data) == 0 { return }
+
+	data := res.Body.Data[0]
+
+	// we'll ignore inactive polls or ones that involve bits/channel points
+	// we can't currently reliably handle channel point stuff
+	if data.Status != "ACTIVE" || data.Bits_voting_enabled || data.Channel_points_voting_enabled {
+		return
+	}
+
+	c.app.Event.Emit("common:poll-begin", PollBeginEventData{
+		Channel: data.Broadcaster_name,
+		Choices: data.Choices,
+		Duration: data.Duration,
+		StartedAt: data.Started_at,
+	})
 }
 
 type StreamData struct{
@@ -952,6 +994,7 @@ func (es *EventSubService) createAuxiliaryChatSubscriptions(accessToken, broadca
 	go es.createBroadcasterIdConditionSubscription(accessToken, broadcasterId, subId, "channel.shared_chat.begin")
 	go es.createBroadcasterIdConditionSubscription(accessToken, broadcasterId, subId, "channel.shared_chat.update")
 	go es.createBroadcasterIdConditionSubscription(accessToken, broadcasterId, subId, "channel.shared_chat.end")
+	go es.createBroadcasterIdConditionSubscription(accessToken, broadcasterId, subId, "channel.poll.begin")
 }
 
 func (es *EventSubService) CreateChatSubscription(accessToken, userId, channelName string, globalBadgeSets *[]api.ApiBadgeSet) (*ChatroomData, error) {
@@ -1041,6 +1084,8 @@ func (es *EventSubService) fetchAndInitChatSubscription(accessToken, userId, cha
 	// fetch channel badge sets in goroutine
 	go es.goGetChannelBadgeSets(accessToken, broadcasterId, subId, globalBadgeSets)
 	go es.goGetSharedChatSession(accessToken, broadcasterId, channelName)
+	go es.Client.pollPollData(accessToken, broadcasterId)
+
 	es.createAuxiliaryChatSubscriptions(accessToken, broadcasterId, subId)
 
 	return newSub, nil

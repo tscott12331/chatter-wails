@@ -125,6 +125,10 @@ var apiEmotesHeaders = apiHeaders;
 
 var apiStreamsHeaders = apiHeaders;
 
+var apiSharedChatHeaders = apiHeaders;
+
+var apiPollHeaders = apiHeaders;
+
 func apiValidateHeaders(access_token string) *http.Header {
     return &http.Header{
         "Authorization" : {"OAuth " + access_token},
@@ -656,7 +660,50 @@ func ApiGetSharedChatSession(
 	) (*ApiResponse[ApiGetSharedChatSessionRes], error) {
 	return ApiGet[ApiGetSharedChatSessionRes](
 		SHARED_CHAT_SESSION_ENDPOINT,
-		apiStreamsHeaders(access_token),
+		apiSharedChatHeaders(access_token),
+		params,
+	)
+}
+
+type ApiPollChoice struct {
+	Id string			`json:"id"`
+	Title string			`json:"title"`
+	Votes int			`json:"votes"`
+	ChannelPointsVotes int			`json:"channel_points_votes"`
+	BitsVotes int			`json:"bits_votes"`
+}
+
+type ApiPoll struct{
+	Id string			`json:"id"`
+	Broadcaster_id string			`json:"broadcaster_id"`
+	Broadcaster_name string			`json:"broadcaster_name"`
+	Title string			`json:"title"`
+	Choices []ApiPollChoice			`json:"choices"`
+	Bits_voting_enabled bool			`json:"bits_voting_enabled"`
+	Bits_per_vote int			`json:"bits_per_vote"`
+	Channel_points_voting_enabled bool			`json:"channel_points_voting_enabled"`
+	Channel_points_per_vote int			`json:"channel_points_per_vote"`
+	// ACTIVE | COMPLETED | TERMINATED | ARCHIVED | MODERATED | INVALID
+	Status string			`json:"status"`
+	// seconds			`json:"second"`
+	Duration int			`json:"duration"`
+	Started_at string			`json:"started_at"`
+	Ended_at string			`json:"ended_at"`
+}
+
+type ApiGetPollRes struct{
+	Data []ApiPoll 		`json:"data"`
+	Pagination ApiPagination
+}
+
+// broadcaster_id(req), id, first, after
+func ApiGetPoll(
+	access_token string,
+	params map[string][]string,
+	) (*ApiResponse[ApiGetPollRes], error) {
+	return ApiGet[ApiGetPollRes](
+		SHARED_CHAT_SESSION_ENDPOINT,
+		apiPollHeaders(access_token),
 		params,
 	)
 }

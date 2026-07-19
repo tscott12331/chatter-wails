@@ -5,6 +5,7 @@ export type {
     ApiBadgeSet,
     ApiBadgeSetVersions,
     ApiMessageDropReason,
+    ApiPollChoice,
     ApiPostMessagesData,
     ApiSubscription,
     ApiSubscriptionTransport

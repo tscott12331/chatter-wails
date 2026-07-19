@@ -112,6 +112,11 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
         })
     }
 
+    const handlePollBeginEvent = (event: Events.WailsEvent<"common:poll-begin">) => {
+        console.log(event.data);
+        if(event.data.Channel.toLowerCase() !== channel?.toLowerCase()) return;
+    }
+
     const sendChatMessage = async (message: string, replyId: string|null|undefined) => {
         if(!channel) return false;
         const trimmed = message.trim();
@@ -158,6 +163,7 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
         offFns.push(Events.On('common:stream-data', (e) => setStreamData(e.data)));
         offFns.push(Events.On('common:ban', handleBanEvent));
         offFns.push(Events.On('common:clear-msg', handleClearMsgEvent));
+        offFns.push(Events.On('common:poll-begin', handlePollBeginEvent))
 
         return () => {
             offFns.forEach(fn => fn());
