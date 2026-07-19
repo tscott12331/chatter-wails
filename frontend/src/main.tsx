@@ -5,12 +5,15 @@ import { createRoot } from 'react-dom/client'
 import App from './App'
 import { HashRouter } from 'react-router-dom'
 import { GlobalContextProvider } from '@/contexts/global-context'
+import { TooltipContextProvider } from './contexts/tooltip-context';
 
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
         <HashRouter>
             <GlobalContextProvider>
-                <App/>
+                <TooltipContextProvider>
+                    <App/>
+                </TooltipContextProvider>
             </GlobalContextProvider>
         </HashRouter>
     </StrictMode>,

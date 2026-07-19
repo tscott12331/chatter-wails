@@ -1,69 +1,43 @@
-import React, { useState } from "react";
+interface ITextTooltip {
+    type: "text";
+    text: string
+}
+interface IImageTooltip {
+    type: "image";
+    imageSrcSet: string;
+    imageDesc: string
+}
 
-interface ITooltipProps extends React.HTMLAttributes<HTMLDivElement> {
-    text: string;
-    hoverTime?: number;
-    children: React.ReactNode;
+export type TTooltipData = (ITextTooltip | IImageTooltip) & {
+    posX: number;
+    posY: number;
+};
+
+interface ITooltipProps {
+    data: TTooltipData;
 }
 
 export default function Tooltip({
- text,
- hoverTime=1000,
- children,
- ...rest
+    data,
 }: ITooltipProps) {
-    const POPUP_POS_OFFSET = 15;
-
-    const [shouldShow, setShouldShow] = useState<boolean>(false);
-    const [pos, setPos] = useState<{x: number, y: number}>({x: 0, y: 0});
-
-    let timeout: ReturnType<typeof setTimeout>;
-
-    const showPopup = (x: number, y: number) => {
-        setShouldShow(true);
-        setPos({
-            x,
-            y,
-        });
-    }
-
-    const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {
-        const x = e.pageX / e.currentTarget.clientWidth + POPUP_POS_OFFSET;
-        const y = e.pageY / e.currentTarget.clientHeight + POPUP_POS_OFFSET;
-        if(hoverTime > 0) {
-            handleMouseLeave();
-            timeout = setTimeout(() => {
-                showPopup(x, y);
-            }, hoverTime);
-        } else {
-            showPopup(x, y);
-        }
-
-    }
-
-    const handleMouseLeave = () => {
-        clearTimeout(timeout);
-
-        setShouldShow(false);
-    }
-
     return (
-        <span
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-            style={{position: 'relative'}}
-            {...rest}
+        <div
+            className="absolute flex flex-col justify-center items-center z-10000 p-0.5 bg-bg-2/80 backdrop-blur-xs outline outline-outline-2/80 border border-outline-1 text-nowrap text-sm -translate-x-1/2 -translate-y-full"
+            style={{
+                left: data.posX,
+                top: data.posY,
+                
+            }}
         >
-            {children}
-            {shouldShow &&
-            <span
-                className='p-0.5 absolute bg-bg-2 border border-outline-1 text-nowrap text-sm z-2000'
-                style={{
-                    left: `${pos.x}px`,
-                    top: `${pos.y}px`,
-                }}
-            >{text}</span>
-            }
-        </span>
+        {data.type === "text"
+        ? data.text
+        : data.type === "image"
+        ? <>
+        <img srcSet={data.imageSrcSet} className="max-w-20"/>
+        <p>{data.imageDesc}</p>
+        </>
+        : <></>
+        }
+        </div>
     )
 }

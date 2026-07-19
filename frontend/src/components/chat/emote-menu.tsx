@@ -1,8 +1,8 @@
 import { TChatroomEmotes } from "@/api/emote"
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { preload } from "react-dom";
-import Tooltip from "../util/tooltip";
 import { AppEmote } from "@wailsjs/chatter-wails/services/emote";
+import { TooltipContext } from "@/contexts/tooltip-context";
 
 interface IEmoteMenuProps {
     emotes: TChatroomEmotes;
@@ -19,6 +19,8 @@ export default function EmoteMenu({
 }: IEmoteMenuProps) {
     const tabs = Object.keys(emotes);
     const [tab, setTab] = useState<number>(0);
+
+    const { tooltipOn, tooltipOff } = useContext(TooltipContext);
     
     useEffect(() => {
         for(const emoteMap of Object.values(emotes)) {
@@ -50,20 +52,26 @@ export default function EmoteMenu({
             className='grow grid grid-cols-[repeat(auto-fill,40px)] auto-rows-min items-start justify-between gap-1 scroller-y'
             >
             {tabs[tab] && [...emotes[tabs[tab]].values()].map(emote =>
-                <Tooltip
-                 text={emote.name}
-                 hoverTime={0}
-                 key={emote.id}
+                 <div
+                     className='flex justify-center items-center cursor-pointer w-10 h-10 p-0.5 rounded-xs opacity-90 hover:bg-bg-5 transition-all duration-150'
+                     onClick={() => handleEmoteSelect(emote)}
+                     onMouseEnter={e => {
+                         const rect = e.currentTarget.getBoundingClientRect();
+                         tooltipOn({
+                             type: "image",
+                             imageSrcSet: emote.darkSrcSet.length > 0 ? emote.darkSrcSet : emote.lightSrcSet,
+                             imageDesc: emote.name,
+                             posX: rect.x + rect.width/2,
+                             posY: rect.y,
+                         }, emote.id)
+                     }}
+                     onMouseLeave={() => tooltipOff(emote.id)}
+                     key={emote.id}
                  >
-                     <div
-                         className='flex justify-center items-center cursor-pointer w-10 h-10 p-0.5 rounded-xs opacity-90 hover:bg-bg-5 transition-all duration-150'
-                         onClick={() => handleEmoteSelect(emote)}
-                     >
-                         <img
-                             srcSet={emote.darkSrcSet.length > 0 ? emote.darkSrcSet : emote.lightSrcSet}
-                         />
-                     </div>
-                 </Tooltip>
+                     <img
+                         srcSet={emote.darkSrcSet.length > 0 ? emote.darkSrcSet : emote.lightSrcSet}
+                     />
+                 </div>
 
             )}
             </div>
