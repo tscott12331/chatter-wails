@@ -12,7 +12,7 @@ export default function Toast({
 }: IToastProps) {
     const bg = toast.type == 'error' ? 'bg-red-800' : '';
     return (
-        <div className={`relative p-3 max-h-28 rounded-md ${bg} align-middle animate-fade-in-out-right opacity-0 z-10000`}>
+        <div className={`ms-auto p-3 max-w-9/10 max-h-28 rounded-md ${bg} wrap-break-word align-middle animate-fade-in-out-right opacity-0 z-10000 pointer-events-none`}>
             {toast.message}
         </div>
     )
