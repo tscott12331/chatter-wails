@@ -51,6 +51,7 @@ func main() {
 		Title:  "chatter-wails",
 		Width:  1024,
 		Height: 768,
+		Frameless: true,
 		BackgroundColour: application.NewRGBA(27, 38, 54, 1),
 		BackgroundType: application.BackgroundTypeSolid,
 	})
