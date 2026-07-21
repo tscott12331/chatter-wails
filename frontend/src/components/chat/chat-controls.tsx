@@ -292,7 +292,7 @@ export default function ChatControls({
         }
         </div>
 
-        <div className={'flex items-center justify-between flex-wrap g-0.5 h-37.5'}>
+        <div className={'flex items-center justify-between flex-wrap gap-0.5 h-37.5'}>
             <div
             className='w-full h-[calc(100%-46px)] overflow-auto'
             contentEditable="true"
