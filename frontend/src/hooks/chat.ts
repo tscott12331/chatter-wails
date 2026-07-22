@@ -131,9 +131,8 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
             const newEmotes: TChatroomEmotes = {};
             Object.assign(newEmotes, curEmotes);
 
-            if(!(setName in newEmotes)) {
-                newEmotes[setName] = new Map();
-            }
+            // always make the set a new map to avoid accumulation between channels
+            newEmotes[setName] = new Map();
 
             for(const [name, emote] of Object.entries(set)) {
                 if(!isDefined(emote)) continue;
