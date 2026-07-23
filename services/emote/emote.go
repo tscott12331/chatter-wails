@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"chatter-wails/internal/api"
 	"chatter-wails/internal/user"
+	"chatter-wails/shared"
+	"chatter-wails/shared/cache"
 	"chatter-wails/shared/types"
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"slices"
@@ -25,8 +28,12 @@ func NewEmoteService(app *application.App) *EmoteService {
 	return &EmoteService{app: app}
 }
 
-func (es *EmoteService) GetUserEmotes(access_token string) (*[]types.AppEmote, error) {
-	user, err := user.GetUserByToken(access_token)
+func (es *EmoteService) GetUserEmotes() (*[]types.AppEmote, error) {
+	appUser := shared.GetUser()
+	if appUser == nil {
+		return nil, errors.New("Cannot get user emotes without being logged in")
+	}
+	user, err := user.GetUserByToken(appUser.Access_token)
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +42,7 @@ func (es *EmoteService) GetUserEmotes(access_token string) (*[]types.AppEmote, e
 		"user_id": {user.Id},
 	}
 
-	res, err := api.ApiGetUserEmotes(access_token, params)
+	res, err := api.ApiGetUserEmotes(appUser.Access_token, params)
 	if err != nil {
 		log.Printf("[GetUserEmotes]: An error occurred fetching user emotes, aborting\n%v\n\n", err)
 		return nil, err
@@ -60,8 +67,13 @@ func (es *EmoteService) GetUserEmotes(access_token string) (*[]types.AppEmote, e
 
 }
 
-func (es *EmoteService) GetGlobalEmotes(access_token string) (*[]types.AppEmote, error) {
-	res, err := api.ApiGetGlobalEmotes(access_token, map[string][]string{})
+func (es *EmoteService) GetGlobalEmotes() (*[]types.AppEmote, error) {
+	appUser := shared.GetUser()
+	if appUser == nil {
+		return nil, errors.New("Cannot get global emotes without being logged in")
+	}
+
+	res, err := api.ApiGetGlobalEmotes(appUser.Access_token, map[string][]string{})
 	if err != nil {
 		log.Printf("[GetGlobalEmotes]: An error occurred fetching global emotes, aborting\n%v\n\n", err)
 		return nil, err
@@ -86,12 +98,22 @@ func (es *EmoteService) GetGlobalEmotes(access_token string) (*[]types.AppEmote,
 	return &emotes, nil
 }
 
-func GetChannelEmotes(access_token string, broadcaster_id string) (*types.AppEmoteSet, error) {
+func (es *EmoteService) GetChannelEmotes(broadcaster_id string) (*types.AppEmoteSet, error) {
+	appUser := shared.GetUser()
+	if appUser == nil {
+		return nil, errors.New("Cannot get channel emotes without logging in")
+	}
+
+	if set, exists := cache.GetEmoteSet(cache.NATIVE_KEY, broadcaster_id); exists {
+		shared.EmitNewSet(es.app, set, broadcaster_id)
+		return set, nil
+	}
+
 	params := map[string][]string{
 		"broadcaster_id": {broadcaster_id},
 	}
 
-	res, err := api.ApiGetChannelEmotes(access_token, params)
+	res, err := api.ApiGetChannelEmotes(appUser.Access_token, params)
 	if err != nil {
 		log.Printf("[GetGlobalEmotes]: An error occurred fetching global emotes, aborting\n%v\n\n", err)
 		return nil, err
@@ -112,9 +134,14 @@ func GetChannelEmotes(access_token string, broadcaster_id string) (*types.AppEmo
 	}
 
 	set := &types.AppEmoteSet{
+		Provider: "channel",
 		Emotes: emotes,
 		Id: broadcaster_id,
 	}
+
+	cache.SetEmoteSet(cache.NATIVE_KEY, broadcaster_id, set)
+
+	shared.EmitNewSet(es.app, set, broadcaster_id)
 
 	return set, nil
 }

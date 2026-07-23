@@ -5,7 +5,3 @@ import * as AuthService from "./authservice.js";
 export {
     AuthService
 };
-
-export type {
-    AppUser
-} from "./models.js";

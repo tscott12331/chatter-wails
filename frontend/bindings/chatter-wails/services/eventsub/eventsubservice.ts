@@ -17,34 +17,34 @@ export function Connect(): $CancellablePromise<void> {
     return $Call.ByID(3016163026);
 }
 
-export function CreateChatSubscription(accessToken: string, userId: string, channelName: string, globalBadgeSets: api$0.ApiBadgeSet[] | null): $CancellablePromise<$models.ChatroomData | null> {
-    return $Call.ByID(2870881603, accessToken, userId, channelName, globalBadgeSets);
+export function CreateChatSubscription(channelName: string, globalBadgeSets: api$0.ApiBadgeSet[] | null): $CancellablePromise<$models.ChatroomData | null> {
+    return $Call.ByID(2870881603, channelName, globalBadgeSets);
 }
 
-export function CreateSubscription(accessToken: string, condition: $models.ESSubscriptionCondition, subType: string): $CancellablePromise<string> {
-    return $Call.ByID(164469809, accessToken, condition, subType);
+export function CreateSubscription(condition: $models.ESSubscriptionCondition, subType: string): $CancellablePromise<string> {
+    return $Call.ByID(164469809, condition, subType);
 }
 
-export function DeleteAllSubscriptions(accessToken: string): $CancellablePromise<void> {
-    return $Call.ByID(705441756, accessToken);
+export function DeleteAllSubscriptions(): $CancellablePromise<void> {
+    return $Call.ByID(705441756);
 }
 
-export function DeleteChatSubscriptionFromChannelName(accessToken: string, channelName: string): $CancellablePromise<void> {
-    return $Call.ByID(4150012008, accessToken, channelName);
+export function DeleteChatSubscriptionFromChannelName(channelName: string): $CancellablePromise<void> {
+    return $Call.ByID(4150012008, channelName);
 }
 
-export function DeleteChatSubscriptionFromSubId(accessToken: string, subId: string): $CancellablePromise<void> {
-    return $Call.ByID(1223491543, accessToken, subId);
+export function DeleteChatSubscriptionFromSubId(subId: string): $CancellablePromise<void> {
+    return $Call.ByID(1223491543, subId);
 }
 
-export function DeleteSubscription(accessToken: string, subId: string): $CancellablePromise<void> {
-    return $Call.ByID(4164798938, accessToken, subId);
+export function DeleteSubscription(subId: string): $CancellablePromise<void> {
+    return $Call.ByID(4164798938, subId);
 }
 
-export function GetSubscriptions(accessToken: string): $CancellablePromise<api$0.ApiSubscription[] | null> {
-    return $Call.ByID(331411654, accessToken);
+export function GetSubscriptions(): $CancellablePromise<api$0.ApiSubscription[] | null> {
+    return $Call.ByID(331411654);
 }
 
-export function SendChatMessageFromChannelName(accessToken: string, userId: string, channelName: string, messageContent: string, replyId: string | null): $CancellablePromise<api$0.ApiPostMessagesData | null> {
-    return $Call.ByID(933703621, accessToken, userId, channelName, messageContent, replyId);
+export function SendChatMessageFromChannelName(channelName: string, messageContent: string, replyId: string | null): $CancellablePromise<api$0.ApiPostMessagesData | null> {
+    return $Call.ByID(933703621, channelName, messageContent, replyId);
 }

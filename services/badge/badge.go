@@ -2,7 +2,9 @@ package badge
 
 import (
 	"chatter-wails/internal/api"
+	"chatter-wails/shared"
 	"context"
+	"errors"
 	"log"
 	"slices"
 
@@ -21,8 +23,13 @@ func NewBadgeService(app *application.App) *BadgeService {
 }
 
 
-func (bs *BadgeService) GetGlobalBadgeSets(accessToken string) (*[]api.ApiBadgeSet, error) {
-	res, err := api.ApiGetGlobalBadges(accessToken)
+func (bs *BadgeService) GetGlobalBadgeSets() (*[]api.ApiBadgeSet, error) {
+	appUser := shared.GetUser()
+	if appUser == nil {
+		return nil, errors.New("Cannot get global badge sets while not being logged in")
+	}
+
+	res, err := api.ApiGetGlobalBadges(appUser.Access_token)
 	if err != nil {
 		log.Printf("[GetGlobalBadgeSets]: An error occurred fetching global badge sets, aborting\n\n")
 		return nil, err
@@ -40,8 +47,12 @@ func (bs *BadgeService) GetGlobalBadgeSets(accessToken string) (*[]api.ApiBadgeS
 	return sets, nil
 }
 
-func GetChannelBadgeSets(accessToken string, broadcasterId string) (*[]api.ApiBadgeSet, error) {
-	res, err := api.ApiGetChannelBadges(accessToken, map[string][]string{
+func GetChannelBadgeSets(broadcasterId string) (*[]api.ApiBadgeSet, error) {
+	appUser := shared.GetUser()
+	if appUser == nil {
+		return nil, errors.New("Cannot get channel badge sets while not being logged in")
+	}
+	res, err := api.ApiGetChannelBadges(appUser.Access_token, map[string][]string{
 		"broadcaster_id": {broadcasterId},
 	})
 	if err != nil {

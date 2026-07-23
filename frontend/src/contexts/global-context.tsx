@@ -4,8 +4,7 @@ import { Login } from "@wailsjs/chatter-wails/services/auth/authservice";
 import { GetGlobalBadgeSets } from "@wailsjs/chatter-wails/services/badge/badgeservice";
 import { GetGlobalEmotes, GetUserEmotes } from "@wailsjs/chatter-wails/services/emote/emoteservice";
 import { DeleteAllSubscriptions } from "@wailsjs/chatter-wails/services/eventsub/eventsubservice";
-import { AppEmote } from "@wailsjs/chatter-wails/shared/types";
-import { AppUser } from "@wailsjs/chatter-wails/services/auth";
+import { AppEmote, AppUser } from "@wailsjs/chatter-wails/shared/types";
 import { ApiBadgeSet } from "@wailsjs/chatter-wails/internal/api";
 import { IToast } from "@/components/util/toast/toast";
 import { assertDefined } from "@/util/assert";
@@ -48,7 +47,7 @@ export function GlobalContextProvider({
 
             setUser({...appUser} as AppUser);
             if(appUser) {
-                initData(appUser.access_token);
+                initData();
             }
 
             localStorage.setItem('token', accessToken);
@@ -71,9 +70,10 @@ export function GlobalContextProvider({
         }
     }
 
-    const initData = (accessToken: string) => {
+    const initData = () => {
+        // TODO: make these emote events as well
         if(globalBadgeSets.length === 0) {
-            GetGlobalBadgeSets(accessToken)
+            GetGlobalBadgeSets()
                 .then(gbs => {
                     assertDefined(gbs, "Global badge sets not found");
                     setGlobalBadgeSets(gbs);
@@ -81,7 +81,7 @@ export function GlobalContextProvider({
                 .catch(broadcastError);
         }
         if(globalEmotes.length === 0) {
-            GetGlobalEmotes(accessToken)
+            GetGlobalEmotes()
                 .then(ge => {
                     assertDefined(ge, "Global emotes not found");
                     setGlobalEmotes(ge);
@@ -89,7 +89,7 @@ export function GlobalContextProvider({
                 .catch(broadcastError);
         }
         if(userEmotes.length === 0) {
-            GetUserEmotes(accessToken)
+            GetUserEmotes()
                 .then(ue => {
                     assertDefined(ue, "User emotes not found");
                     setUserEmotes(ue);
@@ -97,7 +97,7 @@ export function GlobalContextProvider({
                 .catch(broadcastError);
         }
 
-        DeleteAllSubscriptions(accessToken).catch(broadcastError);
+        DeleteAllSubscriptions().catch(broadcastError);
     }
 
     const broadcastToast = (toast: IToast) => {

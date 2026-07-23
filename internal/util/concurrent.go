@@ -98,6 +98,37 @@ func (fc *FetchCache[K, V]) Fetch(fn func() V, key K) *V {
 
 
 
+type RWValue[V any] struct{
+	mutex sync.RWMutex
+	val V
+}
+
+func NewRWValue[V any]() *RWValue[V] {
+	return &RWValue[V]{}
+}
+
+func (rwv *RWValue[V]) Set(val V) {
+	rwv.mutex.Lock()
+	defer rwv.mutex.Unlock()
+
+	rwv.val = val
+}
+
+func (rwv *RWValue[V]) Get() V {
+	rwv.mutex.RLock()
+	defer rwv.mutex.RUnlock()
+
+	return rwv.val
+}
+
+func (rwv *RWValue[V]) Update(fn func(*V)) {
+	rwv.mutex.Lock()
+	defer rwv.mutex.Unlock()
+
+	fn(&rwv.val)
+}
+
+
 type RWMap[K comparable, V any] struct{
 	mutex sync.RWMutex
 	data map[K]V

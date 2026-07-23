@@ -5,5 +5,6 @@ export type {
     AppEmote,
     AppEmoteMap,
     AppEmoteSet,
+    AppUser,
     NewEmoteSetEvent
 } from "./models.js";

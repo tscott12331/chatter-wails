@@ -5,11 +5,11 @@ import { EnableSevenTV } from "@wailsjs/chatter-wails/services/7tv/seventvservic
 import { Events } from "@wailsio/runtime";
 
 import { useContext, useEffect, useState } from "react";
-import { AppEmoteMap } from "@wailsjs/chatter-wails/shared/types";
-import { AppUser } from "@wailsjs/chatter-wails/services/auth";
+import { AppEmoteMap, AppUser } from "@wailsjs/chatter-wails/shared/types";
 import { ESChatMessage, StreamData } from "@wailsjs/chatter-wails/services/eventsub";
 import { assertDefined, isDefined } from "@/util/assert";
 import { GlobalContext } from "@/contexts/global-context";
+import { GetChannelEmotes } from "@wailsjs/chatter-wails/services/emote/emoteservice";
 
 export type TBanTypeInfo = 
     | {
@@ -135,6 +135,7 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
     const addEmoteSet = (set: AppEmoteMap, setName: string) => {
         setEmotes(curEmotes => {
             if(!isDefined(set)) return curEmotes;
+
             const newEmotes: TChatroomEmotes = {};
             Object.assign(newEmotes, curEmotes);
 
@@ -184,11 +185,6 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
 
                 assertDefined(d);
                 setBroadcasterId(d?.broadcasterId);
-
-                
-                // TODO: make emote set updates an event
-                assertDefined(d.channelEmotes);
-                addEmoteSet(d.channelEmotes.Emotes, 'channel');
             })
             .cancelOn(abortController.signal)
             .catch(broadcastError);
@@ -200,8 +196,11 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
     }, [channel, user]);
 
     useEffect(() => {
+        if(broadcasterId.length === 0) return;
+
         // TODO: make optional?
         EnableSevenTV(broadcasterId);
+        GetChannelEmotes(broadcasterId);
 
         const listenersOff = listenersOn(broadcasterId);
         

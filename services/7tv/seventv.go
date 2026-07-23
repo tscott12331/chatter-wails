@@ -2,8 +2,8 @@ package seventv
 
 import (
 	"chatter-wails/internal/api/seventv"
+	"chatter-wails/shared"
 	"chatter-wails/shared/cache"
-	"chatter-wails/shared/types"
 	"context"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -25,7 +25,7 @@ func NewSevenTVService(app *application.App) *SevenTVService{
 
 func (stv *SevenTVService) EnableSevenTV(broadcasterId string) error {
 	if set, exists := cache.GetEmoteSet(cache.STV_KEY, broadcasterId); exists {
-		stv.emitNewSet(set, broadcasterId)
+		shared.EmitNewSet(stv.app, set, broadcasterId)
 		return nil
 	}
 
@@ -36,16 +36,9 @@ func (stv *SevenTVService) EnableSevenTV(broadcasterId string) error {
 
 	set := seventv.GetAppEmotesFromSevenTVUserRes(userRes)
 	cache.SetEmoteSet(cache.STV_KEY, broadcasterId, set)
-	stv.emitNewSet(set, broadcasterId)
+	shared.EmitNewSet(stv.app, set, broadcasterId)
 
 	// TODO: add emote set udpate listeners
 
 	return nil
-}
-
-func (stv *SevenTVService) emitNewSet(set *types.AppEmoteSet, broadcasterId string) {
-	stv.app.Event.Emit("chatter:emote:new-set", types.NewEmoteSetEvent{
-		BroadcasterId: broadcasterId,
-		AppEmoteSet: *set,
-	})
 }

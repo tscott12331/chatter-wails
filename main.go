@@ -1,7 +1,6 @@
 package main
 
 import (
-	"chatter-wails/services/auth"
 	"chatter-wails/services/eventsub"
 	"chatter-wails/shared/types"
 	"embed"
@@ -17,7 +16,7 @@ func main() {
 	application.RegisterEvent[*eventsub.ESChatMessage]("common:chat-message")
 	application.RegisterEvent[eventsub.StreamData]("common:stream-data")
 	application.RegisterEvent[eventsub.ChatOpenData]("common:chat-open")
-	application.RegisterEvent[*auth.AppUser]("common:user-login")
+	application.RegisterEvent[*types.AppUser]("common:user-login")
 	application.RegisterEvent[eventsub.SharedChatBeginEventData]("common:shared-chat-begin")
 	application.RegisterEvent[eventsub.SharedChatUpdateEventData]("common:shared-chat-update")
 	application.RegisterEvent[eventsub.SharedChatEndEventData]("common:shared-chat-end")

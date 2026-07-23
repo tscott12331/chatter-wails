@@ -9,6 +9,6 @@ import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wails
 // @ts-ignore: Unused imports
 import * as api$0 from "../../internal/api/models.js";
 
-export function GetGlobalBadgeSets(accessToken: string): $CancellablePromise<api$0.ApiBadgeSet[] | null> {
-    return $Call.ByID(42025171, accessToken);
+export function GetGlobalBadgeSets(): $CancellablePromise<api$0.ApiBadgeSet[] | null> {
+    return $Call.ByID(42025171);
 }

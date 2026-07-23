@@ -33,7 +33,6 @@ export interface ChatOpenData {
 export interface ChatroomData {
     "subId": string;
     "broadcasterId": string;
-    "channelEmotes": types$0.AppEmoteSet | null;
 }
 
 export interface ClearMsgEventData {

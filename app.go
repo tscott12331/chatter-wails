@@ -7,6 +7,7 @@ import (
 	"chatter-wails/services/badge"
 	"chatter-wails/services/emote"
 	"chatter-wails/services/eventsub"
+	"chatter-wails/shared"
 	"chatter-wails/shared/cache"
 	"context"
 	"log"
@@ -60,51 +61,22 @@ func (nli *NotLoggedInError) Error() string {
 
 
 func (a *AppService) ConnectToChatroom(channelName string) (*eventsub.ChatroomData, error) {
-	if a.authService.User == nil {
+	user := shared.GetUser()
+	if user == nil {
 		return nil, &NotLoggedInError{}
 	}
 
-	accessToken := a.authService.User.Access_token
-
-	return a.esService.CreateChatSubscription(accessToken, a.authService.User.Id, channelName, a.badgeService.GlobalBadgeSets)
-}
-
-func (a *AppService) goGetChannelBadgeSets(
-	accessToken string,
-	broadcasterId string,
-	subId string,
-) {
-	sub, exists := a.esService.Client.ChatSubscriptions.Read().GetSubFromId(subId)
-	if !exists {
-		log.Printf("Subscription %v doesn't exist\n", subId)
-		return
-	}
-
-	// data already fetched
-	if sub.Data.ChannelBadgeSets.IsWritten() {
-		log.Printf("Badge sets already written")
-		return
-	}
-
-	badgeSets, err := badge.GetChannelBadgeSets(accessToken, broadcasterId)
-	if err != nil {
-		log.Printf("ERROR: %+v", err)
-	}
-	combinedSets := badge.CombineChannelGlobalSets(badgeSets, a.badgeService.GlobalBadgeSets)
-
-	if !sub.Data.ChannelBadgeSets.Write(*combinedSets) {
-		log.Printf("Tried to write badge sets which were already written")
-	}
+	return a.esService.CreateChatSubscription(channelName, a.badgeService.GlobalBadgeSets)
 }
 
 func (a *AppService) SendChatMessage(channelName string, messageContent string, replyId *string) (*api.ApiPostMessagesData, error) {
-	user := a.authService.User
+	user := shared.GetUser()
 	if user == nil {
-		log.Printf("[SendChatMessage]: User not logged int, cannot send message, aborting\n\n")
+		log.Printf("[SendChatMessage]: User not logged in, cannot send message, aborting\n\n")
 		return nil, &NotLoggedInError{}
 	}
 
-	return a.esService.SendChatMessageFromChannelName(user.Access_token, user.Id, channelName, messageContent, replyId)
+	return a.esService.SendChatMessageFromChannelName(channelName, messageContent, replyId)
 }
 
 func (a *AppService) DisconnectFromChatroom(channelName string) error {
@@ -114,5 +86,5 @@ func (a *AppService) DisconnectFromChatroom(channelName string) error {
 		cache.RemoveBroadcasterEmoteSets(sub.Data.BroadcasterId)
 	}
 
-	return a.esService.DeleteChatSubscriptionFromChannelName(a.authService.User.Access_token, channelName)
+	return a.esService.DeleteChatSubscriptionFromChannelName(channelName)
 }

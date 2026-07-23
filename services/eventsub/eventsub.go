@@ -16,9 +16,9 @@ import (
 	"chatter-wails/internal/message"
 	"chatter-wails/internal/user"
 	"chatter-wails/internal/util"
+	"chatter-wails/shared"
 	"chatter-wails/shared/types"
 
-	"chatter-wails/services/auth"
 	"chatter-wails/services/badge"
 	"chatter-wails/services/emote"
 	"chatter-wails/services/irc"
@@ -262,7 +262,6 @@ func (cs *ChatSubscriptions) GetChatroomData(channelName string) (*ChatroomData,
 	data := &ChatroomData{
 		SubId: sub.SubId,
 		BroadcasterId: sub.Data.BroadcasterId,
-		ChannelEmotes: sub.Data.ChannelEmotes,
 	}
 
 	return data, true
@@ -272,8 +271,6 @@ func (cs *ChatSubscriptions) GetChatroomData(channelName string) (*ChatroomData,
 type Client struct {
 	app *application.App
 	ctx context.Context
-
-	user *auth.AppUser
 
 	socket *util.Socket
 	IrcListener *irc.IRCListener
@@ -310,7 +307,7 @@ func (c *Client) ToggleChatSubscriptionFromChannelName(data *ChatOpenData) {
 		if data.Open && !sub.Data.ChatOpen {
 			pollCxt, pollCancel := context.WithCancel(c.ctx)
 
-			go c.pollChatSubscription(pollCxt, data.AccessToken, data.Channel)
+			go c.pollChatSubscription(pollCxt, data.Channel)
 
 			sub.Data.PollCancel = pollCancel
 		}
@@ -320,17 +317,17 @@ func (c *Client) ToggleChatSubscriptionFromChannelName(data *ChatOpenData) {
 }
 
 const CHAT_SUB_POLL_DURATION = 30 * time.Second
-func (c *Client) pollChatSubscription(ctx context.Context, accessToken, channel string) {
+func (c *Client) pollChatSubscription(ctx context.Context, channel string) {
 	ticker := time.NewTicker(CHAT_SUB_POLL_DURATION)
 
 	// poll initial data
-	c.pollStreamData(accessToken, channel)
+	c.pollStreamData(channel)
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			c.pollStreamData(accessToken, channel)
+			c.pollStreamData(channel)
 		}
 	}
 }
@@ -343,8 +340,13 @@ type StreamData struct{
 	GameName string 	`json:"gameName"`
 }
 
-func (c *Client) pollStreamData(accessToken, channel string) {
-	res, err := api.ApiGetStreams(accessToken, map[string][]string{
+func (c *Client) pollStreamData(channel string) {
+	appUser := shared.GetUser()
+	if appUser == nil {
+		log.Printf("ERROR: cannot poll stream data without logging in")
+		return
+	}
+	res, err := api.ApiGetStreams(appUser.Access_token, map[string][]string{
 		"user_login": {channel},
 		"first": {"1"},
 	})
@@ -371,7 +373,6 @@ func (c *Client) pollStreamData(accessToken, channel string) {
 type ChatroomData struct{
 	SubId string					`json:"subId"`
 	BroadcasterId string			`json:"broadcasterId"`
-	ChannelEmotes *types.AppEmoteSet `json:"channelEmotes"`
 }
 
 type EventSubService struct {
@@ -420,16 +421,6 @@ func (es *EventSubService) handleChatOpenEvent(event *application.CustomEvent) {
 	es.Client.ToggleChatSubscriptionFromChannelName(&data)
 }
 
-func (es *EventSubService) handleUserLoginEvent(event *application.CustomEvent) {
-	data, ok := event.Data.(*auth.AppUser)
-	if !ok {
-		log.Printf("ERROR: failed to cast user login data\nData: %+v\n", data)
-		return
-	}
-
-	es.Client.user = data
-}
-
 func (es *EventSubService) Connect() {
 	ready := es.Client.ready
 
@@ -439,8 +430,6 @@ func (es *EventSubService) Connect() {
 	defer cancel()
 	
 	newSessionIdChan := es.Client.newSessionIdChan
-
-	es.app.Event.On("common:user-login", es.handleUserLoginEvent)
 
 	ircListener := irc.NewIRCListener()
 	es.Client.IrcListener = ircListener
@@ -453,6 +442,12 @@ func (es *EventSubService) Connect() {
 			if !ok { return }
 
 			if r {
+				user := shared.GetUser()
+				if user == nil {
+					log.Printf("ERROR: attempting to connect to eventsub without logging in")
+					continue
+				}
+
 				if !es.Client.connected {
 					log.Printf("[Connect]: Connecting to eventsub web server\n\n")
 					var err error
@@ -460,7 +455,7 @@ func (es *EventSubService) Connect() {
 
 					es.Client.socket, err = util.NewSocket(esCtx, twitchESURL.String(), es.Client.handleESMessage)
 
-					es.Client.IrcListener.Connect(es.Client.user.Access_token, es.Client.user.Login, true, false, true)
+					es.Client.IrcListener.Connect(user.Access_token, user.Login, true, false, true)
 
 					if err != nil {
 						log.Fatal(err.Error())
@@ -673,16 +668,17 @@ func (c *Client) fetchSharedChatProfileImages(sharedChatBeginEvent *ESSharedChat
 func (c *Client) fetchAndSetSharedParticipantProfileImage(mainBroadcaster string, participant_user_id string, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	if c.user == nil { return }
-	user, err := user.GetUserById(c.user.Access_token, participant_user_id)
+	appUser := shared.GetUser()
+	if appUser == nil { return }
+	participantUser, err := user.GetUserById(appUser.Access_token, participant_user_id)
 	if err == nil {
 		c.ChatSubscriptions.Update(func(cs **ChatSubscriptions) {
 			sub, exists := (*cs).GetSubFromChannelName(mainBroadcaster)
 			if !exists { return }
 
-			sub.Data.SharedChatParticipants[user.Login] = &SharedChatParticipant{
-				Name: user.Display_name,
-				ProfileImageURL: user.Profile_image_url,
+			sub.Data.SharedChatParticipants[participantUser.Login] = &SharedChatParticipant{
+				Name: participantUser.Display_name,
+				ProfileImageURL: participantUser.Profile_image_url,
 			}
 		})
 	}
@@ -744,8 +740,13 @@ func (esrt *ESSessionReqTimeout) Error() string {
 	return "The request for a session ID timed out"
 }
 
-func (es *EventSubService) GetSubscriptions(accessToken string) ([]api.ApiSubscription, error) {
-	res, err := api.ApiGetSubscriptions(accessToken, map[string][]string{})
+func (es *EventSubService) GetSubscriptions() ([]api.ApiSubscription, error) {
+	appUser := shared.GetUser()
+	if appUser == nil {
+		return nil, errors.New("Cannot get subscriptions without being logged in")
+	}
+
+	res, err := api.ApiGetSubscriptions(appUser.Access_token, map[string][]string{})
 	if err != nil {
 		log.Printf("[GetSubscriptions]: An error occurred trying to get subscriptions, aborting\n\n")
 		return nil, err
@@ -759,7 +760,12 @@ func (es *EventSubService) GetSubscriptions(accessToken string) ([]api.ApiSubscr
 	return res.Body.Data, nil
 }
 
-func (es *EventSubService) CreateSubscription(accessToken string, condition ESSubscriptionCondition, subType string) (string, error) {
+func (es *EventSubService) CreateSubscription(condition ESSubscriptionCondition, subType string) (string, error) {
+	appUser := shared.GetUser()
+	if appUser == nil {
+		return "", errors.New("Cannot create subscription without being logged in")
+	}
+
 	if !es.Client.connected {
 		log.Printf("[CreateSubscription]: Client not yet connected, signal ready to connect\n\n")
 		es.Client.ready <- true // signal ready to connect
@@ -803,7 +809,7 @@ func (es *EventSubService) CreateSubscription(accessToken string, condition ESSu
 		},
 	}
 
-	res, err := api.ApiPostSubscriptions(accessToken, req_body, map[string][]string{})
+	res, err := api.ApiPostSubscriptions(appUser.Access_token, req_body, map[string][]string{})
 	if err != nil {
 		log.Printf("[CreateSubscription]: An error occurred while making request, aborting\n\n")
 		return "", err
@@ -831,8 +837,13 @@ func (es *EventSubService) CreateSubscription(accessToken string, condition ESSu
 }
 
 
-func (es *EventSubService) DeleteSubscription(accessToken string, subId string) (error) {
-	res, err := api.ApiDeleteSubscriptions(accessToken, map[string][]string{
+func (es *EventSubService) DeleteSubscription(subId string) (error) {
+	appUser := shared.GetUser()
+	if appUser == nil {
+		return errors.New("Cannot delete subscription without being logged in")
+	}
+
+	res, err := api.ApiDeleteSubscriptions(appUser.Access_token, map[string][]string{
 		"id": {subId},
 	})
 
@@ -849,15 +860,15 @@ func (es *EventSubService) DeleteSubscription(accessToken string, subId string) 
 	return nil
 }
 
-func (es *EventSubService) DeleteAllSubscriptions(accessToken string) error {
-	res, err := es.GetSubscriptions(accessToken)
+func (es *EventSubService) DeleteAllSubscriptions() error {
+	res, err := es.GetSubscriptions()
 	if err != nil {
 		log.Printf("[DeleteAllSubscriptions]: An error occurred getting the current subscriptions, aborting\n\n")
 		return err
 	}
 
 	for _, v := range res {
-		err := es.DeleteSubscription(accessToken, v.Id)
+		err := es.DeleteSubscription(v.Id)
 		if err != nil {
 			log.Printf("[DeleteAllSubscriptions]: An error occured deleting subscription %v", v.Id)
 		}
@@ -866,33 +877,38 @@ func (es *EventSubService) DeleteAllSubscriptions(accessToken string) error {
 	return err
 }
 
-func (es *EventSubService) DeleteChatSubscriptionFromSubId(accessToken, subId string) error {
+func (es *EventSubService) DeleteChatSubscriptionFromSubId(subId string) error {
 	sub, exists := es.Client.ChatSubscriptions.Read().GetSubFromId(subId)
 	if !exists {
 		return nil
 	}
 
 	channelName := sub.Data.Channel
-	return es.deleteChatSubscription(accessToken, subId, channelName)
+	return es.deleteChatSubscription(subId, channelName)
 }
 
-func (es *EventSubService) DeleteChatSubscriptionFromChannelName(accessToken, channelName string) error {
+func (es *EventSubService) DeleteChatSubscriptionFromChannelName(channelName string) error {
+	appUser := shared.GetUser()
+	if appUser == nil {
+		return errors.New("Cannot delete chat subscription without logging in")
+	}
+
 	sub, exists := es.Client.ChatSubscriptions.Read().GetSubFromChannelName(channelName)
 	if !exists {
 		return nil
 	}
 
 	subId := sub.SubId
-	return es.deleteChatSubscription(accessToken, subId, channelName)
+	return es.deleteChatSubscription(subId, channelName)
 }
 
-func (es *EventSubService) deleteChatSubscription(accessToken, subId, channelName string) error {
+func (es *EventSubService) deleteChatSubscription(subId, channelName string) error {
 	es.Client.ChatSubscriptions.Update(func(cs **ChatSubscriptions) {
 		sub := (*cs).fromSubId[subId]
 
 		// delete auxiliary subscriptions
 		for _, id := range sub.Data.AuxiliarySubIds {
-			go es.DeleteSubscription(accessToken, id)
+			go es.DeleteSubscription(id)
 		}
 
 		pollCancel := sub.Data.PollCancel
@@ -902,17 +918,22 @@ func (es *EventSubService) deleteChatSubscription(accessToken, subId, channelNam
 		delete((*cs).fromChannelName, channelName)
 	})
 
-	return es.DeleteSubscription(accessToken, subId)
+	return es.DeleteSubscription(subId)
 }
 
-func (es *EventSubService) SendChatMessageFromChannelName(accessToken, userId, channelName string, messageContent string, replyId *string) (*api.ApiPostMessagesData, error) {
+func (es *EventSubService) SendChatMessageFromChannelName(channelName string, messageContent string, replyId *string) (*api.ApiPostMessagesData, error) {
+	appUser := shared.GetUser()
+	if appUser == nil {
+		return nil, errors.New("Cannot send chat message without being logged in")
+	}
+
 	subData, ok := es.Client.ChatSubscriptions.Read().GetSubFromChannelName(channelName)
 	if !ok {
 		log.Printf("[SendChatMessage]: Failed to find chat subscription data, aborting\n\n")
 		return nil, errors.New("Failed to find chat subscription data")
 	}
 
-	res, err := message.SendMessage(userId, accessToken, subData.Data.BroadcasterId, messageContent, replyId)
+	res, err := message.SendMessage(appUser.Id, appUser.Access_token, subData.Data.BroadcasterId, messageContent, replyId)
 	if err != nil {
 		log.Printf("[SendChatMessage]: An error occurred sending the chat message, aborting\n%+v\n\n", err)
 		return nil, err
@@ -922,8 +943,8 @@ func (es *EventSubService) SendChatMessageFromChannelName(accessToken, userId, c
 }
 
 
-func (es *EventSubService) createBroadcasterIdConditionSubscription(accessToken, broadcasterId, subId, eventType string) {
-	sharedSubId, err := es.CreateSubscription(accessToken, map[string]string{
+func (es *EventSubService) createBroadcasterIdConditionSubscription(broadcasterId, subId, eventType string) {
+	sharedSubId, err := es.CreateSubscription(map[string]string{
 		"broadcaster_user_id": broadcasterId,
 	}, eventType)
 	if err != nil {
@@ -942,13 +963,18 @@ func (es *EventSubService) createBroadcasterIdConditionSubscription(accessToken,
 	})
 }
 
-func (es *EventSubService) createAuxiliaryChatSubscriptions(accessToken, broadcasterId, subId string) {
-	go es.createBroadcasterIdConditionSubscription(accessToken, broadcasterId, subId, "channel.shared_chat.begin")
-	go es.createBroadcasterIdConditionSubscription(accessToken, broadcasterId, subId, "channel.shared_chat.update")
-	go es.createBroadcasterIdConditionSubscription(accessToken, broadcasterId, subId, "channel.shared_chat.end")
+func (es *EventSubService) createAuxiliaryChatSubscriptions(broadcasterId, subId string) {
+	go es.createBroadcasterIdConditionSubscription(broadcasterId, subId, "channel.shared_chat.begin")
+	go es.createBroadcasterIdConditionSubscription(broadcasterId, subId, "channel.shared_chat.update")
+	go es.createBroadcasterIdConditionSubscription(broadcasterId, subId, "channel.shared_chat.end")
 }
 
-func (es *EventSubService) CreateChatSubscription(accessToken, userId, channelName string, globalBadgeSets *[]api.ApiBadgeSet) (*ChatroomData, error) {
+func (es *EventSubService) CreateChatSubscription(channelName string, globalBadgeSets *[]api.ApiBadgeSet) (*ChatroomData, error) {
+	appUser := shared.GetUser()
+	if appUser == nil {
+		return nil, errors.New("Cannot create chat subscriptions without loggin in")
+	}
+
 	var chatroomData *ChatroomData
 	var err error
 	es.Client.ChatSubscriptions.Update(func(cs **ChatSubscriptions) {
@@ -958,48 +984,23 @@ func (es *EventSubService) CreateChatSubscription(accessToken, userId, channelNa
 			return
 		}
 
-		broadcaster, broadcasterErr := user.GetUserByLogin(accessToken, channelName)
+		broadcaster, broadcasterErr := user.GetUserByLogin(appUser.Access_token, channelName)
 		if broadcasterErr != nil {
 			log.Printf("[CreateChatSubscription]: An error occurred fetching the broadcaster info, aborting")
 			err = broadcasterErr
 			return
 		}
 
-		// fetch channel emotes
-		var channelEmotesDone chan *types.AppEmoteSet = make(chan *types.AppEmoteSet)
-		var channelEmotesErr chan error = make(chan error)
-		defer func() {
-			close(channelEmotesDone)
-			close(channelEmotesErr)
-		}()
-
-		ceCtx, ceCancel := context.WithTimeout(es.Ctx, 15 * time.Second)
-		defer ceCancel()
-
-		var wg sync.WaitGroup
-
-		// fetch channel emotes in goroutine
-		wg.Add(1)
-		go es.goGetChannelEmotes(ceCtx, channelEmotesDone, channelEmotesErr, &wg, accessToken, broadcaster.Id)
-
 		// fetch
-		sub, fetchErr := es.fetchAndInitChatSubscription(accessToken, userId, channelName, broadcaster.Id, globalBadgeSets)
+		sub, fetchErr := es.fetchAndInitChatSubscription(appUser.Id, channelName, broadcaster.Id, globalBadgeSets)
 		err = fetchErr
 		if err != nil {
-			wg.Wait()
 			return
 		}
 
 		chatroomData = &ChatroomData{
 			SubId: sub.SubId,
 			BroadcasterId: sub.Data.BroadcasterId,
-		}
-		select {
-		case channelEmotes := <-channelEmotesDone:
-			chatroomData.ChannelEmotes = channelEmotes
-			sub.Data.ChannelEmotes = channelEmotes
-		case err := <-channelEmotesErr:
-			log.Printf("[CreateChatSubscription]: Failed to get channel emotes\n%+v\n\n", err)
 		}
 
 		(*cs).SetSubData(sub)
@@ -1008,12 +1009,12 @@ func (es *EventSubService) CreateChatSubscription(accessToken, userId, channelNa
 	return chatroomData, err
 }
 
-func (es *EventSubService) fetchAndInitChatSubscription(accessToken, userId, channelName, broadcasterId string, globalBadgeSets *[]api.ApiBadgeSet) (*ESSubscription[*ESChatSubscriptionData], error){
+func (es *EventSubService) fetchAndInitChatSubscription(userId, channelName, broadcasterId string, globalBadgeSets *[]api.ApiBadgeSet) (*ESSubscription[*ESChatSubscriptionData], error){
 	condition := map[string]string{
 		"broadcaster_user_id": broadcasterId,
 		"user_id": userId,
 	}
-	subId, err := es.CreateSubscription(accessToken, condition, CHAT_SUB_TYPE)
+	subId, err := es.CreateSubscription(condition, CHAT_SUB_TYPE)
 	if err != nil {
 		log.Printf("[ConnectToChatroom]: ERROR: %+v\n", err)
 		return nil, err
@@ -1032,19 +1033,24 @@ func (es *EventSubService) fetchAndInitChatSubscription(accessToken, userId, cha
 	}
 
 	// fetch channel badge sets in goroutine
-	go es.goGetChannelBadgeSets(accessToken, broadcasterId, subId, globalBadgeSets)
-	go es.goGetSharedChatSession(accessToken, broadcasterId, channelName)
-	es.createAuxiliaryChatSubscriptions(accessToken, broadcasterId, subId)
+	go es.goGetChannelBadgeSets(broadcasterId, subId, globalBadgeSets)
+	go es.goGetSharedChatSession(broadcasterId, channelName)
+	es.createAuxiliaryChatSubscriptions(broadcasterId, subId)
 
 	return newSub, nil
 }
 
 func (es *EventSubService) goGetSharedChatSession(
-	accessToken,
 	broadcasterId,
 	channelName string,
 ) {
-	res, err := api.ApiGetSharedChatSession(accessToken, map[string][]string{
+	appUser := shared.GetUser()
+	if appUser == nil {
+		log.Printf("ERROR: cannot get shared chat session without logging in")
+		return
+	}
+
+	res, err := api.ApiGetSharedChatSession(appUser.Access_token, map[string][]string{
 		"broadcaster_id": { broadcasterId },
 	})
 
@@ -1078,7 +1084,6 @@ func (es *EventSubService) goGetSharedChatSession(
 }
 
 func (es *EventSubService) goGetChannelBadgeSets(
-	accessToken string,
 	broadcasterId string,
 	subId string,
 	globalBadgeSets *[]api.ApiBadgeSet,
@@ -1095,7 +1100,7 @@ func (es *EventSubService) goGetChannelBadgeSets(
 		return
 	}
 
-	badgeSets, err := badge.GetChannelBadgeSets(accessToken, broadcasterId)
+	badgeSets, err := badge.GetChannelBadgeSets(broadcasterId)
 	if err != nil {
 		log.Printf("ERROR: %+v", err)
 	}
@@ -1104,34 +1109,4 @@ func (es *EventSubService) goGetChannelBadgeSets(
 	if !sub.Data.ChannelBadgeSets.Write(*combinedSets) {
 		log.Printf("Tried to write badge sets which were already written")
 	}
-}
-
-func (es *EventSubService) goGetChannelEmotes(
-	ctx context.Context, 
-	channelEmotesDone chan *types.AppEmoteSet, 
-	channelEmotesErr chan error, 
-	wg *sync.WaitGroup,
-	accessToken string,
-	broadcasterId string,
-) {
-	defer wg.Done()
-	channelEmotes, err := emote.GetChannelEmotes(accessToken, broadcasterId)
-	if err != nil {
-		select {
-		case <-ctx.Done():
-			return
-		default:
-			channelEmotesErr <- err
-			return
-		}
-	}
-	select {
-	case <-ctx.Done():
-		log.Printf("[ConnectToChatroom]: channel emote context closed")
-		return
-	default:
-		channelEmotesDone <- channelEmotes
-		return
-	}
-
 }
