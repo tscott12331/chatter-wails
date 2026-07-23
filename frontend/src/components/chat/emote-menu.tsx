@@ -1,7 +1,7 @@
 import { TChatroomEmotes } from "@/api/emote"
 import { useContext, useEffect, useState } from "react";
 import { preload } from "react-dom";
-import { AppEmote } from "@wailsjs/chatter-wails/services/emote";
+import { AppEmote } from "@wailsjs/chatter-wails/shared/types";
 import { TooltipContext } from "@/contexts/tooltip-context";
 
 interface IEmoteMenuProps {

@@ -2,7 +2,8 @@ package seventv
 
 import (
 	"chatter-wails/internal/api"
-	"chatter-wails/services/emote"
+	"chatter-wails/shared/cache"
+	"chatter-wails/shared/types"
 	"fmt"
 	"net/url"
 	"strings"
@@ -170,11 +171,11 @@ func GetSevenTVUser(platform string, platform_id string) (*ApiGetSevenTVUserRes,
 	return &res.Body, nil
 }
 
-func GetAppEmotesFromSevenTVUserRes(res *ApiGetSevenTVUserRes) map[string]*emote.AppEmote {
-	var appEmotes map[string]*emote.AppEmote = map[string]*emote.AppEmote{}
+func GetAppEmotesFromSevenTVUserRes(res *ApiGetSevenTVUserRes) *types.AppEmoteSet{
+	var appEmotes map[string]*types.AppEmote = map[string]*types.AppEmote{}
 	for _, stvEmote := range res.Emote_set.Emotes {
 		srcSet := getSevenTVEmoteSrcSet(&stvEmote)
-		appEmote := emote.AppEmote{
+		appEmote := types.AppEmote{
 			Id: stvEmote.Id,
 			Name: stvEmote.Name,
 			LightSrcSet: srcSet,
@@ -186,7 +187,13 @@ func GetAppEmotesFromSevenTVUserRes(res *ApiGetSevenTVUserRes) map[string]*emote
 		appEmotes[appEmote.Name] = &appEmote
 	}
 
-	return appEmotes
+	set := &types.AppEmoteSet{
+		Id: res.Emote_set.Id,
+		Provider: cache.STV_KEY,
+		Emotes: appEmotes,
+	}
+
+	return set
 }
 
 func getSevenTVEmoteSrcSet(emote *SevenTVEmote) string {

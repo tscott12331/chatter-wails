@@ -4,7 +4,7 @@ import { Login } from "@wailsjs/chatter-wails/services/auth/authservice";
 import { GetGlobalBadgeSets } from "@wailsjs/chatter-wails/services/badge/badgeservice";
 import { GetGlobalEmotes, GetUserEmotes } from "@wailsjs/chatter-wails/services/emote/emoteservice";
 import { DeleteAllSubscriptions } from "@wailsjs/chatter-wails/services/eventsub/eventsubservice";
-import { AppEmote } from "@wailsjs/chatter-wails/services/emote";
+import { AppEmote } from "@wailsjs/chatter-wails/shared/types";
 import { AppUser } from "@wailsjs/chatter-wails/services/auth";
 import { ApiBadgeSet } from "@wailsjs/chatter-wails/internal/api";
 import { IToast } from "@/components/util/toast/toast";

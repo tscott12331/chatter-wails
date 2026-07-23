@@ -14,3 +14,18 @@ export interface AppEmote {
     "zeroWidth": boolean;
     "emoteStack": (AppEmote | null)[] | null;
 }
+
+export type AppEmoteMap = { [_ in string]?: AppEmote | null } | null;
+
+export interface AppEmoteSet {
+    "Id": string;
+    "Provider": string;
+    "Emotes": AppEmoteMap;
+}
+
+export interface NewEmoteSetEvent {
+    "BroadcasterId": string;
+    "Id": string;
+    "Provider": string;
+    "Emotes": AppEmoteMap;
+}

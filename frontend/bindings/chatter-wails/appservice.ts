@@ -15,9 +15,6 @@ import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wails
 import * as api$0 from "./internal/api/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as emote$0 from "./services/emote/models.js";
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: Unused imports
 import * as eventsub$0 from "./services/eventsub/models.js";
 
 export function ConnectToChatroom(channelName: string): $CancellablePromise<eventsub$0.ChatroomData | null> {
@@ -26,10 +23,6 @@ export function ConnectToChatroom(channelName: string): $CancellablePromise<even
 
 export function DisconnectFromChatroom(channelName: string): $CancellablePromise<void> {
     return $Call.ByID(3340004225, channelName);
-}
-
-export function EnableSevenTV(channelName: string): $CancellablePromise<{ [_ in string]?: emote$0.AppEmote | null } | null> {
-    return $Call.ByID(1975072532, channelName);
 }
 
 export function SendChatMessage(channelName: string, messageContent: string, replyId: string | null): $CancellablePromise<api$0.ApiPostMessagesData | null> {

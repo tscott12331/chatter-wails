@@ -3,13 +3,13 @@
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as emote$0 from "../emote/models.js";
+import * as types$0 from "../../shared/types/models.js";
 
 export interface AppChatMessageFragment {
     "type": string;
     "text": string;
     "cheermote"?: {"prefix": string, "bits": number, "tier": number} | null;
-    "emote": emote$0.AppEmote | null;
+    "emote": types$0.AppEmote | null;
     "mention"?: {"user_id": string, "user_name": string, "user_login": string} | null;
 }
 
@@ -33,7 +33,7 @@ export interface ChatOpenData {
 export interface ChatroomData {
     "subId": string;
     "broadcasterId": string;
-    "channelEmotes": { [_ in string]?: emote$0.AppEmote | null } | null;
+    "channelEmotes": types$0.AppEmoteSet | null;
 }
 
 export interface ClearMsgEventData {

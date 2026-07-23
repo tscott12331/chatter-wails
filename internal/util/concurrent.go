@@ -95,3 +95,38 @@ func (fc *FetchCache[K, V]) Fetch(fn func() V, key K) *V {
 
 	return result
 }
+
+
+
+type RWMap[K comparable, V any] struct{
+	mutex sync.RWMutex
+	data map[K]V
+}
+
+func NewRWMap[K comparable, V any]() *RWMap[K,V] {
+	return &RWMap[K, V]{
+		data: map[K]V{},
+	}
+}
+
+func (rwm *RWMap[K, V]) Get(key K) (V, bool) {
+	rwm.mutex.RLock()
+	defer rwm.mutex.RUnlock()
+
+	val, exists := rwm.data[key]
+	return val, exists
+}
+
+func (rwm *RWMap[K, V]) Set(key K, val V) {
+	rwm.mutex.Lock()
+	defer rwm.mutex.Unlock()
+
+	rwm.data[key] = val
+}
+
+func (rwm *RWMap[K, V]) Delete(key K) {
+	rwm.mutex.Lock()
+	defer rwm.mutex.Unlock()
+
+	delete(rwm.data, key)
+}

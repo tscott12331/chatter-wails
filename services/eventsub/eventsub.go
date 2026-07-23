@@ -16,6 +16,7 @@ import (
 	"chatter-wails/internal/message"
 	"chatter-wails/internal/user"
 	"chatter-wails/internal/util"
+	"chatter-wails/shared/types"
 
 	"chatter-wails/services/auth"
 	"chatter-wails/services/badge"
@@ -74,14 +75,14 @@ var (
 
 var esDarkTheme = "dark"
 var esLightTheme = "light"
-func esChatMessageFragmentToAppMessageFragment(cmf *ESChatMessageFragment, emoteMap map[string]*emote.AppEmote) []*AppChatMessageFragment {
-	var appEmote *emote.AppEmote = nil
+func esChatMessageFragmentToAppMessageFragment(cmf *ESChatMessageFragment, emoteSet types.AppEmoteMap) []*AppChatMessageFragment {
+	var appEmote *types.AppEmote = nil
 	if cmf.Fragment_type == "text" {
-		return parseTextFragmentEmotes(cmf, emoteMap)
+		return parseTextFragmentEmotes(cmf, emoteSet)
 	}
 
 	if cmf.Emote != nil {
-		appEmote = &emote.AppEmote{
+		appEmote = &types.AppEmote{
 			Id: cmf.Emote.Id,
 			Name: cmf.Text,
 			LightSrcSet: emote.GetEmoteSrcSet(cmf.Emote.Id, cmf.Emote.Format, &esLightTheme, nil),
@@ -107,19 +108,19 @@ func consumeWhitespace(text string, i int) (int, string) {
 	return nextIndex, text[i:nextIndex]
 }
 
-func parseWord(text string, i int, emoteMap map[string]*emote.AppEmote) (int, string, *emote.AppEmote) {
+func parseWord(text string, i int, emoteSet types.AppEmoteMap) (int, string, *types.AppEmote) {
 	nextIndex := i
 	for nextIndex < len(text) && !unicode.IsSpace(rune(text[nextIndex])) {
 		nextIndex += 1
 	}
 	
 	word := text[i:nextIndex]
-	emote := emoteMap[word]
+	emote := emoteSet[word]
 
 	return nextIndex, word, emote
 }
 
-func parseTextFragmentEmotes(cmf *ESChatMessageFragment, emoteMap map[string]*emote.AppEmote) []*AppChatMessageFragment {
+func parseTextFragmentEmotes(cmf *ESChatMessageFragment, emoteSet types.AppEmoteMap) []*AppChatMessageFragment {
 	fragments := []*AppChatMessageFragment{}
 	
 	text := cmf.Text
@@ -132,7 +133,7 @@ func parseTextFragmentEmotes(cmf *ESChatMessageFragment, emoteMap map[string]*em
 		i = nextIndex
 		sb.WriteString(spaces)
 
-		nextIndex, word, appEmote := parseWord(text, i, emoteMap)
+		nextIndex, word, appEmote := parseWord(text, i, emoteSet)
 		i = nextIndex
 		if appEmote == nil {
 			sb.WriteString(word)
@@ -145,7 +146,7 @@ func parseTextFragmentEmotes(cmf *ESChatMessageFragment, emoteMap map[string]*em
 				Mention: cmf.Mention,
 			}
 
-			i, appEmote.EmoteStack = parseZeroWidthEmotes(text, i, emoteMap)
+			i, appEmote.EmoteStack = parseZeroWidthEmotes(text, i, emoteSet)
 
 			emoteFragment := &AppChatMessageFragment{
 				Fragment_type: "emote",
@@ -177,8 +178,8 @@ func parseTextFragmentEmotes(cmf *ESChatMessageFragment, emoteMap map[string]*em
 }
 
 
-func parseZeroWidthEmotes(text string, i int, emoteMap map[string]*emote.AppEmote) (int, []*emote.AppEmote){
-	emotes := []*emote.AppEmote{}
+func parseZeroWidthEmotes(text string, i int, emoteMap types.AppEmoteMap) (int, []*types.AppEmote){
+	emotes := []*types.AppEmote{}
 
 	indexAfterLast := i
 	nextIndex, _ := consumeWhitespace(text, indexAfterLast)
@@ -200,11 +201,6 @@ func parseZeroWidthEmotes(text string, i int, emoteMap map[string]*emote.AppEmot
 }
 
 
-type ESChatSubscriptionSevenTVData struct{
-	SevenTVEmotes map[string]*emote.AppEmote
-	Enabled bool
-}
-
 type SharedChatParticipant struct{
 	Name string					`json:"name"`
 	ProfileImageURL string		`json:"profileImageURL"`
@@ -217,12 +213,10 @@ type ESChatSubscriptionData struct{
 	BroadcasterId string
 	Channel string
 	ChannelBadgeSets *util.SingleWriteMutex[[]api.ApiBadgeSet]
-	ChannelEmotes map[string]*emote.AppEmote
+	ChannelEmotes *types.AppEmoteSet
 
 	AuxiliarySubIds []string
 	SharedChatParticipants map[string]*SharedChatParticipant
-	
-	SevenTV *ESChatSubscriptionSevenTVData
 }
 type ESSubscription[T any] struct{
 	SubId string
@@ -377,7 +371,7 @@ func (c *Client) pollStreamData(accessToken, channel string) {
 type ChatroomData struct{
 	SubId string					`json:"subId"`
 	BroadcasterId string			`json:"broadcasterId"`
-	ChannelEmotes map[string]*emote.AppEmote `json:"channelEmotes"`
+	ChannelEmotes *types.AppEmoteSet `json:"channelEmotes"`
 }
 
 type EventSubService struct {
@@ -972,7 +966,7 @@ func (es *EventSubService) CreateChatSubscription(accessToken, userId, channelNa
 		}
 
 		// fetch channel emotes
-		var channelEmotesDone chan map[string]*emote.AppEmote = make(chan map[string]*emote.AppEmote)
+		var channelEmotesDone chan *types.AppEmoteSet = make(chan *types.AppEmoteSet)
 		var channelEmotesErr chan error = make(chan error)
 		defer func() {
 			close(channelEmotesDone)
@@ -1033,7 +1027,6 @@ func (es *EventSubService) fetchAndInitChatSubscription(accessToken, userId, cha
 			Channel: channelName,
 			ChannelBadgeSets: &util.SingleWriteMutex[[]api.ApiBadgeSet]{},
 			// ChannelEmotes: chatroomData.ChannelEmotes,
-			SevenTV: &ESChatSubscriptionSevenTVData{},
 			SharedChatParticipants: map[string]*SharedChatParticipant{},
 		},
 	}
@@ -1115,7 +1108,7 @@ func (es *EventSubService) goGetChannelBadgeSets(
 
 func (es *EventSubService) goGetChannelEmotes(
 	ctx context.Context, 
-	channelEmotesDone chan map[string]*emote.AppEmote, 
+	channelEmotesDone chan *types.AppEmoteSet, 
 	channelEmotesErr chan error, 
 	wg *sync.WaitGroup,
 	accessToken string,
@@ -1137,10 +1130,7 @@ func (es *EventSubService) goGetChannelEmotes(
 		log.Printf("[ConnectToChatroom]: channel emote context closed")
 		return
 	default:
-		channelEmoteMap := util.ArrToMap(*channelEmotes, func(item emote.AppEmote) (string, *emote.AppEmote) {
-			return item.Name, &item
-		})
-		channelEmotesDone <- channelEmoteMap
+		channelEmotesDone <- channelEmotes
 		return
 	}
 

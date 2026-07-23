@@ -3,6 +3,7 @@ package main
 import (
 	"chatter-wails/services/auth"
 	"chatter-wails/services/eventsub"
+	"chatter-wails/shared/types"
 	"embed"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -22,6 +23,7 @@ func main() {
 	application.RegisterEvent[eventsub.SharedChatEndEventData]("common:shared-chat-end")
 	application.RegisterEvent[eventsub.BanEventData]("common:ban")
 	application.RegisterEvent[eventsub.ClearMsgEventData]("common:clear-msg")
+	application.RegisterEvent[types.NewEmoteSetEvent]("chatter:emote:new-set")
 
 	// Create an instance of the app structure
 	// Create application with options
@@ -39,12 +41,14 @@ func main() {
 	emoteService := application.NewService(appServiceRaw.emoteService)
 	badgeService := application.NewService(appServiceRaw.badgeService)
 	authService := application.NewService(appServiceRaw.authService)
+	seventvService := application.NewService(appServiceRaw.seventvService)
 
 	app.RegisterService(appService)
 	app.RegisterService(esService)
 	app.RegisterService(emoteService)
 	app.RegisterService(badgeService)
 	app.RegisterService(authService)
+	app.RegisterService(seventvService)
 
 
 	app.Window.NewWithOptions(application.WebviewWindowOptions{

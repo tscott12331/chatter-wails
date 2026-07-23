@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"chatter-wails/internal/api"
 	"chatter-wails/internal/user"
+	"chatter-wails/shared/types"
 	"context"
 	"fmt"
 	"log"
@@ -16,15 +17,15 @@ import (
 type EmoteService struct {
 	app *application.App
 	Ctx context.Context
-	GlobalEmotes *[]AppEmote
-	UserEmotes *[]AppEmote
+	GlobalEmotes *[]types.AppEmote
+	UserEmotes *[]types.AppEmote
 }
 
 func NewEmoteService(app *application.App) *EmoteService {
 	return &EmoteService{app: app}
 }
 
-func (es *EmoteService) GetUserEmotes(access_token string) (*[]AppEmote, error) {
+func (es *EmoteService) GetUserEmotes(access_token string) (*[]types.AppEmote, error) {
 	user, err := user.GetUserByToken(access_token)
 	if err != nil {
 		return nil, err
@@ -45,7 +46,7 @@ func (es *EmoteService) GetUserEmotes(access_token string) (*[]AppEmote, error) 
 		return nil, &api.StatusError[api.ApiGetUserEmotesRes]{ Res: res }
 	}
 
-	emotes := []AppEmote{}
+	emotes := []types.AppEmote{}
 	tmpl := res.Body.Template
 	for _, emote := range res.Body.Data {
 		appEmote := *GetAppEmoteFromApiEmote(api.ApiEmote(emote), tmpl)
@@ -59,7 +60,7 @@ func (es *EmoteService) GetUserEmotes(access_token string) (*[]AppEmote, error) 
 
 }
 
-func (es *EmoteService) GetGlobalEmotes(access_token string) (*[]AppEmote, error) {
+func (es *EmoteService) GetGlobalEmotes(access_token string) (*[]types.AppEmote, error) {
 	res, err := api.ApiGetGlobalEmotes(access_token, map[string][]string{})
 	if err != nil {
 		log.Printf("[GetGlobalEmotes]: An error occurred fetching global emotes, aborting\n%v\n\n", err)
@@ -72,7 +73,7 @@ func (es *EmoteService) GetGlobalEmotes(access_token string) (*[]AppEmote, error
 	}
 
 
-	emotes := []AppEmote{}
+	emotes := []types.AppEmote{}
 	tmpl := res.Body.Template
 	for _, emote := range res.Body.Data {
 		appEmote := *GetAppEmoteFromApiEmote(api.ApiEmote(emote), tmpl)
@@ -85,7 +86,7 @@ func (es *EmoteService) GetGlobalEmotes(access_token string) (*[]AppEmote, error
 	return &emotes, nil
 }
 
-func GetChannelEmotes(access_token string, broadcaster_id string) (*[]AppEmote, error) {
+func GetChannelEmotes(access_token string, broadcaster_id string) (*types.AppEmoteSet, error) {
 	params := map[string][]string{
 		"broadcaster_id": {broadcaster_id},
 	}
@@ -102,28 +103,22 @@ func GetChannelEmotes(access_token string, broadcaster_id string) (*[]AppEmote, 
 	}
 
 
-	emotes := []AppEmote{}
+	emotes := map[string]*types.AppEmote{}
 	tmpl := res.Body.Template
 	for _, emote := range res.Body.Data {
 		appEmote := *GetAppEmoteFromApiEmote(api.ApiEmote(emote), tmpl)
 		appEmote.Type = "channel"
-		emotes = append(emotes, appEmote)
+		emotes[appEmote.Name] = &appEmote
 	}
 
-	return &emotes, nil
+	set := &types.AppEmoteSet{
+		Emotes: emotes,
+		Id: broadcaster_id,
+	}
+
+	return set, nil
 }
 
-
-type AppEmote struct{
-	Id string					`json:"id"`
-	Name string					`json:"name"`
-	LightSrcSet string		`json:"lightSrcSet"`
-	DarkSrcSet string		`json:"darkSrcSet"`
-	// 'global' | 'user' | 'channel' | 'seventv'
-	Type string				`json:"type"`
-	ZeroWidth bool			`json:"zeroWidth"`
-	EmoteStack []*AppEmote  `json:"emoteStack"`
-}
 
 var TMPL_ID_RPL = []byte("{{id}}")
 var TMPL_FORMAT_RPL = []byte("{{format}}")
@@ -133,10 +128,10 @@ var TMPL_SCALE_RPL = []byte("{{scale}}")
 var B_DARK_THEME = []byte("dark")
 var B_LIGHT_THEME = []byte("light")
 
-func GetAppEmoteFromApiEmote(apiEmote api.ApiEmote, tmpl string) *AppEmote {
+func GetAppEmoteFromApiEmote(apiEmote api.ApiEmote, tmpl string) *types.AppEmote {
 	hasDark := slices.Contains(apiEmote.Theme_mode, "dark")
 	hasLight := slices.Contains(apiEmote.Theme_mode, "light")
-	appEmote := &AppEmote{
+	appEmote := &types.AppEmote{
 		Id: apiEmote.Id,
 		Name: apiEmote.Name,
 	}

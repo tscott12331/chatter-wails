@@ -2,13 +2,13 @@ package main
 
 import (
 	"chatter-wails/internal/api"
-	"chatter-wails/internal/api/seventv"
+	seventv "chatter-wails/services/7tv"
 	"chatter-wails/services/auth"
 	"chatter-wails/services/badge"
 	"chatter-wails/services/emote"
 	"chatter-wails/services/eventsub"
+	"chatter-wails/shared/cache"
 	"context"
-	"errors"
 	"log"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -22,6 +22,7 @@ type AppService struct {
 	emoteService *emote.EmoteService
 	badgeService *badge.BadgeService
 	authService *auth.AuthService
+	seventvService *seventv.SevenTVService
 }
 
 // NewAppService creates a new App application struct
@@ -32,6 +33,7 @@ func NewAppService(app *application.App) *AppService {
 		emoteService: emote.NewEmoteService(app),
 		badgeService: badge.NewBadgeService(app),
 		authService: auth.NewAuthService(app),
+		seventvService: seventv.NewSevenTVService(app),
 	}
 }
 
@@ -43,6 +45,7 @@ func (a *AppService) ServiceStartup(ctx context.Context, options application.Ser
 	a.emoteService.Ctx = ctx
 	a.badgeService.Ctx = ctx
 	a.authService.Ctx = ctx
+	a.seventvService.Ctx = ctx
 
 	go a.esService.Connect()
 
@@ -64,29 +67,6 @@ func (a *AppService) ConnectToChatroom(channelName string) (*eventsub.ChatroomDa
 	accessToken := a.authService.User.Access_token
 
 	return a.esService.CreateChatSubscription(accessToken, a.authService.User.Id, channelName, a.badgeService.GlobalBadgeSets)
-}
-
-func (a *AppService) EnableSevenTV(channelName string) (map[string]*emote.AppEmote, error) {
-	sub, subExists := a.esService.Client.ChatSubscriptions.Read().GetSubFromChannelName(channelName)
-
-	if !subExists {
-		return nil, errors.New("Cannot enable 7tv on nonexistent chat subscription")
-	}
-
-	if subExists && sub.Data.SevenTV.Enabled {
-		return sub.Data.SevenTV.SevenTVEmotes, nil
-	}
-
-	userRes, err := seventv.GetSevenTVUser("twitch", sub.Data.BroadcasterId)
-	if err != nil {
-		return nil, err
-	}
-
-	emotes := seventv.GetAppEmotesFromSevenTVUserRes(userRes)
-	sub.Data.SevenTV.SevenTVEmotes = emotes
-	sub.Data.SevenTV.Enabled = true
-
-	return emotes, nil
 }
 
 func (a *AppService) goGetChannelBadgeSets(
@@ -129,5 +109,10 @@ func (a *AppService) SendChatMessage(channelName string, messageContent string, 
 
 func (a *AppService) DisconnectFromChatroom(channelName string) error {
 	a.esService.Client.IrcListener.PartChannel(channelName)
+
+	if sub, exists := a.esService.Client.ChatSubscriptions.Read().GetSubFromChannelName(channelName); exists {
+		cache.RemoveBroadcasterEmoteSets(sub.Data.BroadcasterId)
+	}
+
 	return a.esService.DeleteChatSubscriptionFromChannelName(a.authService.User.Access_token, channelName)
 }
