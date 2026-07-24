@@ -2,7 +2,8 @@ package eventsub
 
 import (
 	"chatter-wails/internal/api"
-	"chatter-wails/services/emote"
+	"chatter-wails/shared/cache"
+	"chatter-wails/shared/types"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -27,7 +28,7 @@ type AppChatMessageFragment struct{
 		Bits int									`json:"bits"`
 		Tier int									`json:"tier"`
 	}												`json:"cheermote,omitempty"`
-	Emote *emote.AppEmote									`json:"emote"`
+	Emote *types.AppEmote									`json:"emote"`
     Mention *struct{
 		User_id string								`json:"user_id"`
 		User_name string							`json:"user_name"`
@@ -355,7 +356,6 @@ func extractSharedChatBadge(chatMessageEvent *ESChatMessageEvent, chatSubscripti
 
 func esNotificationToEsChatMessage(notification *ESNotification, chatSubscriptionData *ESChatSubscriptionData) *ESChatMessage {
 	channelBadges, _ := chatSubscriptionData.ChannelBadgeSets.Read()
-	seventvEmotes := chatSubscriptionData.SevenTV.SevenTVEmotes
 
 	var chatMessageEvent ESChatMessageEvent
 	if notification.Payload.Event == nil { 
@@ -364,6 +364,8 @@ func esNotificationToEsChatMessage(notification *ESNotification, chatSubscriptio
 	}
 
 	json.Unmarshal(*notification.Payload.Event, &chatMessageEvent)
+
+	seventvEmotes := cache.GetBroadcasterEmoteMap(chatMessageEvent.Broadcaster_user_id)
 
 	var fragments = []*AppChatMessageFragment{}
 	for _, fragment := range chatMessageEvent.Message.Fragments {

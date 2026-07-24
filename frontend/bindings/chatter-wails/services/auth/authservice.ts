@@ -7,9 +7,9 @@ import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wails
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as $models from "./models.js";
+import * as types$0 from "../../shared/types/models.js";
 
-export function Login(accessToken: string): $CancellablePromise<$models.AppUser | null> {
+export function Login(accessToken: string): $CancellablePromise<types$0.AppUser | null> {
     return $Call.ByID(1457994249, accessToken);
 }
 

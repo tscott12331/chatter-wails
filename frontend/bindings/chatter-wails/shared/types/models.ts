@@ -5,6 +5,28 @@
 // @ts-ignore: Unused imports
 import * as time$0 from "../../../time/models.js";
 
+export interface AppEmote {
+    "id": string;
+    "name": string;
+    "lightSrcSet": string;
+    "darkSrcSet": string;
+
+    /**
+     * 'global' | 'user' | 'channel' | 'seventv'
+     */
+    "type": string;
+    "zeroWidth": boolean;
+    "emoteStack": (AppEmote | null)[] | null;
+}
+
+export type AppEmoteMap = { [_ in string]?: AppEmote | null } | null;
+
+export interface AppEmoteSet {
+    "Id": string;
+    "Provider": string;
+    "Emotes": AppEmoteMap;
+}
+
 export interface AppUser {
     "id": string;
     "login": string;
@@ -18,4 +40,11 @@ export interface AppUser {
     "email": string;
     "created_at": time$0.Time;
     "access_token": string;
+}
+
+export interface NewEmoteSetEvent {
+    "BroadcasterId": string;
+    "Id": string;
+    "Provider": string;
+    "Emotes": AppEmoteMap;
 }

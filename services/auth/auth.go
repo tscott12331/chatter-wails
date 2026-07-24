@@ -3,6 +3,8 @@ package auth
 import (
 	"chatter-wails/internal/api"
 	"chatter-wails/internal/user"
+	"chatter-wails/shared"
+	"chatter-wails/shared/types"
 	"context"
 	"errors"
 	"log"
@@ -12,26 +14,10 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
-type AppUser struct {
-	Id string					`json:"id"`
-    Login string				`json:"login"`
-    Display_name string			`json:"display_name"`
-    User_type string			`json:"type"`
-    Broadcaster_type string		`json:"broadcaster_type"`
-    Description string			`json:"description"`
-    Profile_image_url string	`json:"profile_image_url"`
-    Offline_image_url string	`json:"offline_image_url"`
-    View_count int				`json:"view_count"`
-	Email string				`json:"email"`
-    Created_at time.Time		`json:"created_at"`
-    Access_token string			`json:"access_token"`
-}
-
 type AuthService struct {
 	app *application.App
 
 	Ctx context.Context
-	User *AppUser
 
 	cancelValidation chan struct{}
 	validationRunning bool
@@ -46,8 +32,8 @@ func NewAuthService(app *application.App) *AuthService {
 }
 
 
-func apiUserToAppUser(user *api.ApiUser, accessToken string) *AppUser {
-	return &AppUser{
+func apiUserToAppUser(user *api.ApiUser, accessToken string) *types.AppUser {
+	return &types.AppUser{
 		Id: user.Id,
 		Login: user.Login,
 		Display_name: user.Display_name,
@@ -64,12 +50,13 @@ func apiUserToAppUser(user *api.ApiUser, accessToken string) *AppUser {
 }
 
 func (as *AuthService) validate() error {
-	if as.User == nil {
+	user := shared.GetUser()
+	if user == nil {
 		log.Printf("[validate]: Cannot validate a nil user, aborting\n\n")
 		return errors.New("Cannot validate a nil user")
 	}
 
-	res, err := api.ApiGetValidate(as.User.Access_token)
+	res, err := api.ApiGetValidate(user.Access_token)
 	if err != nil {
 		log.Printf("[validate]: An error occurred validating token, signing out and aborting\n%+v\n\n", err)
 		return err
@@ -112,7 +99,7 @@ errorOccurred: // if set validation running to false when an error occurs
 	as.validationMutex.Unlock()
 }
 
-func (as *AuthService) Login(accessToken string) (*AppUser, error) {
+func (as *AuthService) Login(accessToken string) (*types.AppUser, error) {
 	apiUser, err := user.GetUserByToken(accessToken)
 	if err != nil {
 		log.Printf("[Login]: An error occurred while logging in, aborting\n%+v\n\n", err)
@@ -132,16 +119,19 @@ func (as *AuthService) Login(accessToken string) (*AppUser, error) {
 	as.validationMutex.Unlock()
 
 	user := apiUserToAppUser(apiUser, accessToken)
-	as.User = user
-	as.app.Event.Emit("common:user-login", as.User)
+	shared.SetUser(user)
+	as.app.Event.Emit("common:user-login", user)
 
 	return user, nil
 }
 
 func (as *AuthService) Logout() {
-	if as.User != nil {
-		as.cancelValidation <- struct{}{}
+	shared.UpdateUser(func(user **types.AppUser) {
+		if user == nil || *user == nil {
+			return
+		}
 
-		as.User = nil
-	}
+		as.cancelValidation <- struct{}{}
+		*user = nil
+	})
 }

@@ -5,7 +5,3 @@ import * as EmoteService from "./emoteservice.js";
 export {
     EmoteService
 };
-
-export type {
-    AppEmote
-} from "./models.js";

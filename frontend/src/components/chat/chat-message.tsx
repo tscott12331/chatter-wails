@@ -1,7 +1,7 @@
 import { TooltipContext } from '@/contexts/tooltip-context';
 import { IAppChatMessage } from '@/hooks/chat';
 import ReplyIcon from '@components/svg/reply-icon';
-import { AppEmote } from '@wailsjs/chatter-wails/services/emote';
+import { AppEmote } from '@wailsjs/chatter-wails/shared/types';
 import { AppChatMessageFragment } from '@wailsjs/chatter-wails/services/eventsub';
 import React, { useContext } from 'react';
 

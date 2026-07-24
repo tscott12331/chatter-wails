@@ -2,13 +2,14 @@ package main
 
 import (
 	"chatter-wails/internal/api"
-	"chatter-wails/internal/api/seventv"
+	seventv "chatter-wails/services/7tv"
 	"chatter-wails/services/auth"
 	"chatter-wails/services/badge"
 	"chatter-wails/services/emote"
 	"chatter-wails/services/eventsub"
+	"chatter-wails/shared"
+	"chatter-wails/shared/cache"
 	"context"
-	"errors"
 	"log"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -22,6 +23,7 @@ type AppService struct {
 	emoteService *emote.EmoteService
 	badgeService *badge.BadgeService
 	authService *auth.AuthService
+	seventvService *seventv.SevenTVService
 }
 
 // NewAppService creates a new App application struct
@@ -32,6 +34,7 @@ func NewAppService(app *application.App) *AppService {
 		emoteService: emote.NewEmoteService(app),
 		badgeService: badge.NewBadgeService(app),
 		authService: auth.NewAuthService(app),
+		seventvService: seventv.NewSevenTVService(app),
 	}
 }
 
@@ -43,6 +46,7 @@ func (a *AppService) ServiceStartup(ctx context.Context, options application.Ser
 	a.emoteService.Ctx = ctx
 	a.badgeService.Ctx = ctx
 	a.authService.Ctx = ctx
+	a.seventvService.Ctx = ctx
 
 	go a.esService.Connect()
 
@@ -57,77 +61,30 @@ func (nli *NotLoggedInError) Error() string {
 
 
 func (a *AppService) ConnectToChatroom(channelName string) (*eventsub.ChatroomData, error) {
-	if a.authService.User == nil {
+	user := shared.GetUser()
+	if user == nil {
 		return nil, &NotLoggedInError{}
 	}
 
-	accessToken := a.authService.User.Access_token
-
-	return a.esService.CreateChatSubscription(accessToken, a.authService.User.Id, channelName, a.badgeService.GlobalBadgeSets)
-}
-
-func (a *AppService) EnableSevenTV(channelName string) (map[string]*emote.AppEmote, error) {
-	sub, subExists := a.esService.Client.ChatSubscriptions.Read().GetSubFromChannelName(channelName)
-
-	if !subExists {
-		return nil, errors.New("Cannot enable 7tv on nonexistent chat subscription")
-	}
-
-	if subExists && sub.Data.SevenTV.Enabled {
-		return sub.Data.SevenTV.SevenTVEmotes, nil
-	}
-
-	userRes, err := seventv.GetSevenTVUser("twitch", sub.Data.BroadcasterId)
-	if err != nil {
-		return nil, err
-	}
-
-	emotes := seventv.GetAppEmotesFromSevenTVUserRes(userRes)
-	sub.Data.SevenTV.SevenTVEmotes = emotes
-	sub.Data.SevenTV.Enabled = true
-
-	return emotes, nil
-}
-
-func (a *AppService) goGetChannelBadgeSets(
-	accessToken string,
-	broadcasterId string,
-	subId string,
-) {
-	sub, exists := a.esService.Client.ChatSubscriptions.Read().GetSubFromId(subId)
-	if !exists {
-		log.Printf("Subscription %v doesn't exist\n", subId)
-		return
-	}
-
-	// data already fetched
-	if sub.Data.ChannelBadgeSets.IsWritten() {
-		log.Printf("Badge sets already written")
-		return
-	}
-
-	badgeSets, err := badge.GetChannelBadgeSets(accessToken, broadcasterId)
-	if err != nil {
-		log.Printf("ERROR: %+v", err)
-	}
-	combinedSets := badge.CombineChannelGlobalSets(badgeSets, a.badgeService.GlobalBadgeSets)
-
-	if !sub.Data.ChannelBadgeSets.Write(*combinedSets) {
-		log.Printf("Tried to write badge sets which were already written")
-	}
+	return a.esService.CreateChatSubscription(channelName, a.badgeService.GlobalBadgeSets)
 }
 
 func (a *AppService) SendChatMessage(channelName string, messageContent string, replyId *string) (*api.ApiPostMessagesData, error) {
-	user := a.authService.User
+	user := shared.GetUser()
 	if user == nil {
-		log.Printf("[SendChatMessage]: User not logged int, cannot send message, aborting\n\n")
+		log.Printf("[SendChatMessage]: User not logged in, cannot send message, aborting\n\n")
 		return nil, &NotLoggedInError{}
 	}
 
-	return a.esService.SendChatMessageFromChannelName(user.Access_token, user.Id, channelName, messageContent, replyId)
+	return a.esService.SendChatMessageFromChannelName(channelName, messageContent, replyId)
 }
 
 func (a *AppService) DisconnectFromChatroom(channelName string) error {
 	a.esService.Client.IrcListener.PartChannel(channelName)
-	return a.esService.DeleteChatSubscriptionFromChannelName(a.authService.User.Access_token, channelName)
+
+	if sub, exists := a.esService.Client.ChatSubscriptions.Read().GetSubFromChannelName(channelName); exists {
+		cache.RemoveBroadcasterEmoteSets(sub.Data.BroadcasterId)
+	}
+
+	return a.esService.DeleteChatSubscriptionFromChannelName(channelName)
 }

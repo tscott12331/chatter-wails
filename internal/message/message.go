@@ -3,6 +3,7 @@ package message
 import (
 	"chatter-wails/internal/api"
 	"errors"
+	"fmt"
 	"log"
 )
 
@@ -32,7 +33,7 @@ func SendMessage(userId string, access_token string, brdId string, message strin
 
 	if messageData.Drop_reason != nil {
 		log.Printf("[SendChatMessage]: Message was dropped\n%+v\n\n", messageData.Drop_reason)
-		return nil, errors.New("Message was dropped")
+		return nil, fmt.Errorf("Message was dropped %+v", messageData.Drop_reason)
 	}
 
 	return &messageData, nil

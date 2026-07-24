@@ -7,14 +7,15 @@ import type { Events } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import type * as auth$0 from "../../../../../chatter-wails/services/auth/models.js";
+import type * as eventsub$0 from "../../../../../chatter-wails/services/eventsub/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import type * as eventsub$0 from "../../../../../chatter-wails/services/eventsub/models.js";
+import type * as types$0 from "../../../../../chatter-wails/shared/types/models.js";
 
 declare module "@wailsio/runtime" {
     namespace Events {
         interface CustomEvents {
+            "chatter:emote:new-set": types$0.NewEmoteSetEvent;
             "common:ban": eventsub$0.BanEventData;
             "common:chat-message": eventsub$0.ESChatMessage | null;
             "common:chat-open": eventsub$0.ChatOpenData;
@@ -23,7 +24,7 @@ declare module "@wailsio/runtime" {
             "common:shared-chat-end": eventsub$0.SharedChatEndEventData;
             "common:shared-chat-update": eventsub$0.SharedChatUpdateEventData;
             "common:stream-data": eventsub$0.StreamData;
-            "common:user-login": auth$0.AppUser | null;
+            "common:user-login": types$0.AppUser | null;
         }
     }
 }

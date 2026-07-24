@@ -1,4 +1,4 @@
-import { AppEmote } from "@wailsjs/chatter-wails/services/emote";
+import { AppEmote } from "@wailsjs/chatter-wails/shared/types";
 import { TooltipContext } from "@/contexts/tooltip-context";
 import { useContext } from "react";
 

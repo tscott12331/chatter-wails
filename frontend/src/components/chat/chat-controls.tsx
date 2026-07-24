@@ -5,7 +5,7 @@ import EmoteIcon from "../svg/emote-icon";
 import EmoteCarousel, { IEmoteCarouselData } from "./carousel";
 import EmoteMenu from "./emote-menu";
 import ReplyPopup from "./reply-popup";
-import { AppEmote } from "@wailsjs/chatter-wails/services/emote";
+import { AppEmote } from "@wailsjs/chatter-wails/shared/types";
 import { IAppChatMessage } from "@/hooks/chat";
 
 interface IChatControlsProps {

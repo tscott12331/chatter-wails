@@ -5,10 +5,6 @@
 // @ts-ignore: Unused imports
 import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wailsio/runtime";
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: Unused imports
-import * as api$0 from "../../internal/api/models.js";
-
-export function GetGlobalBadgeSets(): $CancellablePromise<api$0.ApiBadgeSet[] | null> {
-    return $Call.ByID(42025171);
+export function EnableSevenTV(broadcasterId: string): $CancellablePromise<void> {
+    return $Call.ByID(3375483442, broadcasterId);
 }

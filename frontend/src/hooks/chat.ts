@@ -1,14 +1,15 @@
 import { TChatroomEmotes } from "@/api/emote";
 
-import { ConnectToChatroom, EnableSevenTV, SendChatMessage } from '@wailsjs/chatter-wails/appservice';
+import { ConnectToChatroom, SendChatMessage } from '@wailsjs/chatter-wails/appservice';
+import { EnableSevenTV } from "@wailsjs/chatter-wails/services/7tv/seventvservice";
 import { Events } from "@wailsio/runtime";
 
 import { useContext, useEffect, useState } from "react";
-import { AppUser } from "@wailsjs/chatter-wails/services/auth";
+import { AppEmoteMap, AppUser } from "@wailsjs/chatter-wails/shared/types";
 import { ESChatMessage, StreamData } from "@wailsjs/chatter-wails/services/eventsub";
-import { AppEmote } from "@wailsjs/chatter-wails/services/emote";
 import { assertDefined, isDefined } from "@/util/assert";
 import { GlobalContext } from "@/contexts/global-context";
+import { GetChannelEmotes } from "@wailsjs/chatter-wails/services/emote/emoteservice";
 
 export type TBanTypeInfo = 
     | {
@@ -41,10 +42,9 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
 }) {
 
     const [chatMessages, setChatMessages] = useState<IAppChatMessage[]>([]);
-
     const [emotes, setEmotes] = useState<TChatroomEmotes>(emoteRecord);
-
     const [streamData, setStreamData] = useState<StreamData>({channel: "", live: false, viewCount: 0, title: "", gameName: "" });
+    const [broadcasterId, setBroadcasterId] = useState<string>("");
 
     const { broadcastError } = useContext(GlobalContext);
     
@@ -112,6 +112,12 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
         })
     }
 
+    const handleNewSetEvent = (event: Events.WailsEvent<"chatter:emote:new-set">, broadcasterId: string) => {
+        if(event.data.BroadcasterId !== broadcasterId) return;
+
+        addEmoteSet(event.data.Emotes, event.data.Provider);
+    }
+
     const sendChatMessage = async (message: string, replyId: string|null|undefined) => {
         if(!channel) return false;
         const trimmed = message.trim();
@@ -126,8 +132,10 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
         }
     }
     
-    const addEmoteSet = (set: Record<string, AppEmote|null|undefined>, setName: string) => {
+    const addEmoteSet = (set: AppEmoteMap, setName: string) => {
         setEmotes(curEmotes => {
+            if(!isDefined(set)) return curEmotes;
+
             const newEmotes: TChatroomEmotes = {};
             Object.assign(newEmotes, curEmotes);
 
@@ -151,12 +159,14 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
         });
     }
 
-    const listenersOn = () => {
-        const offFns: (() => void)[] = [];
-        offFns.push(Events.On('common:chat-message', handleChatMessageEvent));
-        offFns.push(Events.On('common:stream-data', (e) => setStreamData(e.data)));
-        offFns.push(Events.On('common:ban', handleBanEvent));
-        offFns.push(Events.On('common:clear-msg', handleClearMsgEvent));
+    const listenersOn = (broadcasterId: string) => {
+        const offFns: (() => void)[] = [
+            Events.On('common:chat-message', handleChatMessageEvent),
+            Events.On('common:stream-data', (e) => setStreamData(e.data)),
+            Events.On('common:ban', handleBanEvent),
+            Events.On('common:clear-msg', handleClearMsgEvent),
+            Events.On('chatter:emote:new-set', (e) => handleNewSetEvent(e, broadcasterId))
+        ];
 
         return () => {
             offFns.forEach(fn => fn());
@@ -171,27 +181,33 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
 
         ConnectToChatroom(channel)
             .then(d => {
-                assertDefined(d?.channelEmotes);
-                addEmoteSet(d.channelEmotes, 'channel');
-            })
-            .then(() => emitChatOpenState(channel, user.access_token, true))
-            // TODO: make optional?
-            .then(() => EnableSevenTV(channel))
-            .then(e => {
-                assertDefined(e);
-                addEmoteSet(e, 'seventv');
+                emitChatOpenState(channel, user.access_token, true)
+
+                assertDefined(d);
+                setBroadcasterId(d?.broadcasterId);
             })
             .cancelOn(abortController.signal)
             .catch(broadcastError);
 
-        const listenersOff = listenersOn();
-        
         return () => {
             abortController.abort("Channel/user changed");
             emitChatOpenState(channel, user.access_token, false);
-            listenersOff();
         }
     }, [channel, user]);
+
+    useEffect(() => {
+        if(broadcasterId.length === 0) return;
+
+        // TODO: make optional?
+        EnableSevenTV(broadcasterId);
+        GetChannelEmotes(broadcasterId);
+
+        const listenersOff = listenersOn(broadcasterId);
+        
+        return () => {
+            listenersOff();
+        }
+    }, [broadcasterId])
 
     return { chatMessages, sendChatMessage, emotes, streamData }
 }

@@ -7,12 +7,16 @@ import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wails
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as $models from "./models.js";
+import * as types$0 from "../../shared/types/models.js";
 
-export function GetGlobalEmotes(access_token: string): $CancellablePromise<$models.AppEmote[] | null> {
-    return $Call.ByID(2348908202, access_token);
+export function GetChannelEmotes(broadcaster_id: string): $CancellablePromise<types$0.AppEmoteSet | null> {
+    return $Call.ByID(173205142, broadcaster_id);
 }
 
-export function GetUserEmotes(access_token: string): $CancellablePromise<$models.AppEmote[] | null> {
-    return $Call.ByID(1550766318, access_token);
+export function GetGlobalEmotes(): $CancellablePromise<types$0.AppEmote[] | null> {
+    return $Call.ByID(2348908202);
+}
+
+export function GetUserEmotes(): $CancellablePromise<types$0.AppEmote[] | null> {
+    return $Call.ByID(1550766318);
 }
