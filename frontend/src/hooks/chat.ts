@@ -4,7 +4,7 @@ import { ConnectToChatroom, SendChatMessage } from '@wailsjs/chatter-wails/appse
 import { EnableSevenTV } from "@wailsjs/chatter-wails/services/7tv/seventvservice";
 import { Events } from "@wailsio/runtime";
 
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { AppEmoteMap, AppUser } from "@wailsjs/chatter-wails/shared/types";
 import { ESChatMessage, StreamData } from "@wailsjs/chatter-wails/services/eventsub";
 import { assertDefined, isDefined } from "@/util/assert";
@@ -34,14 +34,26 @@ export interface IAppChatMessage extends ESChatMessage {
     deleted: boolean;
 }
 
+interface IMessageBuffer {
+    messages: IAppChatMessage[];
+
+    // set of message id's that were deleted
+    deletions: Set<string>;
+    bans: Map<string, TBanInfo>
+}
+
+
 export default function useChat({ channel, user, emoteRecord, maxMessages = 200 }: {
     channel: string|undefined,
     user: AppUser,
     emoteRecord: TChatroomEmotes,
     maxMessages?: number,
 }) {
+    const MESSAGE_BATCH_RATE = 250;
 
     const [chatMessages, setChatMessages] = useState<IAppChatMessage[]>([]);
+    const messageBuffer = useRef<IMessageBuffer>({messages:[], deletions: new Set(), bans: new Map()});
+
     const [emotes, setEmotes] = useState<TChatroomEmotes>(emoteRecord);
     const [streamData, setStreamData] = useState<StreamData>({channel: "", live: false, viewCount: 0, title: "", gameName: "" });
     const [broadcasterId, setBroadcasterId] = useState<string>("");
@@ -49,25 +61,54 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
     const { broadcastError } = useContext(GlobalContext);
     
 
-    const appendChatMessage = (message: ESChatMessage) => {
+    const appendMessageBuffer = () => {
+        const { messages, deletions, bans } = messageBuffer.current;
+
+        // copy buffer data and clear immediately to avoid data loss on future batches
+        const bufferedMessages = [...messages];
+        const bufferedDeletions = new Set(deletions);
+        const bufferedBans = new Map(bans);
+
+        messageBuffer.current.messages = [];
+        messageBuffer.current.deletions.clear();
+        messageBuffer.current.bans.clear();
+
+        setChatMessages(cm => {
+            const newMessages = [...cm, ...bufferedMessages];
+            const numExtraMessages = newMessages.length - maxMessages;
+
+            if(numExtraMessages >= 0) {
+                newMessages.splice(0, numExtraMessages);
+            }
+
+            for(let i = 0; i < newMessages.length; i++) {
+                if(bufferedDeletions.has(newMessages[i].id)) {
+                    newMessages[i] = { ...newMessages[i], deleted: true };
+                }
+
+                const banInfo = bufferedBans.get(newMessages[i].username.toLowerCase());
+                if(isDefined(banInfo)) {
+                    newMessages[i] = { ...newMessages[i], banInfo };
+                }
+            }
+
+            return newMessages;
+        });
+    }
+
+    const appendChatMessageToBuffer = (message: ESChatMessage) => {
         const appMessage: IAppChatMessage = {
             ...message,
             banInfo: { isBanned: false },
             deleted: false,
         }
-        setChatMessages(curMessages => {
-            const numExtraMessages = curMessages.length - maxMessages;
-            if(numExtraMessages >= 0) {
-                return [...curMessages.slice(numExtraMessages + 1), appMessage];
-            } else {
-                return [...curMessages, appMessage];
-            }
-        })
+
+        messageBuffer.current.messages.push(appMessage);
     }
 
     const handleChatMessageEvent = (event: Events.WailsEvent<"common:chat-message">) => {
         if(event.data?.channel && channel === event.data.channel) {
-            appendChatMessage(event.data);
+            appendChatMessageToBuffer(event.data);
         }
     }
 
@@ -87,29 +128,13 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
             banTypeInfo,
         }
 
-        setChatMessages(cur => {
-            const matchedIndices = cur.flatMap((mes, i) => mes.username.toLowerCase() === event.data.userLogin ? [i] : []);
-            const newMessages = [...cur];
-            
-            for(const i of matchedIndices) {
-                newMessages[i] = { ...newMessages[i], banInfo }
-            }
-
-            return newMessages;
-        })
+        messageBuffer.current.bans.set(event.data.userLogin, banInfo);
     }
 
     const handleClearMsgEvent = (event: Events.WailsEvent<"common:clear-msg">) => {
         if(event.data.channel !== channel) return;
 
-        setChatMessages(cur => {
-            const msgToDeleteIndex = cur.findIndex(m => m.id === event.data.messageID);
-            if(msgToDeleteIndex === -1) return cur;
-
-            const newMessages = [...cur];
-            newMessages[msgToDeleteIndex] = { ...newMessages[msgToDeleteIndex], deleted: true };
-            return newMessages;
-        })
+        messageBuffer.current.deletions.add(event.data.messageID);
     }
 
     const handleNewSetEvent = (event: Events.WailsEvent<"chatter:emote:new-set">, broadcasterId: string) => {
@@ -168,8 +193,13 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
             Events.On('chatter:emote:new-set', (e) => handleNewSetEvent(e, broadcasterId))
         ];
 
+        const interval = setInterval(() => {
+            appendMessageBuffer();
+        }, MESSAGE_BATCH_RATE);
+
         return () => {
             offFns.forEach(fn => fn());
+            clearInterval(interval);
         }
     }
 
