@@ -10,13 +10,13 @@ import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wails
 import * as types$0 from "../../shared/types/models.js";
 
 export function GetChannelEmotes(broadcaster_id: string): $CancellablePromise<types$0.AppEmoteSet | null> {
-    return $Call.ByID(173205142, broadcaster_id);
+    return $Call.ByID(1363477587, broadcaster_id);
 }
 
 export function GetGlobalEmotes(): $CancellablePromise<types$0.AppEmote[] | null> {
-    return $Call.ByID(2348908202);
+    return $Call.ByID(1706581313);
 }
 
 export function GetUserEmotes(): $CancellablePromise<types$0.AppEmote[] | null> {
-    return $Call.ByID(1550766318);
+    return $Call.ByID(1101420057);
 }

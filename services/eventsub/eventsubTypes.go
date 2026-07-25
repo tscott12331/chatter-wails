@@ -1,7 +1,7 @@
 package eventsub
 
 import (
-	"chatter-wails/internal/api"
+	"chatter-wails/internal/api/nativeApi"
 	"chatter-wails/shared/cache"
 	"chatter-wails/shared/types"
 	"encoding/json"
@@ -278,11 +278,11 @@ func esMessageToESNotification(message *ESMessage) *ESNotification {
 
 
 
-func esBadgesToMessageBadges(esBadges []ESBadge, badgeSets []api.ApiBadgeSet) []ESMessageBadge {
+func esBadgesToMessageBadges(esBadges []ESBadge, badgeSets []nativeApi.ApiBadgeSet) []ESMessageBadge {
     var messageBadges = []ESMessageBadge{}
 
 	for _, badge := range esBadges {
-		setIndex := slices.IndexFunc(badgeSets, func(bs api.ApiBadgeSet) bool {
+		setIndex := slices.IndexFunc(badgeSets, func(bs nativeApi.ApiBadgeSet) bool {
 			return bs.Set_id == badge.Set_id
 		})
         if(setIndex == -1) {
@@ -292,7 +292,7 @@ func esBadgesToMessageBadges(esBadges []ESBadge, badgeSets []api.ApiBadgeSet) []
 		var set = badgeSets[setIndex]
 
 
-		versionIndex := slices.IndexFunc(set.Versions, func(v api.ApiBadgeSetVersions) bool {
+		versionIndex := slices.IndexFunc(set.Versions, func(v nativeApi.ApiBadgeSetVersions) bool {
 			return v.Id == badge.Id
 		})
         if(versionIndex == -1) {

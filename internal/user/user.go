@@ -2,25 +2,26 @@ package user
 
 import (
 	"chatter-wails/internal/api"
+	"chatter-wails/internal/api/nativeApi"
 	"errors"
 	"log"
 )
 
 
 
-func GetUserByToken(accessToken string) (*api.ApiUser, error){
+func GetUserByToken(accessToken string) (*nativeApi.ApiUser, error){
 	return getUser(accessToken, nil, nil)
 }
 
-func GetUserByLogin(accessToken string, loginName string) (*api.ApiUser, error) {
+func GetUserByLogin(accessToken string, loginName string) (*nativeApi.ApiUser, error) {
 	return getUser(accessToken, &loginName, nil)
 }
 
-func GetUserById(accessToken string, id string) (*api.ApiUser, error) {
+func GetUserById(accessToken string, id string) (*nativeApi.ApiUser, error) {
 	return getUser(accessToken, nil, &id)
 }
 
-func getUser(accessToken string, loginName *string, id *string) (*api.ApiUser, error) {
+func getUser(accessToken string, loginName *string, id *string) (*nativeApi.ApiUser, error) {
 	params := map[string][]string{}
 	if loginName != nil {
 		params["login"] = []string{*loginName}
@@ -29,14 +30,14 @@ func getUser(accessToken string, loginName *string, id *string) (*api.ApiUser, e
 		params["id"] = []string{*id}
 	}
 
-	res, err := api.ApiGetUsers(accessToken, params)
+	res, err := nativeApi.ApiGetUsers(accessToken, params)
 	if err != nil {
 		log.Printf("[getUser]: An error occurred fetching user, aborting\n%+v\n\n", res)
 		return nil, err
 	}
 	if res.Status != 200 {
 		log.Printf("[getUser]: Failed to get user, aborting\n%+v\n\n", res)
-		return nil, &api.StatusError[api.ApiGetUsersRes]{ Res: res }
+		return nil, &api.StatusError[nativeApi.ApiGetUsersRes]{ Res: res }
 	}
 	if len(res.Body.Data) == 0 {
 		log.Printf("[getUser]: Request parameters returned no users\n\n")

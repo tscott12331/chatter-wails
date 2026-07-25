@@ -1,4 +1,4 @@
-package seventv
+package seventvApi
 
 import (
 	"chatter-wails/internal/api"

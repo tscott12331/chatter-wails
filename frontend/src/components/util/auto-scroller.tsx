@@ -66,7 +66,7 @@ export default function AutoScroller({
 
             if((scrollHeight - itemHeight) - (scrollTop + wrapperHeight) < scrollThresh) {
                   setShouldShowPopup(false);
-                  scrollToBottom('auto');
+                  scrollToBottom('instant');
                   setNewItems(0);
               } else {
                   setShouldShowPopup(true);

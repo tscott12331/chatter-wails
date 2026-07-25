@@ -2,6 +2,7 @@ package badge
 
 import (
 	"chatter-wails/internal/api"
+	"chatter-wails/internal/api/nativeApi"
 	"chatter-wails/shared"
 	"context"
 	"errors"
@@ -15,7 +16,7 @@ type BadgeService struct {
 	app *application.App
 	Ctx context.Context
 
-	GlobalBadgeSets *[]api.ApiBadgeSet
+	GlobalBadgeSets *[]nativeApi.ApiBadgeSet
 }
 
 func NewBadgeService(app *application.App) *BadgeService {
@@ -23,13 +24,13 @@ func NewBadgeService(app *application.App) *BadgeService {
 }
 
 
-func (bs *BadgeService) GetGlobalBadgeSets() (*[]api.ApiBadgeSet, error) {
+func (bs *BadgeService) GetGlobalBadgeSets() (*[]nativeApi.ApiBadgeSet, error) {
 	appUser := shared.GetUser()
 	if appUser == nil {
 		return nil, errors.New("Cannot get global badge sets while not being logged in")
 	}
 
-	res, err := api.ApiGetGlobalBadges(appUser.Access_token)
+	res, err := nativeApi.ApiGetGlobalBadges(appUser.Access_token)
 	if err != nil {
 		log.Printf("[GetGlobalBadgeSets]: An error occurred fetching global badge sets, aborting\n\n")
 		return nil, err
@@ -37,7 +38,7 @@ func (bs *BadgeService) GetGlobalBadgeSets() (*[]api.ApiBadgeSet, error) {
 
 	if res.Status != 200 {
 		log.Printf("[GetGlobalBadges]: Failed to get global badge sets, aborting\n\n")
-		return nil, &api.StatusError[api.ApiGetGlobalBadgesRes]{ Res: res }
+		return nil, &api.StatusError[nativeApi.ApiGetGlobalBadgesRes]{ Res: res }
 	}
 
 	sets := &res.Body.Data
@@ -47,12 +48,12 @@ func (bs *BadgeService) GetGlobalBadgeSets() (*[]api.ApiBadgeSet, error) {
 	return sets, nil
 }
 
-func GetChannelBadgeSets(broadcasterId string) (*[]api.ApiBadgeSet, error) {
+func GetChannelBadgeSets(broadcasterId string) (*[]nativeApi.ApiBadgeSet, error) {
 	appUser := shared.GetUser()
 	if appUser == nil {
 		return nil, errors.New("Cannot get channel badge sets while not being logged in")
 	}
-	res, err := api.ApiGetChannelBadges(appUser.Access_token, map[string][]string{
+	res, err := nativeApi.ApiGetChannelBadges(appUser.Access_token, map[string][]string{
 		"broadcaster_id": {broadcasterId},
 	})
 	if err != nil {
@@ -61,28 +62,28 @@ func GetChannelBadgeSets(broadcasterId string) (*[]api.ApiBadgeSet, error) {
 	}
 	if res.Status != 200 {
 		log.Printf("[GetChannelBadges]: Failed to get channel badge sets, aborting\n%+v\n\n", res)
-		return nil, &api.StatusError[api.ApiGetChannelBadgesRes]{ Res: res}
+		return nil, &api.StatusError[nativeApi.ApiGetChannelBadgesRes]{ Res: res}
 	}
 
 	return &res.Body.Data, nil
 }
 
-func combineBadgeSets(set1 *api.ApiBadgeSet, set2 *api.ApiBadgeSet) *api.ApiBadgeSet {
+func combineBadgeSets(set1 *nativeApi.ApiBadgeSet, set2 *nativeApi.ApiBadgeSet) *nativeApi.ApiBadgeSet {
     if set1 == nil || set2 == nil || set1.Set_id != set2.Set_id {
 		return nil
 	}
 
 	newVersions := slices.Concat(set1.Versions, set2.Versions)
-    return &api.ApiBadgeSet{
+    return &nativeApi.ApiBadgeSet{
         Set_id: set1.Set_id,
         Versions: newVersions,
     }
 }
 
 
-func CombineChannelGlobalSets (cBadgeSets *[]api.ApiBadgeSet,  gBadgeSets *[]api.ApiBadgeSet) *[]api.ApiBadgeSet {
+func CombineChannelGlobalSets (cBadgeSets *[]nativeApi.ApiBadgeSet,  gBadgeSets *[]nativeApi.ApiBadgeSet) *[]nativeApi.ApiBadgeSet {
 	if cBadgeSets == nil && gBadgeSets == nil {
-		return &[]api.ApiBadgeSet{}
+		return &[]nativeApi.ApiBadgeSet{}
 	} else if gBadgeSets == nil {
 		return cBadgeSets
 	} else if cBadgeSets == nil {
@@ -90,15 +91,15 @@ func CombineChannelGlobalSets (cBadgeSets *[]api.ApiBadgeSet,  gBadgeSets *[]api
 	}
 
 
-	cSubSetIndex := slices.IndexFunc(*cBadgeSets, func(s api.ApiBadgeSet) bool {
+	cSubSetIndex := slices.IndexFunc(*cBadgeSets, func(s nativeApi.ApiBadgeSet) bool {
 		return s.Set_id == "subscriber"
 	})
-	gSubSetIndex := slices.IndexFunc(*gBadgeSets, func(s api.ApiBadgeSet) bool {
+	gSubSetIndex := slices.IndexFunc(*gBadgeSets, func(s nativeApi.ApiBadgeSet) bool {
 		return s.Set_id == "subscriber"
 	})
 	
-	var cSubSet *api.ApiBadgeSet = nil
-	var gSubSet *api.ApiBadgeSet = nil
+	var cSubSet *nativeApi.ApiBadgeSet = nil
+	var gSubSet *nativeApi.ApiBadgeSet = nil
 
 	if cSubSetIndex != -1 {
 		bs := *cBadgeSets
@@ -115,7 +116,7 @@ func CombineChannelGlobalSets (cBadgeSets *[]api.ApiBadgeSet,  gBadgeSets *[]api
 	combined := slices.Concat(*cBadgeSets, *gBadgeSets)
 
     if(subscriberSet != nil) {
-		subIndex := slices.IndexFunc(combined, func(s api.ApiBadgeSet) bool {
+		subIndex := slices.IndexFunc(combined, func(s nativeApi.ApiBadgeSet) bool {
 			return s.Set_id == "subscriber"
 		})
 

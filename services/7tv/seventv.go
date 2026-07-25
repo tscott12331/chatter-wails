@@ -1,7 +1,7 @@
 package seventv
 
 import (
-	"chatter-wails/internal/api/seventv"
+	"chatter-wails/internal/api/seventvApi"
 	"chatter-wails/shared"
 	"chatter-wails/shared/cache"
 	"context"
@@ -29,12 +29,12 @@ func (stv *SevenTVService) EnableSevenTV(broadcasterId string) error {
 		return nil
 	}
 
-	userRes, err := seventv.GetSevenTVUser("twitch", broadcasterId)
+	userRes, err := seventvApi.GetSevenTVUser("twitch", broadcasterId)
 	if err != nil {
 		return err
 	}
 
-	set := seventv.GetAppEmotesFromSevenTVUserRes(userRes)
+	set := seventvApi.GetAppEmotesFromSevenTVUserRes(userRes)
 	cache.SetEmoteSet(cache.STV_KEY, broadcasterId, set)
 	shared.EmitNewSet(stv.app, set, broadcasterId)
 

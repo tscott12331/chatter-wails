@@ -7,7 +7,7 @@ import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wails
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as api$0 from "../../internal/api/models.js";
+import * as nativeApi$0 from "../../internal/api/nativeApi/models.js";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -17,7 +17,7 @@ export function Connect(): $CancellablePromise<void> {
     return $Call.ByID(3016163026);
 }
 
-export function CreateChatSubscription(channelName: string, globalBadgeSets: api$0.ApiBadgeSet[] | null): $CancellablePromise<$models.ChatroomData | null> {
+export function CreateChatSubscription(channelName: string, globalBadgeSets: nativeApi$0.ApiBadgeSet[] | null): $CancellablePromise<$models.ChatroomData | null> {
     return $Call.ByID(2870881603, channelName, globalBadgeSets);
 }
 
@@ -41,10 +41,10 @@ export function DeleteSubscription(subId: string): $CancellablePromise<void> {
     return $Call.ByID(4164798938, subId);
 }
 
-export function GetSubscriptions(): $CancellablePromise<api$0.ApiSubscription[] | null> {
+export function GetSubscriptions(): $CancellablePromise<nativeApi$0.ApiSubscription[] | null> {
     return $Call.ByID(331411654);
 }
 
-export function SendChatMessageFromChannelName(channelName: string, messageContent: string, replyId: string | null): $CancellablePromise<api$0.ApiPostMessagesData | null> {
+export function SendChatMessageFromChannelName(channelName: string, messageContent: string, replyId: string | null): $CancellablePromise<nativeApi$0.ApiPostMessagesData | null> {
     return $Call.ByID(933703621, channelName, messageContent, replyId);
 }
