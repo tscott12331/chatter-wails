@@ -24,6 +24,7 @@ export type AppEmoteMap = { [_ in string]?: AppEmote | null } | null;
 export interface AppEmoteSet {
     "Id": string;
     "Provider": string;
+    "Section": string;
     "Emotes": AppEmoteMap;
 }
 
@@ -44,7 +45,9 @@ export interface AppUser {
 
 export interface NewEmoteSetEvent {
     "BroadcasterId": string;
+    "ChannelSpecific": boolean;
     "Id": string;
     "Provider": string;
+    "Section": string;
     "Emotes": AppEmoteMap;
 }

@@ -7,7 +7,6 @@ import UserPopup, { IPopupUser } from '@components/chat/user-popup';
 import useChat, { IAppChatMessage } from '@/hooks/chat';
 import { GlobalContext } from '@/contexts/global-context';
 import ChatControls from '@/components/chat/chat-controls';
-import { listToMap } from '@/util/map';
 import StreamDataIsland from '@/components/chat/stream-data-island';
 
 interface IChatroomProps {
@@ -15,7 +14,7 @@ interface IChatroomProps {
 
 export default function Chatroom({
 }: IChatroomProps) {
-    const { user, globalEmotes, userEmotes } = useContext(GlobalContext);
+    const { user } = useContext(GlobalContext);
     const navigate = useNavigate()
 
     if(!user) {
@@ -30,10 +29,6 @@ export default function Chatroom({
                          channel,
                          user,
                          maxMessages: MAX_MESSAGES,
-                         emoteRecord: {
-                             global: listToMap(globalEmotes, 'name'),
-                             user: listToMap(userEmotes, 'name'),
-                         }
                     });
 
     const [isReplying, setIsReplying] = useState<boolean>(false);

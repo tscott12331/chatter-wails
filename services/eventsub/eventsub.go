@@ -346,7 +346,7 @@ func (c *Client) pollStreamData(channel string) {
 		log.Printf("ERROR: cannot poll stream data without logging in")
 		return
 	}
-	res, err := nativeApi.ApiGetStreams(appUser.Access_token, map[string][]string{
+	res, err := nativeApi.GetStreams(appUser.Access_token, map[string][]string{
 		"user_login": {channel},
 		"first": {"1"},
 	})
@@ -746,7 +746,7 @@ func (es *EventSubService) GetSubscriptions() ([]nativeApi.ApiSubscription, erro
 		return nil, errors.New("Cannot get subscriptions without being logged in")
 	}
 
-	res, err := nativeApi.ApiGetSubscriptions(appUser.Access_token, map[string][]string{})
+	res, err := nativeApi.ApiGetNativeSubscriptions(appUser.Access_token, map[string][]string{})
 	if err != nil {
 		log.Printf("[GetSubscriptions]: An error occurred trying to get subscriptions, aborting\n\n")
 		return nil, err
@@ -809,7 +809,7 @@ func (es *EventSubService) CreateSubscription(condition ESSubscriptionCondition,
 		},
 	}
 
-	res, err := nativeApi.ApiPostSubscriptions(appUser.Access_token, req_body, map[string][]string{})
+	res, err := nativeApi.ApiPostNativeSubscriptions(appUser.Access_token, req_body, map[string][]string{})
 	if err != nil {
 		log.Printf("[CreateSubscription]: An error occurred while making request, aborting\n\n")
 		return "", err
@@ -843,7 +843,7 @@ func (es *EventSubService) DeleteSubscription(subId string) (error) {
 		return errors.New("Cannot delete subscription without being logged in")
 	}
 
-	res, err := nativeApi.ApiDeleteSubscriptions(appUser.Access_token, map[string][]string{
+	res, err := nativeApi.ApiDeleteNativeSubscriptions(appUser.Access_token, map[string][]string{
 		"id": {subId},
 	})
 
@@ -1050,7 +1050,7 @@ func (es *EventSubService) goGetSharedChatSession(
 		return
 	}
 
-	res, err := nativeApi.ApiGetSharedChatSession(appUser.Access_token, map[string][]string{
+	res, err := nativeApi.GetSharedChatSession(appUser.Access_token, map[string][]string{
 		"broadcaster_id": { broadcasterId },
 	})
 

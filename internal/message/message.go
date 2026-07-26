@@ -16,7 +16,7 @@ func SendMessage(userId string, access_token string, brdId string, message strin
 		Reply_parent_message_id: replyId,
 	}
 
-	res, err := nativeApi.ApiPostMessages(access_token, body, map[string][]string{})
+	res, err := nativeApi.PostMessage(access_token, body, map[string][]string{})
 	if err != nil {
 		log.Printf("[SendMessage]: An error occurred trying to send a message, aborting\n%+v\n\n", err)
 		return nil, err

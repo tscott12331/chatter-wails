@@ -17,5 +17,6 @@ type AppEmoteMap map[string]*AppEmote
 type AppEmoteSet struct{
 	Id string
 	Provider string
+	Section string
 	Emotes AppEmoteMap
 }

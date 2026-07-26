@@ -57,7 +57,7 @@ func (as *AuthService) validate() error {
 		return errors.New("Cannot validate a nil user")
 	}
 
-	res, err := nativeApi.ApiGetValidate(user.Access_token)
+	res, err := nativeApi.ApiGetNativeValidate(user.Access_token)
 	if err != nil {
 		log.Printf("[validate]: An error occurred validating token, signing out and aborting\n%+v\n\n", err)
 		return err

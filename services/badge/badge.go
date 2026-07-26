@@ -30,7 +30,7 @@ func (bs *BadgeService) GetGlobalBadgeSets() (*[]nativeApi.ApiBadgeSet, error) {
 		return nil, errors.New("Cannot get global badge sets while not being logged in")
 	}
 
-	res, err := nativeApi.ApiGetGlobalBadges(appUser.Access_token)
+	res, err := nativeApi.GetNativeGlobalBadges(appUser.Access_token)
 	if err != nil {
 		log.Printf("[GetGlobalBadgeSets]: An error occurred fetching global badge sets, aborting\n\n")
 		return nil, err
@@ -53,7 +53,7 @@ func GetChannelBadgeSets(broadcasterId string) (*[]nativeApi.ApiBadgeSet, error)
 	if appUser == nil {
 		return nil, errors.New("Cannot get channel badge sets while not being logged in")
 	}
-	res, err := nativeApi.ApiGetChannelBadges(appUser.Access_token, map[string][]string{
+	res, err := nativeApi.GetNativeChannelBadges(appUser.Access_token, map[string][]string{
 		"broadcaster_id": {broadcasterId},
 	})
 	if err != nil {

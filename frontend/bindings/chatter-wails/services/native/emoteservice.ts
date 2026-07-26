@@ -9,14 +9,30 @@ import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wails
 // @ts-ignore: Unused imports
 import * as types$0 from "../../shared/types/models.js";
 
-export function GetChannelEmotes(broadcaster_id: string): $CancellablePromise<types$0.AppEmoteSet | null> {
-    return $Call.ByID(1363477587, broadcaster_id);
+export function GetTwitchChannelEmotes(broadcaster_id: string): $CancellablePromise<types$0.AppEmoteSet | null> {
+    return $Call.ByID(516261966, broadcaster_id);
 }
 
-export function GetGlobalEmotes(): $CancellablePromise<types$0.AppEmote[] | null> {
-    return $Call.ByID(1706581313);
+export function GetTwitchGlobalEmotes(): $CancellablePromise<types$0.AppEmoteSet | null> {
+    return $Call.ByID(1629199106);
 }
 
-export function GetUserEmotes(): $CancellablePromise<types$0.AppEmote[] | null> {
-    return $Call.ByID(1101420057);
+export function GetTwitchUserEmotes(): $CancellablePromise<types$0.AppEmoteSet | null> {
+    return $Call.ByID(3242829366);
+}
+
+export function RequestTwitchChannelEmotes(broadcasterId: string): $CancellablePromise<void> {
+    return $Call.ByID(3965765101, broadcasterId);
+}
+
+export function RequestTwitchEmotes(broadcasterId: string): $CancellablePromise<void> {
+    return $Call.ByID(3606760464, broadcasterId);
+}
+
+export function RequestTwitchGlobalEmotes(): $CancellablePromise<void> {
+    return $Call.ByID(3151873303);
+}
+
+export function RequestTwitchUserEmotes(): $CancellablePromise<void> {
+    return $Call.ByID(552065171);
 }

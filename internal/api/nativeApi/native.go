@@ -95,7 +95,7 @@ func apiValidateHeaders(access_token string) *http.Header {
 
 
 
-func ApiGetValidate(
+func ApiGetNativeValidate(
         access_token string,
     ) (*api.ApiResponse[any], error) {
     return api.ApiGet[any](
@@ -139,7 +139,7 @@ type ApiGetSubscriptionsRes struct{
 	Pagination ApiPagination 	`json:"pagination"`
 }
 
-func ApiGetSubscriptions(
+func ApiGetNativeSubscriptions(
     access_token string,
     params map[string][]string,
 	) (*api.ApiResponse[ApiGetSubscriptionsRes], error) {
@@ -185,7 +185,7 @@ type ApiPostSubscriptionsBodyTransport struct {
 	Session_id string		`json:"session_id"`
 }
 
-func ApiPostSubscriptions(
+func ApiPostNativeSubscriptions(
     access_token string,
     body ApiPostSubscriptionsBody,
     params map[string][]string,
@@ -198,7 +198,7 @@ func ApiPostSubscriptions(
     )
 }
 
-func ApiDeleteSubscriptions(
+func ApiDeleteNativeSubscriptions(
     access_token string,
     params map[string][]string,
     ) (*api.ApiResponse[any], error) {
@@ -230,7 +230,7 @@ type ApiGetUsersRes struct{
 	Data []ApiUser				`json:"data"`
 }
 
-func ApiGetUsers(
+func GetNativeUsers(
     access_token string,
     params map[string][]string,
     ) (*api.ApiResponse[ApiGetUsersRes], error) {
@@ -241,7 +241,7 @@ func ApiGetUsers(
     )
 }
 
-func ApiPostUsers(
+func PostNativeUsers(
     access_token string,
     body any,
     params map[string][]string,
@@ -277,7 +277,7 @@ type ApiPostMessagesRes struct{
 	Data []ApiPostMessagesData
 }
 
-func ApiPostMessages(
+func PostMessage(
     access_token string,
     body ApiPostMessagesBody,
     params map[string][]string,
@@ -293,7 +293,7 @@ func ApiPostMessages(
 
 type ApiGetChannelBadgesRes = ApiGetGlobalBadgesRes
 
-func ApiGetChannelBadges(
+func GetNativeChannelBadges(
     access_token string,
     params map[string][]string,
     ) (*api.ApiResponse[ApiGetChannelBadgesRes], error) {
@@ -324,7 +324,7 @@ type ApiGetGlobalBadgesRes struct{
 	Data []ApiBadgeSet
 }
 
-func ApiGetGlobalBadges(
+func GetNativeGlobalBadges(
     access_token string,
     ) (*api.ApiResponse[ApiGetGlobalBadgesRes], error) {
     return api.ApiGet[ApiGetGlobalBadgesRes](
@@ -388,7 +388,7 @@ type ApiGetUserEmotesRes struct{
 	Pagination ApiPagination		`json:"pagination"`
 }
 
-func ApiGetUserEmotes(
+func GetNativeUserEmotes(
     access_token string,
     params map[string][]string,
     ) (*api.ApiResponse[ApiGetUserEmotesRes], error) {
@@ -423,7 +423,7 @@ type ApiGetGlobalEmotesRes struct{
 	Template string			`json:"template"`
 }
 
-func ApiGetGlobalEmotes(
+func GetNativeGlobalEmotes(
     access_token string,
     params map[string][]string,
     ) (*api.ApiResponse[ApiGetGlobalEmotesRes], error) {
@@ -441,7 +441,7 @@ type ApiGetChannelEmotesRes struct{
 	Template string			`json:"template"`
 }
 
-func ApiGetChannelEmotes(
+func GetNativeChannelEmotes(
     access_token string,
     params map[string][]string,
     ) (*api.ApiResponse[ApiGetChannelEmotesRes], error) {
@@ -473,7 +473,7 @@ type ApiGetStreamsRes struct{
 	Pagination ApiPagination	`json:"pagination"`
 }
 
-func ApiGetStreams(
+func GetStreams(
 	access_token string,
 	params map[string][]string,
 	) (*api.ApiResponse[ApiGetStreamsRes], error) {
@@ -500,7 +500,7 @@ type ApiGetSharedChatSessionRes struct{
 	Data []ApiSharedChatSession		`json:"data"`
 }
 
-func ApiGetSharedChatSession(
+func GetSharedChatSession(
 	access_token string,
 	params map[string][]string,
 	) (*api.ApiResponse[ApiGetSharedChatSessionRes], error) {

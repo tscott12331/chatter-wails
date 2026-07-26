@@ -30,7 +30,7 @@ func getUser(accessToken string, loginName *string, id *string) (*nativeApi.ApiU
 		params["id"] = []string{*id}
 	}
 
-	res, err := nativeApi.ApiGetUsers(accessToken, params)
+	res, err := nativeApi.GetNativeUsers(accessToken, params)
 	if err != nil {
 		log.Printf("[getUser]: An error occurred fetching user, aborting\n%+v\n\n", res)
 		return nil, err
