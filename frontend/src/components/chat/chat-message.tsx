@@ -71,7 +71,7 @@ export default function ChatMessage({
                                 tooltipOn({
                                     type: "image",
                                     imageSrcSet: fragment.emote ? (fragment.emote.darkSrcSet.length > 0 ? fragment.emote.darkSrcSet : fragment.emote.lightSrcSet) : '',
-                                    imageDesc: fragment.text,
+                                    imageDesc: [fragment.text, fragment.type],
                                     posX: rect.x + rect.width/2,
                                     posY: rect.y,
                                 }, fragment.text)

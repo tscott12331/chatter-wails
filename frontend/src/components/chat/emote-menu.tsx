@@ -3,6 +3,7 @@ import { useContext, useEffect, useState } from "react";
 import { preload } from "react-dom";
 import { AppEmote } from "@wailsjs/chatter-wails/shared/types";
 import { TooltipContext } from "@/contexts/tooltip-context";
+import { isDefined } from "@/util/assert";
 
 interface IEmoteMenuProps {
     emotes: TChatroomEmotes;
@@ -17,17 +18,21 @@ export default function EmoteMenu({
     handleEmoteSelect,
     ref,
 }: IEmoteMenuProps) {
-    const tabs = Object.keys(emotes);
+    const tabs = [...emotes.keys()];
+
     const [tab, setTab] = useState<number>(0);
 
     const { tooltipOn, tooltipOff } = useContext(TooltipContext);
     
     useEffect(() => {
-        for(const emoteMap of Object.values(emotes)) {
-            for(const emote of emoteMap.values()) {
-                const srcSet = emote.darkSrcSet.length > 0 ? emote.darkSrcSet : emote.lightSrcSet;
-                for(const image of srcSet.split(', ')) {
-                    preload(image, { as: "image", imageSrcSet: srcSet });
+        for(const providerMap of emotes.values()) {
+            for(const set of providerMap.values()) {
+                if(!isDefined(set.Emotes)) continue;
+                for(const emote of Object.values(set.Emotes).filter(isDefined)) {
+                    const srcSet = emote.darkSrcSet.length > 0 ? emote.darkSrcSet : emote.lightSrcSet;
+                    for(const image of srcSet.split(', ')) {
+                        preload(image, { as: "image", imageSrcSet: srcSet });
+                    }
                 }
             }
         }
@@ -51,7 +56,9 @@ export default function EmoteMenu({
             <div
             className='grow grid grid-cols-[repeat(auto-fill,40px)] auto-rows-min items-start justify-between gap-1 scroller-y'
             >
-            {tabs[tab] && [...emotes[tabs[tab]].values()].map(emote =>
+            {tabs[tab] && emotes.has(tabs[tab]) && [...emotes.get(tabs[tab])!.values()].flatMap(set =>
+                set.Emotes
+                ? Object.values(set.Emotes).filter(isDefined).map(emote =>
                  <div
                      className='flex justify-center items-center cursor-pointer w-10 h-10 p-0.5 rounded-xs opacity-90 hover:bg-bg-5 transition-all duration-150'
                      onClick={() => handleEmoteSelect(emote)}
@@ -72,7 +79,8 @@ export default function EmoteMenu({
                          srcSet={emote.darkSrcSet.length > 0 ? emote.darkSrcSet : emote.lightSrcSet}
                      />
                  </div>
-
+                )
+                : []
             )}
             </div>
         </div>

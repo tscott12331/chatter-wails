@@ -5,8 +5,9 @@ import EmoteIcon from "../svg/emote-icon";
 import EmoteCarousel, { IEmoteCarouselData } from "./carousel";
 import EmoteMenu from "./emote-menu";
 import ReplyPopup from "./reply-popup";
-import { AppEmote } from "@wailsjs/chatter-wails/shared/types";
+import { AppEmote, AppEmoteMap, AppEmoteSet } from "@wailsjs/chatter-wails/shared/types";
 import { IAppChatMessage } from "@/hooks/chat";
+import { isDefined } from "@/util/assert";
 
 interface IChatControlsProps {
     isReplying: boolean;
@@ -104,11 +105,17 @@ export default function ChatControls({
     // TODO: change emoteMap structure to trie to improve lookup on completion
     function getEmoteMatches(potentialEmote: string): AppEmote[] {
         const matches: AppEmote[] = [];
-        for(const emoteMap of Object.values(emotes)) {
-            for(const [emoteName, emote] of emoteMap) {
-                if(emoteName.toLowerCase().startsWith(potentialEmote.toLowerCase())) {
-                    matches.push(emote);
-                }
+        const flatEmotes = Array.from(
+                            emotes.values().flatMap(setMap => 
+                            setMap.values().flatMap(set => 
+                                set.Emotes
+                                ? Object.values(set.Emotes).filter(isDefined)
+                                : []))
+                           );
+
+        for(const emote of flatEmotes) {
+            if(emote.name.toLowerCase().startsWith(potentialEmote.toLowerCase())) {
+                matches.push(emote);
             }
         }
 
@@ -231,16 +238,31 @@ export default function ChatControls({
     }
 
     const filteredEmoteList = useMemo<TChatroomEmotes>(() => {
-        const idHash: Record<string, string> = {};
+        const filtered: TChatroomEmotes = new Map();
 
-        const filtered: TChatroomEmotes = {};
+        for(const [provider, providerMap] of emotes.entries()) {
+            const filteredProviderMap = new Map<string, AppEmoteSet>();
+            filtered.set(provider, filteredProviderMap);
+            const idHash: Record<string, string> = {};
 
-        for(const [emoteType, emoteMap] of Object.entries(emotes)) {
-            filtered[emoteType] = new Map<string, AppEmote>()
-            for(const [emoteName, emote] of emoteMap) {
-                if(!(emote.id in idHash)) {
-                    idHash[emote.id] = emote.id;
-                    filtered[emoteType].set(emoteName, emote);
+            for(const [sectionName, set] of providerMap.entries()) {
+                if(!isDefined(set.Emotes)) continue;
+
+                const filteredEmoteMap: AppEmoteMap = {};
+                const filteredSet: AppEmoteSet = {
+                    ...set,
+                    Emotes: filteredEmoteMap,
+                }
+                filteredProviderMap.set(sectionName, filteredSet);
+
+                for(const emote of Object.values(set.Emotes)) {
+                    if(!isDefined(emote)) continue;
+
+                    if(!(emote.id in idHash)) {
+                        idHash[emote.id] = emote.id;
+                        
+                        filteredEmoteMap[emote.name] = emote
+                    }
                 }
             }
         }

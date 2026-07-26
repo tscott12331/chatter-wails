@@ -1,3 +1,5 @@
-import { AppEmote } from "@wailsjs/chatter-wails/shared/types";
+import { AppEmoteSet } from "@wailsjs/chatter-wails/shared/types";
 
-export type TChatroomEmotes = Record<string, Map<string, AppEmote>>;
+
+// provider -> section_id -> set
+export type TChatroomEmotes = Map<string, Map<string, AppEmoteSet>>;
