@@ -54,7 +54,7 @@ export default function ChatMessage({
     getChatterColor,
     showUserPopup,
 }: ChatMessageProps) {
-    const { tooltipOn, tooltipOff } = useContext(TooltipContext);
+    const { tooltipOnEmote, tooltipOnPartial, tooltipOff, tooltipOffEmote } = useContext(TooltipContext);
     const fragmentToNode = (fragment: AppChatMessageFragment, index: number): React.ReactNode => {
         switch(fragment.type) {
             case 'emote':
@@ -66,17 +66,8 @@ export default function ChatMessage({
                             className="row-1 col-1"
                             srcSet={fragment.emote.darkSrcSet.length > 0 ? fragment.emote.darkSrcSet : fragment.emote.lightSrcSet}
                             alt={fragment.text}
-                            onMouseEnter={e => {
-                                const rect = e.currentTarget.getBoundingClientRect();
-                                tooltipOn({
-                                    type: "image",
-                                    imageSrcSet: fragment.emote ? (fragment.emote.darkSrcSet.length > 0 ? fragment.emote.darkSrcSet : fragment.emote.lightSrcSet) : '',
-                                    imageDesc: [fragment.text, fragment.type],
-                                    posX: rect.x + rect.width/2,
-                                    posY: rect.y,
-                                }, fragment.text)
-                            }}
-                            onMouseLeave={() => tooltipOff(fragment.text)}
+                            onMouseEnter={e => fragment.emote && tooltipOnEmote(fragment.emote, e.currentTarget)}
+                            onMouseLeave={() => fragment.emote && tooltipOffEmote(fragment.emote)}
                         />
                         {
                         fragment.emote.emoteStack?.map(e =>
@@ -118,16 +109,11 @@ export default function ChatMessage({
         return <img 
                     className="inline mr-1 max-w-4.5"
                     srcSet={badge.srcSet}
-                    onMouseEnter={e => {
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        tooltipOn({
+                    onMouseEnter={e => tooltipOnPartial({
                             type: "image",
                             imageSrcSet: badge.srcSet,
                             imageDesc: badge.title,
-                            posX: rect.x + rect.width/2,
-                            posY: rect.y,
-                        }, badge.title);
-                    }}
+                    }, badge.title, e.currentTarget)}
                     onMouseLeave={() => tooltipOff(badge.title)}
                     key={index} 
                 />
@@ -144,15 +130,12 @@ export default function ChatMessage({
             {message.reply &&
             <p 
                 className='w-full text-text-3 text-sm ellipsis'
-                onMouseEnter={e => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    tooltipOn({
+                onMouseEnter={e =>
+                    tooltipOnPartial({
                         type: "text",
                         text: message.reply?.parent_message_body ?? "",
-                        posX: rect.x + rect.width/2,
-                        posY: rect.y,
-                    }, message.id + message.reply?.parent_message_id)
-                }}
+                    }, message.id + message.reply?.parent_message_id, e.currentTarget)
+                }
                 onMouseLeave={() => tooltipOff(message.id + message.reply?.parent_message_id)}
             >replying to @{message.reply.parent_user_name}: {message.reply.parent_message_body}
             </p>

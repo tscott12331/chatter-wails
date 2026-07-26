@@ -80,7 +80,7 @@ func (es *EmoteService) GetTwitchUserEmotes() (*types.AppEmoteSet, error) {
 	tmpl := res.Body.Template
 	for _, emote := range res.Body.Data {
 		appEmote := *nativeApi.GetAppEmoteFromApiEmote(nativeApi.ApiEmote(emote), tmpl)
-		appEmote.Type = "user"
+		appEmote.Section = cache.USER_EMOTE_SECTION
 		emotes[appEmote.Name] = &appEmote
 	}
 
@@ -134,7 +134,7 @@ func (es *EmoteService) GetTwitchGlobalEmotes() (*types.AppEmoteSet, error) {
 	tmpl := res.Body.Template
 	for _, emote := range res.Body.Data {
 		appEmote := *nativeApi.GetAppEmoteFromApiEmote(nativeApi.ApiEmote(emote), tmpl)
-		appEmote.Type = "global"
+		appEmote.Section = cache.GLOBAL_EMOTE_SECTION
 		emotes[appEmote.Name] = &appEmote
 	}
 
@@ -190,7 +190,7 @@ func (es *EmoteService) GetTwitchChannelEmotes(broadcaster_id string) (*types.Ap
 	tmpl := res.Body.Template
 	for _, emote := range res.Body.Data {
 		appEmote := *nativeApi.GetAppEmoteFromApiEmote(nativeApi.ApiEmote(emote), tmpl)
-		appEmote.Type = "channel"
+		appEmote.Section = cache.CHANNEL_EMOTE_SECTION
 		emotes[appEmote.Name] = &appEmote
 	}
 

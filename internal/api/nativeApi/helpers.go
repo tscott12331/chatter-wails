@@ -2,6 +2,7 @@ package nativeApi
 
 import (
 	"bytes"
+	"chatter-wails/shared/cache"
 	"chatter-wails/shared/types"
 	"fmt"
 	"slices"
@@ -22,6 +23,7 @@ func GetAppEmoteFromApiEmote(apiEmote ApiEmote, tmpl string) *types.AppEmote {
 	appEmote := &types.AppEmote{
 		Id:   apiEmote.Id,
 		Name: apiEmote.Name,
+		Provider: cache.TWITCH_KEY,
 	}
 
 	byteTmpl := []byte(tmpl)

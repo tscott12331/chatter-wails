@@ -22,7 +22,7 @@ export default function EmoteMenu({
 
     const [tab, setTab] = useState<number>(0);
 
-    const { tooltipOn, tooltipOff } = useContext(TooltipContext);
+    const { tooltipOnEmote, tooltipOffEmote } = useContext(TooltipContext);
     
     useEffect(() => {
         for(const providerMap of emotes.values()) {
@@ -62,17 +62,8 @@ export default function EmoteMenu({
                  <div
                      className='flex justify-center items-center cursor-pointer w-10 h-10 p-0.5 rounded-xs opacity-90 hover:bg-bg-5 transition-all duration-150'
                      onClick={() => handleEmoteSelect(emote)}
-                     onMouseEnter={e => {
-                         const rect = e.currentTarget.getBoundingClientRect();
-                         tooltipOn({
-                             type: "image",
-                             imageSrcSet: emote.darkSrcSet.length > 0 ? emote.darkSrcSet : emote.lightSrcSet,
-                             imageDesc: emote.name,
-                             posX: rect.x + rect.width/2,
-                             posY: rect.y,
-                         }, emote.id)
-                     }}
-                     onMouseLeave={() => tooltipOff(emote.id)}
+                     onMouseEnter={e => tooltipOnEmote(emote, e.currentTarget)}
+                     onMouseLeave={() => tooltipOffEmote(emote)}
                      key={emote.id}
                  >
                      <img

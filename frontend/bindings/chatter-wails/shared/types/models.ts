@@ -10,11 +10,8 @@ export interface AppEmote {
     "name": string;
     "lightSrcSet": string;
     "darkSrcSet": string;
-
-    /**
-     * 'global' | 'user' | 'channel' | 'seventv'
-     */
-    "type": string;
+    "provider": string;
+    "section": string;
     "zeroWidth": boolean;
     "emoteStack": (AppEmote | null)[] | null;
 }

@@ -18,6 +18,7 @@ import (
 	"chatter-wails/internal/user"
 	"chatter-wails/internal/util"
 	"chatter-wails/shared"
+	"chatter-wails/shared/cache"
 	"chatter-wails/shared/types"
 
 	"chatter-wails/services/badge"
@@ -85,6 +86,7 @@ func esChatMessageFragmentToAppMessageFragment(cmf *ESChatMessageFragment, emote
 		appEmote = &types.AppEmote{
 			Id: cmf.Emote.Id,
 			Name: cmf.Text,
+			Provider: cache.TWITCH_KEY,
 			LightSrcSet: nativeApi.GetEmoteSrcSet(cmf.Emote.Id, cmf.Emote.Format, &esLightTheme, nil),
 			DarkSrcSet: nativeApi.GetEmoteSrcSet(cmf.Emote.Id, cmf.Emote.Format, &esDarkTheme, nil),
 		}

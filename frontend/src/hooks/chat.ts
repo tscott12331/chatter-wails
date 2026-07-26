@@ -231,8 +231,8 @@ export default function useChat({ channel, user, maxMessages = 200 }: {
         if(broadcasterId.length === 0) return;
 
         // TODO: make optional?
-        RequestSevenTVEmotes(broadcasterId);
-        RequestTwitchEmotes(broadcasterId);
+        RequestSevenTVEmotes(broadcasterId).catch(broadcastError);
+        RequestTwitchEmotes(broadcasterId).catch(broadcastError);
 
         const listenersOff = listenersOn(broadcasterId);
         

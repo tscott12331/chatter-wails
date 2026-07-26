@@ -23,7 +23,7 @@ export default function EmoteCarousel({
         highlightIndex = 1;
     }
 
-    const { tooltipOn, tooltipOff } = useContext(TooltipContext);
+    const { tooltipOnEmote, tooltipOffEmote } = useContext(TooltipContext);
 
     return (
         <div className="relative max-w-50 flex gap-1 justify-around p-2 bg-bg-2/50 outline outline-outline-2/50 shadow-md shadow-outline-2/50 backdrop-blur-xs">
@@ -31,17 +31,8 @@ export default function EmoteCarousel({
             {trio.map((e,i) => 
                 <div 
                     className={`w-10 h-10 flex justify-center items-center ${i === highlightIndex && "bg-bg-5"}`}
-                    onMouseEnter={me => {
-                        const rect= me.currentTarget.getBoundingClientRect();
-                        tooltipOn({
-                            type: "image",
-                            imageSrcSet: e.darkSrcSet,
-                            imageDesc: e.name,
-                            posX: rect.x + rect.width/2,
-                            posY: rect.y,
-                        }, e.id)
-                    }}
-                    onMouseLeave={() => tooltipOff(e.id)}
+                    onMouseEnter={me =>tooltipOnEmote(e, me.currentTarget)}
+                    onMouseLeave={() => tooltipOffEmote(e)}
                     key={i}
                 >
                     <img

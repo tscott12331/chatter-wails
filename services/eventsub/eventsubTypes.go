@@ -365,11 +365,11 @@ func esNotificationToEsChatMessage(notification *ESNotification, chatSubscriptio
 
 	json.Unmarshal(*notification.Payload.Event, &chatMessageEvent)
 
-	seventvEmotes := cache.GetBroadcasterEmoteMap(chatMessageEvent.Broadcaster_user_id)
+	emotesForChannel := cache.GetBroadcasterEmoteMap(chatMessageEvent.Broadcaster_user_id)
 
 	var fragments = []*AppChatMessageFragment{}
 	for _, fragment := range chatMessageEvent.Message.Fragments {
-		fragments = append(fragments, esChatMessageFragmentToAppMessageFragment(fragment, seventvEmotes)...)
+		fragments = append(fragments, esChatMessageFragmentToAppMessageFragment(fragment, emotesForChannel)...)
 	}
 
 	sharedChatBadge := extractSharedChatBadge(&chatMessageEvent, chatSubscriptionData)
