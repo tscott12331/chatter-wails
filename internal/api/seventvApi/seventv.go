@@ -17,6 +17,13 @@ var (
 		// "/v3/users/{platform}/{platform_id}",
 		Path: "/v3/users",
 	}
+
+	GLOBAL_EMOTES_ENDPOINT = url.URL{
+		Scheme: "https",
+		Host: "7tv.io",
+		Path: "/v3/emote-sets/global",
+
+	}
 )
 
 const SEVENTV_ZERO_WIDTH = 1 << 8
@@ -102,7 +109,7 @@ type SevenTVEmoteSet struct{
 	// owner null				`json:"owner"` // TODO: figure out type
 }
 
-type ApiGetSevenTVUserRes struct{
+type GetSevenTVUserRes struct{
 	Id string				`json:"id"`
 	Platform string				`json:"platform"`
 	Username string				`json:"username"`
@@ -159,10 +166,10 @@ type SevenTVUser struct{
 	Connections []SevenTVUserConnection				`json:"connections"`
 }
 
-func GetSevenTVUser(platform string, platform_id string) (*ApiGetSevenTVUserRes, error) {
+func GetSevenTVUser(platform string, platform_id string) (*GetSevenTVUserRes, error) {
 	endpoint := constructUserEndpointURL(platform, platform_id)
 	
-	res, err := api.ApiGet[ApiGetSevenTVUserRes](*endpoint, nil, map[string][]string{})
+	res, err := api.ApiGet[GetSevenTVUserRes](*endpoint, nil, map[string][]string{})
 	if err != nil {
 		println(err.Error())
 		return nil, err
@@ -171,9 +178,13 @@ func GetSevenTVUser(platform string, platform_id string) (*ApiGetSevenTVUserRes,
 	return &res.Body, nil
 }
 
-func GetAppEmotesFromSevenTVUserRes(res *ApiGetSevenTVUserRes) *types.AppEmoteSet{
+func GetAppEmotesFromSevenTVUserRes(res *GetSevenTVUserRes) *types.AppEmoteSet{
+	return GetAppEmotesFromSevenTVEmotes(res.Emote_set.Emotes, res.Emote_set.Id, cache.CHANNEL_EMOTE_SECTION)
+}
+
+func GetAppEmotesFromSevenTVEmotes(emotes []SevenTVEmote, setId, sectionId string) *types.AppEmoteSet {
 	var appEmotes map[string]*types.AppEmote = map[string]*types.AppEmote{}
-	for _, stvEmote := range res.Emote_set.Emotes {
+	for _, stvEmote := range emotes {
 		srcSet := getSevenTVEmoteSrcSet(&stvEmote)
 		appEmote := types.AppEmote{
 			Id: stvEmote.Id,
@@ -181,7 +192,7 @@ func GetAppEmotesFromSevenTVUserRes(res *ApiGetSevenTVUserRes) *types.AppEmoteSe
 			LightSrcSet: srcSet,
 			DarkSrcSet: srcSet,
 			Provider: cache.STV_KEY,
-			Section: cache.CHANNEL_EMOTE_SECTION,
+			Section: sectionId,
 			ZeroWidth: stvEmote.Data.Flags & SEVENTV_ZERO_WIDTH != 0,
 		}
 
@@ -189,13 +200,36 @@ func GetAppEmotesFromSevenTVUserRes(res *ApiGetSevenTVUserRes) *types.AppEmoteSe
 	}
 
 	set := &types.AppEmoteSet{
-		Id: res.Emote_set.Id,
+		Id: setId,
 		Provider: cache.STV_KEY,
-		Section: cache.CHANNEL_EMOTE_SECTION,
+		Section: sectionId,
 		Emotes: appEmotes,
 	}
 
 	return set
+}
+
+
+type GetSevenTVGlobalEmotesRes struct{
+	Id string		`json:"id"`
+	Name string		`json:"name"`
+	Flags int		`json:"flags"`
+	Tags []string		`json:"tags"`
+	Immutable bool		`json:"immutable"`
+	Privileged bool		`json:"privileged"`
+	Emotes []SevenTVEmote		`json:"emotes"`
+	Emote_count int		`json:"emote"`
+	Capacity int		`json:"capacity"`
+	Owner SevenTVEmoteDataOwner		`json:"owner"`
+}
+
+func GetGlobalEmotes() (*GetSevenTVGlobalEmotesRes, error) {
+	res, err := api.ApiGet[GetSevenTVGlobalEmotesRes](GLOBAL_EMOTES_ENDPOINT, nil, map[string][]string{})
+	if err != nil {
+		return nil, err
+	}
+	
+	return &res.Body, nil
 }
 
 func getSevenTVEmoteSrcSet(emote *SevenTVEmote) string {
