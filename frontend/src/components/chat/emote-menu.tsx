@@ -25,18 +25,23 @@ export default function EmoteMenu({
     const { tooltipOnEmote, tooltipOffEmote } = useContext(TooltipContext);
     
     useEffect(() => {
-        for(const providerMap of emotes.values()) {
-            for(const set of providerMap.values()) {
-                if(!isDefined(set.Emotes)) continue;
-                for(const emote of Object.values(set.Emotes).filter(isDefined)) {
-                    const srcSet = emote.darkSrcSet.length > 0 ? emote.darkSrcSet : emote.lightSrcSet;
-                    for(const image of srcSet.split(', ')) {
-                        preload(image, { as: "image", imageSrcSet: srcSet });
-                    }
-                }
+        const providerMaps = emotes.values();
+        const flatEmotes = Array.from(providerMaps.flatMap(sectionMap =>
+            sectionMap.values().flatMap(set =>
+                set.Emotes
+                ? Object.values(set.Emotes).filter(isDefined)
+                : []
+            )
+        ));
+
+        for(const emote of flatEmotes) {
+            const srcSet = emote.darkSrcSet.length > 0 ? emote.darkSrcSet : emote.lightSrcSet;
+            for(const image of srcSet.split(', ')) {
+                preload(image, { as: "image", imageSrcSet: srcSet });
             }
         }
     }, [emotes]);
+
     return (
         <div 
             className={`${!open && 'invisible opacity-0'} flex flex-col w-[calc(100%-30px)] h-75 border border-outline-1 rounded-xs m-3.5 absolute left-0 bottom-full bg-bg-2/80 backdrop-blur-xs p-1 z-600 *:select-none transition-all duration-75 ease-in-out transition-discrete`}
