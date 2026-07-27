@@ -257,6 +257,7 @@ button:active {
 
 .scroller, .scroller-y, .scroller-x {
     scrollbar-width: thin;
+    scrollbar-color: var(--color-outline-2) transparent;
 }
 
 .scroller {

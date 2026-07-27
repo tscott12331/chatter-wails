@@ -79,23 +79,23 @@ export default function ChatControls({
         let text = "";
         for(const node of nodes) {
             switch(node.nodeType) {
-            case Node.TEXT_NODE:
-                const prevSibling = node.previousSibling
-                const textContent = node.nodeValue;
-                if(prevSibling && prevSibling.nodeType === Node.ELEMENT_NODE
-                  && textContent?.charAt(0) !== ' ') text += ' ';
-                text += textContent;
-                break;
-            case Node.ELEMENT_NODE:
-                const prevChar = text.at(-1);
-                if(prevChar && prevChar !== ' ') {
-                    text += ' ';
-                }
+                case Node.TEXT_NODE:
+                    const prevSibling = node.previousSibling
+                    const textContent = node.nodeValue;
+                    if(prevSibling && prevSibling.nodeType === Node.ELEMENT_NODE
+                        && textContent?.charAt(0) !== ' ') text += ' ';
+                    text += textContent;
+                    break;
+                case Node.ELEMENT_NODE:
+                    const prevChar = text.at(-1);
+                    if(prevChar && prevChar !== ' ') {
+                        text += ' ';
+                    }
 
-                if(node instanceof HTMLImageElement) {
-                    text += node.alt;
-                }
-                break;
+                    if(node instanceof HTMLImageElement) {
+                        text += node.alt;
+                    }
+                    break;
             }
         }
 
@@ -106,12 +106,12 @@ export default function ChatControls({
     function getEmoteMatches(potentialEmote: string): AppEmote[] {
         const matches: AppEmote[] = [];
         const flatEmotes = Array.from(
-                            emotes.values().flatMap(setMap => 
-                            setMap.values().flatMap(set => 
-                                set.Emotes
-                                ? Object.values(set.Emotes).filter(isDefined)
-                                : []))
-                           );
+            emotes.values().flatMap(setMap => 
+                setMap.values().flatMap(set => 
+                    set.Emotes
+                        ? Object.values(set.Emotes).filter(isDefined)
+                        : []))
+        );
 
         for(const emote of flatEmotes) {
             if(emote.name.toLowerCase().startsWith(potentialEmote.toLowerCase())) {
@@ -165,7 +165,7 @@ export default function ChatControls({
         const offset = (opts.wordStart + opts.match.name.length) - opts.cursorOffset;
 
         opts.node.replaceWith(newText);
-        
+
         return offset;
     }
 
@@ -240,31 +240,43 @@ export default function ChatControls({
     const filteredEmoteList = useMemo<TChatroomEmotes>(() => {
         const filtered: TChatroomEmotes = new Map();
 
-        for(const [provider, providerMap] of emotes.entries()) {
+        function filterProvider(provider: string, providerMap: Map<string, AppEmoteSet>) {
             const filteredProviderMap = new Map<string, AppEmoteSet>();
             filtered.set(provider, filteredProviderMap);
             const idHash: Record<string, string> = {};
 
             for(const [sectionName, set] of providerMap.entries()) {
-                if(!isDefined(set.Emotes)) continue;
-
-                const filteredEmoteMap: AppEmoteMap = {};
-                const filteredSet: AppEmoteSet = {
-                    ...set,
-                    Emotes: filteredEmoteMap,
-                }
-                filteredProviderMap.set(sectionName, filteredSet);
-
-                for(const emote of Object.values(set.Emotes)) {
-                    if(!isDefined(emote)) continue;
-
-                    if(!(emote.id in idHash)) {
-                        idHash[emote.id] = emote.id;
-                        
-                        filteredEmoteMap[emote.name] = emote
-                    }
-                }
+                filterSection(sectionName, set, filteredProviderMap, idHash);
             }
+        }
+
+        function filterSection(sectionName: string, set: AppEmoteSet, filteredProviderMap: Map<string, AppEmoteSet>, idHash: Record<string, string>) {
+            if(!isDefined(set.Emotes)) return;
+
+            const filteredEmoteMap: AppEmoteMap = {};
+            const filteredSet: AppEmoteSet = {
+                ...set,
+                Emotes: filteredEmoteMap,
+            }
+
+            filteredProviderMap.set(sectionName, filteredSet);
+
+            for(const emote of Object.values(set.Emotes)) {
+                if(!isDefined(emote)) continue;
+                filterEmote(emote, filteredEmoteMap, idHash)
+            }
+        }
+
+        function filterEmote(emote: AppEmote, filteredEmoteMap: NonNullable<AppEmoteMap>, idHash: Record<string, string>) {
+            if(!(emote.id in idHash)) {
+                idHash[emote.id] = emote.id;
+
+                filteredEmoteMap[emote.name] = emote
+            }
+        }
+
+        for(const [provider, providerMap] of emotes.entries()) {
+            filterProvider(provider, providerMap);
         }
 
         return filtered
@@ -276,7 +288,7 @@ export default function ChatControls({
         function handleOutsideClick(e: MouseEvent) {
             if(e.target instanceof Node) {
                 if(!messageInputRef.current?.contains(e.target)
-                   && !emotePopupRef.current?.contains(e.target)) {
+                    && !emotePopupRef.current?.contains(e.target)) {
                     setShouldShowEmotePopup(false);
                 }
             }
@@ -291,51 +303,51 @@ export default function ChatControls({
 
 
     return (
-    <div className='flex flex-col p-1 basis-[max-content] bg-bg-09 relative z-4500'>
-        {carouselData && 
-        <div className="absolute -top-8 flex justify-center items-center w-full">
-            <EmoteCarousel data={carouselData} />
-        </div>
-        }
-        <EmoteMenu 
-            emotes={filteredEmoteList}
-            open={shouldShowEmotePopup}
-            handleEmoteSelect={handleEmoteSelect}
-            ref={emotePopupRef}
-        />
-        <div className={`${!(isReplying && replyingToMessage) && 'invisible opacity-0'} transition-all transition-discrete ease-in-out duration-75`}>
-        {isReplying && replyingToMessage &&
-            <ReplyPopup
-                onCloseClicked={onReplyClosed}
-                message={replyingToMessage}
-                getChatterColor={getChatterColor}
-                showUserPopup={onShowUserPopup}
+        <div className='flex flex-col p-1 basis-[max-content] bg-bg-09 relative z-4500'>
+            {carouselData && 
+                <div className="absolute -top-8 flex justify-center items-center w-full">
+                    <EmoteCarousel data={carouselData} />
+                </div>
+            }
+            <EmoteMenu 
+                emotes={filteredEmoteList}
+                open={shouldShowEmotePopup}
+                handleEmoteSelect={handleEmoteSelect}
+                ref={emotePopupRef}
             />
-        }
-        </div>
+            <div className={`${!(isReplying && replyingToMessage) && 'invisible opacity-0'} transition-all transition-discrete ease-in-out duration-75`}>
+                {isReplying && replyingToMessage &&
+                    <ReplyPopup
+                        onCloseClicked={onReplyClosed}
+                        message={replyingToMessage}
+                        getChatterColor={getChatterColor}
+                        showUserPopup={onShowUserPopup}
+                    />
+                }
+            </div>
 
-        <div className={'flex items-center justify-between flex-wrap gap-0.5 h-37.5'}>
-            <div
-            className='w-full h-[calc(100%-46px)] overflow-auto'
-            contentEditable="true"
-            onKeyDown={handleMessageInputKeydown}
-            onBlur={handleMessageInputBlur}
-            ref={messageInputRef}
-            onClick={(e: React.MouseEvent<HTMLDivElement>) => e.stopPropagation()}
-            ></div>
-            <div className='flex items-center justify-end gap-1.5 w-full'>
-                <button
-                    className='relative flex justify-center items-center w-8 bg-none'
-                    onClick={handleEmoteButtonClick}
-                >
+            <div className={'flex items-center justify-between flex-wrap gap-0.5 h-37.5'}>
+                <div
+                    className='w-full h-[calc(100%-46px)] overflow-auto'
+                    contentEditable="true"
+                    onKeyDown={handleMessageInputKeydown}
+                    onBlur={handleMessageInputBlur}
+                    ref={messageInputRef}
+                    onClick={(e: React.MouseEvent<HTMLDivElement>) => e.stopPropagation()}
+                ></div>
+                <div className='flex items-center justify-end gap-1.5 w-full'>
+                    <button
+                        className='relative flex justify-center items-center w-8 bg-none'
+                        onClick={handleEmoteButtonClick}
+                    >
                         <EmoteIcon />
-                </button>
-                <button
-                    className="h-8"
-                    onClick={handleSendMessage}
-                >send</button>
+                    </button>
+                    <button
+                        className="h-8"
+                        onClick={handleSendMessage}
+                    >send</button>
+                </div>
             </div>
         </div>
-    </div>
     )
 }

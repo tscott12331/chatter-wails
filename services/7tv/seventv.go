@@ -7,6 +7,7 @@ import (
 	"chatter-wails/shared/types"
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -79,16 +80,27 @@ func (stv *SevenTVService) RequestSevenTVChannelEmotes(broadcasterId string) err
 }
 
 func (stv *SevenTVService) GetSevenTVGlobalEmotes() (*types.AppEmoteSet, error) {
-	panic("not implemented")
+	if set, exists := cache.GetEmoteSet(cache.STV_KEY, cache.GLOBAL_EMOTE_SECTION); exists {
+		return set, nil
+	}
+
+	res, err := seventvApi.GetGlobalEmotes()
+	if err != nil {
+		return nil, err
+	}
+
+	set := seventvApi.GetAppEmotesFromSevenTVEmotes(res.Emotes, fmt.Sprintf("%s:%s", cache.STV_KEY, cache.GLOBAL_EMOTE_SECTION), cache.GLOBAL_EMOTE_SECTION)
+	cache.SetEmoteSet(cache.STV_KEY, cache.GLOBAL_EMOTE_SECTION, set)
+
+	return set, nil
 }
 
 func (stv *SevenTVService) RequestSevenTVGlobalEmotes() error {
+	set, err := stv.GetSevenTVGlobalEmotes()
+	if err != nil {
+		return err
+	}
+
+	shared.EmitNewSet(stv.app, set, false, "")
 	return nil
-	// set, err := stv.GetSevenTVGlobalEmotes()
-	// if err != nil {
-	// 	return err
-	// }
-	//
-	// shared.EmitNewSet(stv.app, set, false, "")
-	// return nil
 }
