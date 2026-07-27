@@ -139,6 +139,7 @@ func (es *EmoteService) GetTwitchGlobalEmotes() (*types.AppEmoteSet, error) {
 	}
 
 	set := &types.AppEmoteSet{
+		Section: cache.GLOBAL_EMOTE_SECTION,
 		Provider: cache.TWITCH_KEY,
 		Emotes: emotes,
 		Id: cache.GLOBAL_EMOTE_SECTION,

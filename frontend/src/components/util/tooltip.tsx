@@ -25,23 +25,23 @@ const tooltipMaxTextWidth = 500;
 export default function Tooltip({
     data,
 }: ITooltipProps) {
-    function determinePosition(posX: number, posY: number, type: TTooltipData["type"]) {
+    function determinePosition(data: TTooltipData) {
         const windowWidth = window.innerWidth;
 
         const posStyles = {};
-        const padding = (type == "text" 
-                        ? tooltipMaxTextWidth 
+        const padding = (data.type == "text" 
+                        ? Math.min(tooltipMaxTextWidth, data.text.length*14)
                         : tooltipMaxImageWidth) / 2;
 
-        if(posX + padding > windowWidth) {
-            posStyles['right'] = padding;
-        } else if(posX < padding) {
+        if(data.posX + padding > windowWidth) {
+            posStyles['right'] = 0;
+        } else if(data.posX < padding) {
             posStyles['left'] = padding;
         } else {
-            posStyles['left'] = posX;
+            posStyles['left'] = data.posX;
         }
 
-        posStyles['top'] = posY
+        posStyles['top'] = data.posY
 
         return posStyles;
     }
@@ -56,7 +56,7 @@ export default function Tooltip({
         <div
             className="absolute flex flex-col justify-center items-center z-10000 p-1 bg-bg-2/80 backdrop-blur-xs outline outline-outline-2/80 border border-outline-1 text-sm text-center text-text-1 wrap-break-word -translate-x-1/2 -translate-y-full rounded-sm shadow-[0_0_1px_1px] shadow-bg-9/50 italic"
             style={{
-                ...determinePosition(data.posX, data.posY, data.type),
+                ...determinePosition(data),
             }}
         >
         {data.type === "text"
