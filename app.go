@@ -5,6 +5,7 @@ import (
 	seventv "chatter-wails/services/7tv"
 	"chatter-wails/services/auth"
 	"chatter-wails/services/badge"
+	"chatter-wails/services/bttv"
 	"chatter-wails/services/eventsub"
 	"chatter-wails/services/native"
 	"chatter-wails/shared"
@@ -24,6 +25,7 @@ type AppService struct {
 	badgeService *badge.BadgeService
 	authService *auth.AuthService
 	seventvService *seventv.SevenTVService
+	bttvService *bttv.BTTVService
 }
 
 // NewAppService creates a new App application struct
@@ -35,6 +37,7 @@ func NewAppService(app *application.App) *AppService {
 		badgeService: badge.NewBadgeService(app),
 		authService: auth.NewAuthService(app),
 		seventvService: seventv.NewSevenTVService(app),
+		bttvService: bttv.NewBTTVService(app),
 	}
 }
 
@@ -47,6 +50,7 @@ func (a *AppService) ServiceStartup(ctx context.Context, options application.Ser
 	a.badgeService.Ctx = ctx
 	a.authService.Ctx = ctx
 	a.seventvService.Ctx = ctx
+	a.bttvService.Ctx = ctx
 
 	go a.esService.Connect()
 

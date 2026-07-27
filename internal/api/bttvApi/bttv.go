@@ -2,8 +2,11 @@ package bttvApi
 
 import (
 	"chatter-wails/internal/api"
+	"chatter-wails/shared/cache"
+	"chatter-wails/shared/types"
 	"fmt"
 	"net/url"
+	"strings"
 )
 
 var (
@@ -18,6 +21,14 @@ var (
 		Host: "api.betterttv.net",
 		Path: "/3/cached/users",
 	}
+
+	BTTV_EMOTE_CDN = url.URL{
+		Scheme: "https",
+		Host: "cdn.betterttv.net",
+		Path: "/emote",
+	}
+
+	BTTV_TWITCH_PROVIDER = "twitch"
 )
 
 type BTTVPartialUser struct {
@@ -32,8 +43,8 @@ type BTTVEmote struct {
 	Code      string           `json:"code"`
 	ImageType string           `json:"imageType"`
 	Animated  bool             `json:"animated"`
-	UserId    *string          `json:"userId"`
-	User      *BTTVPartialUser `json:"user"`
+	UserId    *string          `json:"userId,omitempty"`
+	User      *BTTVPartialUser `json:"user,omitempty"`
 }
 
 type BTTVUser struct {
@@ -77,3 +88,44 @@ func GetGlobalEmotes() ([]BTTVEmote, error) {
 	return res.Body, nil
 }
 
+func BTTVEmotesToAppEmoteSet(emotes []BTTVEmote, sectionId string) *types.AppEmoteSet {
+	set := &types.AppEmoteSet{
+		Id: fmt.Sprintf("%s:%s", cache.BTTV_KEY, sectionId),
+		Provider: cache.BTTV_KEY,
+		Section: sectionId,
+		Emotes: types.AppEmoteMap{},
+	}
+	
+	for _, emote := range emotes {
+		appEmote := BTTVEmoteToAppEmote(&emote, sectionId)
+		set.Emotes[appEmote.Name] = appEmote
+	}
+
+	return set
+}
+
+// sectionId is needed since bttv global emotes still have userId associated with them
+func BTTVEmoteToAppEmote(emote *BTTVEmote, sectionId string) *types.AppEmote {
+	srcSet := ExtractBTTVSrcSet(emote)
+
+	return &types.AppEmote{
+		Id: emote.Id,
+		Name: emote.Code,
+		LightSrcSet: srcSet,
+		DarkSrcSet: srcSet,
+		Provider: cache.BTTV_KEY,
+		Section: sectionId,
+	}
+}
+
+func ExtractBTTVSrcSet(emote *BTTVEmote) string {
+	// {cdn_base}/{id}/{scale}x.{imagetype}
+
+	srcs := []string{}
+	for i := 1; i <= 3; i++ {
+		src := fmt.Sprintf("%s/%s/%dx.%s", BTTV_EMOTE_CDN.String(), emote.Id, i, emote.ImageType)
+		srcs = append(srcs, src)
+	}
+
+	return strings.Join(srcs, ", ")
+}

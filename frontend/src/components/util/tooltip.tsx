@@ -48,7 +48,7 @@ export default function Tooltip({
 
     const displayText = (text: string|string[]) => {
         return Array.isArray(text)
-            ? text.map((t, i) => <span className={`block ${i !== 0 ? 'text-xs text-text-2' : 'mb-1'}`}>{t}</span>)
+            ? text.map((t, i) => <span key={t+i} className={`block ${i !== 0 ? 'text-xs text-text-2' : 'mb-1'}`}>{t}</span>)
             : <span>{text}</span>
     }
 
