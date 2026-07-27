@@ -13,6 +13,7 @@ var assets embed.FS
 
 func main() {
 	// Register events
+	// TODO: rename events to be under chatter namespace
 	application.RegisterEvent[*eventsub.ESChatMessage]("common:chat-message")
 	application.RegisterEvent[eventsub.StreamData]("common:stream-data")
 	application.RegisterEvent[eventsub.ChatOpenData]("common:chat-open")
@@ -41,6 +42,7 @@ func main() {
 	badgeService := application.NewService(appServiceRaw.badgeService)
 	authService := application.NewService(appServiceRaw.authService)
 	seventvService := application.NewService(appServiceRaw.seventvService)
+	bttvService := application.NewService(appServiceRaw.bttvService)
 
 	app.RegisterService(appService)
 	app.RegisterService(esService)
@@ -48,6 +50,7 @@ func main() {
 	app.RegisterService(badgeService)
 	app.RegisterService(authService)
 	app.RegisterService(seventvService)
+	app.RegisterService(bttvService)
 
 
 	app.Window.NewWithOptions(application.WebviewWindowOptions{

@@ -7,8 +7,8 @@ import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wails
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as api$0 from "../../internal/api/models.js";
+import * as nativeApi$0 from "../../internal/api/nativeApi/models.js";
 
-export function GetGlobalBadgeSets(): $CancellablePromise<api$0.ApiBadgeSet[] | null> {
+export function GetGlobalBadgeSets(): $CancellablePromise<nativeApi$0.ApiBadgeSet[] | null> {
     return $Call.ByID(42025171);
 }

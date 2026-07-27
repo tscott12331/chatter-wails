@@ -1,14 +1,16 @@
 interface ITextTooltip {
     type: "text";
-    text: string
+    text: string | string[];
 }
 interface IImageTooltip {
     type: "image";
     imageSrcSet: string;
-    imageDesc: string
+    imageDesc: string | string[];
 }
 
-export type TTooltipData = (ITextTooltip | IImageTooltip) & {
+export type TPartialTooltipData = ITextTooltip|IImageTooltip
+
+export type TTooltipData = TPartialTooltipData & {
     posX: number;
     posY: number;
 };
@@ -43,9 +45,16 @@ export default function Tooltip({
 
         return posStyles;
     }
+
+    const displayText = (text: string|string[]) => {
+        return Array.isArray(text)
+            ? text.map((t, i) => <span key={t+i} className={`block ${i !== 0 ? 'text-xs text-text-2' : 'mb-1'}`}>{t}</span>)
+            : <span>{text}</span>
+    }
+
     return (
         <div
-            className="absolute flex flex-col justify-center items-center z-10000 p-1 bg-bg-2/80 backdrop-blur-xs outline outline-outline-2/80 border border-outline-1 text-sm text-center wrap-break-word -translate-x-1/2 -translate-y-full rounded-sm shadow-[0_0_1px_1px] shadow-bg-9/50 italic"
+            className="absolute flex flex-col justify-center items-center z-10000 p-1 bg-bg-2/80 backdrop-blur-xs outline outline-outline-2/80 border border-outline-1 text-sm text-center text-text-1 wrap-break-word -translate-x-1/2 -translate-y-full rounded-sm shadow-[0_0_1px_1px] shadow-bg-9/50 italic"
             style={{
                 ...determinePosition(data.posX, data.posY, data.type),
             }}
@@ -56,7 +65,7 @@ export default function Tooltip({
             style={{
                 maxWidth: `min(100%,${tooltipMaxTextWidth}px)`
             }}
-        >{data.text}</p>
+        >{displayText(data.text)}</p>
         : data.type === "image"
         ? <>
         <img 
@@ -70,7 +79,7 @@ export default function Tooltip({
             style={{
                 maxWidth: `${tooltipMaxImageWidth}px`,
             }}
-        >{data.imageDesc}</p>
+        >{displayText(data.imageDesc)}</p>
         </>
         : <></>
         }

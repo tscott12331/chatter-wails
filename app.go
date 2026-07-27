@@ -1,12 +1,13 @@
 package main
 
 import (
-	"chatter-wails/internal/api"
+	"chatter-wails/internal/api/nativeApi"
 	seventv "chatter-wails/services/7tv"
 	"chatter-wails/services/auth"
 	"chatter-wails/services/badge"
-	"chatter-wails/services/emote"
+	"chatter-wails/services/bttv"
 	"chatter-wails/services/eventsub"
+	"chatter-wails/services/native"
 	"chatter-wails/shared"
 	"chatter-wails/shared/cache"
 	"context"
@@ -20,10 +21,11 @@ type AppService struct {
 	app *application.App
 	ctx context.Context
 	esService *eventsub.EventSubService
-	emoteService *emote.EmoteService
+	emoteService *native.EmoteService
 	badgeService *badge.BadgeService
 	authService *auth.AuthService
 	seventvService *seventv.SevenTVService
+	bttvService *bttv.BTTVService
 }
 
 // NewAppService creates a new App application struct
@@ -31,10 +33,11 @@ func NewAppService(app *application.App) *AppService {
 	return &AppService{
 		app: app,
 		esService: eventsub.NewEventSubService(app),
-		emoteService: emote.NewEmoteService(app),
+		emoteService: native.NewEmoteService(app),
 		badgeService: badge.NewBadgeService(app),
 		authService: auth.NewAuthService(app),
 		seventvService: seventv.NewSevenTVService(app),
+		bttvService: bttv.NewBTTVService(app),
 	}
 }
 
@@ -47,6 +50,7 @@ func (a *AppService) ServiceStartup(ctx context.Context, options application.Ser
 	a.badgeService.Ctx = ctx
 	a.authService.Ctx = ctx
 	a.seventvService.Ctx = ctx
+	a.bttvService.Ctx = ctx
 
 	go a.esService.Connect()
 
@@ -69,7 +73,7 @@ func (a *AppService) ConnectToChatroom(channelName string) (*eventsub.ChatroomDa
 	return a.esService.CreateChatSubscription(channelName, a.badgeService.GlobalBadgeSets)
 }
 
-func (a *AppService) SendChatMessage(channelName string, messageContent string, replyId *string) (*api.ApiPostMessagesData, error) {
+func (a *AppService) SendChatMessage(channelName string, messageContent string, replyId *string) (*nativeApi.ApiPostMessagesData, error) {
 	user := shared.GetUser()
 	if user == nil {
 		log.Printf("[SendChatMessage]: User not logged in, cannot send message, aborting\n\n")

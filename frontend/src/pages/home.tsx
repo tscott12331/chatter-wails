@@ -21,7 +21,7 @@ export default function HomePage({
     const authURL = `https://id.twitch.tv/oauth2/authorize?response_type=token&client_id=${import.meta.env.VITE_CLIENT_ID}&redirect_uri=${import.meta.env.VITE_OAUTH_REDIRECT}&scope=${scopeParamVal}`;
 
 
-    const handleTokenSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleTokenSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
         e.preventDefault();
         submitAccess(new FormData(e.currentTarget));
     }

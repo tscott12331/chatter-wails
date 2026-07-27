@@ -2,10 +2,9 @@ import { createContext, useEffect, useMemo, useState } from "react";
 
 import { Login } from "@wailsjs/chatter-wails/services/auth/authservice";
 import { GetGlobalBadgeSets } from "@wailsjs/chatter-wails/services/badge/badgeservice";
-import { GetGlobalEmotes, GetUserEmotes } from "@wailsjs/chatter-wails/services/emote/emoteservice";
+import { ApiBadgeSet } from "@wailsjs/chatter-wails/internal/api/nativeApi";
 import { DeleteAllSubscriptions } from "@wailsjs/chatter-wails/services/eventsub/eventsubservice";
-import { AppEmote, AppUser } from "@wailsjs/chatter-wails/shared/types";
-import { ApiBadgeSet } from "@wailsjs/chatter-wails/internal/api";
+import { AppUser } from "@wailsjs/chatter-wails/shared/types";
 import { IToast } from "@/components/util/toast/toast";
 import { assertDefined } from "@/util/assert";
 import { CancelError } from "@wailsio/runtime";
@@ -14,8 +13,6 @@ import { CancelError } from "@wailsio/runtime";
 interface IGlobalContext {
     user: AppUser|null;
     globalBadgeSets: ApiBadgeSet[];
-    globalEmotes: AppEmote[];
-    userEmotes: AppEmote[];
     broadcastToast: (toast: IToast) => void;
     broadcastError: (err: any) => void;
     toast?: IToast;
@@ -25,8 +22,6 @@ interface IGlobalContext {
 export const GlobalContext = createContext<IGlobalContext>({
     user: null,
     globalBadgeSets: [],
-    globalEmotes: [],
-    userEmotes: [],
     broadcastToast: () => {},
     broadcastError: () => {},
 });
@@ -36,8 +31,6 @@ export function GlobalContextProvider({
 }: { children: React.ReactNode }) {
     const [user, setUser] = useState<AppUser|null>(null);
     const [globalBadgeSets, setGlobalBadgeSets] = useState<ApiBadgeSet[]>([]);
-    const [globalEmotes, setGlobalEmotes] = useState<AppEmote[]>([]);
-    const [userEmotes, setUserEmotes] = useState<AppEmote[]>([]);
     const [toast, setToast] = useState<IToast|undefined>(undefined);
 
 
@@ -80,22 +73,6 @@ export function GlobalContextProvider({
                 })
                 .catch(broadcastError);
         }
-        if(globalEmotes.length === 0) {
-            GetGlobalEmotes()
-                .then(ge => {
-                    assertDefined(ge, "Global emotes not found");
-                    setGlobalEmotes(ge);
-                })
-                .catch(broadcastError);
-        }
-        if(userEmotes.length === 0) {
-            GetUserEmotes()
-                .then(ue => {
-                    assertDefined(ue, "User emotes not found");
-                    setUserEmotes(ue);
-                })
-                .catch(broadcastError);
-        }
 
         DeleteAllSubscriptions().catch(broadcastError);
     }
@@ -121,12 +98,10 @@ export function GlobalContextProvider({
             user,
             submitAccessToken,
             globalBadgeSets,
-            globalEmotes,
-            userEmotes,
             broadcastToast,
             broadcastError,
             toast,
-        }), [user, globalBadgeSets, globalEmotes, userEmotes, toast]);
+        }), [user, globalBadgeSets, toast]);
 
     return (
         <GlobalContext.Provider value={globalContextValue}>

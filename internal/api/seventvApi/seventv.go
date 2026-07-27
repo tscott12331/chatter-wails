@@ -1,4 +1,4 @@
-package seventv
+package seventvApi
 
 import (
 	"chatter-wails/internal/api"
@@ -180,7 +180,8 @@ func GetAppEmotesFromSevenTVUserRes(res *ApiGetSevenTVUserRes) *types.AppEmoteSe
 			Name: stvEmote.Name,
 			LightSrcSet: srcSet,
 			DarkSrcSet: srcSet,
-			Type: "seventv",
+			Provider: cache.STV_KEY,
+			Section: cache.CHANNEL_EMOTE_SECTION,
 			ZeroWidth: stvEmote.Data.Flags & SEVENTV_ZERO_WIDTH != 0,
 		}
 
@@ -190,6 +191,7 @@ func GetAppEmotesFromSevenTVUserRes(res *ApiGetSevenTVUserRes) *types.AppEmoteSe
 	set := &types.AppEmoteSet{
 		Id: res.Emote_set.Id,
 		Provider: cache.STV_KEY,
+		Section: cache.CHANNEL_EMOTE_SECTION,
 		Emotes: appEmotes,
 	}
 

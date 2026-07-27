@@ -12,7 +12,7 @@ import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wails
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as api$0 from "./internal/api/models.js";
+import * as nativeApi$0 from "./internal/api/nativeApi/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as eventsub$0 from "./services/eventsub/models.js";
@@ -25,6 +25,6 @@ export function DisconnectFromChatroom(channelName: string): $CancellablePromise
     return $Call.ByID(3340004225, channelName);
 }
 
-export function SendChatMessage(channelName: string, messageContent: string, replyId: string | null): $CancellablePromise<api$0.ApiPostMessagesData | null> {
+export function SendChatMessage(channelName: string, messageContent: string, replyId: string | null): $CancellablePromise<nativeApi$0.ApiPostMessagesData | null> {
     return $Call.ByID(2462501357, channelName, messageContent, replyId);
 }

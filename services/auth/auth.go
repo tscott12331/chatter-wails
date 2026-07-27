@@ -2,6 +2,7 @@ package auth
 
 import (
 	"chatter-wails/internal/api"
+	"chatter-wails/internal/api/nativeApi"
 	"chatter-wails/internal/user"
 	"chatter-wails/shared"
 	"chatter-wails/shared/types"
@@ -32,7 +33,7 @@ func NewAuthService(app *application.App) *AuthService {
 }
 
 
-func apiUserToAppUser(user *api.ApiUser, accessToken string) *types.AppUser {
+func apiUserToAppUser(user *nativeApi.ApiUser, accessToken string) *types.AppUser {
 	return &types.AppUser{
 		Id: user.Id,
 		Login: user.Login,
@@ -56,7 +57,7 @@ func (as *AuthService) validate() error {
 		return errors.New("Cannot validate a nil user")
 	}
 
-	res, err := api.ApiGetValidate(user.Access_token)
+	res, err := nativeApi.ApiGetNativeValidate(user.Access_token)
 	if err != nil {
 		log.Printf("[validate]: An error occurred validating token, signing out and aborting\n%+v\n\n", err)
 		return err

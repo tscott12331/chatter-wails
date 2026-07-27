@@ -1,15 +1,16 @@
 import { TChatroomEmotes } from "@/api/emote";
 
 import { ConnectToChatroom, SendChatMessage } from '@wailsjs/chatter-wails/appservice';
-import { EnableSevenTV } from "@wailsjs/chatter-wails/services/7tv/seventvservice";
+import { RequestSevenTVEmotes } from "@wailsjs/chatter-wails/services/7tv/seventvservice";
+import { RequestTwitchEmotes } from "@wailsjs/chatter-wails/services/native/emoteservice";
 import { Events } from "@wailsio/runtime";
 
 import { useContext, useEffect, useRef, useState } from "react";
-import { AppEmoteMap, AppUser } from "@wailsjs/chatter-wails/shared/types";
+import { AppEmoteSet, AppUser } from "@wailsjs/chatter-wails/shared/types";
 import { ESChatMessage, StreamData } from "@wailsjs/chatter-wails/services/eventsub";
 import { assertDefined, isDefined } from "@/util/assert";
 import { GlobalContext } from "@/contexts/global-context";
-import { GetChannelEmotes } from "@wailsjs/chatter-wails/services/emote/emoteservice";
+import { RequestBTTVEmotes } from "@wailsjs/chatter-wails/services/bttv/bttvservice";
 
 export type TBanTypeInfo = 
     | {
@@ -43,10 +44,9 @@ interface IMessageBuffer {
 }
 
 
-export default function useChat({ channel, user, emoteRecord, maxMessages = 200 }: {
+export default function useChat({ channel, user, maxMessages = 200 }: {
     channel: string|undefined,
     user: AppUser,
-    emoteRecord: TChatroomEmotes,
     maxMessages?: number,
 }) {
     const MESSAGE_BATCH_RATE = 250;
@@ -54,7 +54,7 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
     const [chatMessages, setChatMessages] = useState<IAppChatMessage[]>([]);
     const messageBuffer = useRef<IMessageBuffer>({messages:[], deletions: new Set(), bans: new Map()});
 
-    const [emotes, setEmotes] = useState<TChatroomEmotes>(emoteRecord);
+    const [emotes, setEmotes] = useState<TChatroomEmotes>(new Map());
     const [streamData, setStreamData] = useState<StreamData>({channel: "", live: false, viewCount: 0, title: "", gameName: "" });
     const [broadcasterId, setBroadcasterId] = useState<string>("");
 
@@ -138,9 +138,9 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
     }
 
     const handleNewSetEvent = (event: Events.WailsEvent<"chatter:emote:new-set">, broadcasterId: string) => {
-        if(event.data.BroadcasterId !== broadcasterId) return;
+        if(event.data.ChannelSpecific && event.data.BroadcasterId !== broadcasterId) return;
 
-        addEmoteSet(event.data.Emotes, event.data.Provider);
+        addEmoteSet(event.data);
     }
 
     const sendChatMessage = async (message: string, replyId: string|null|undefined) => {
@@ -157,20 +157,22 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
         }
     }
     
-    const addEmoteSet = (set: AppEmoteMap, setName: string) => {
+    const addEmoteSet = (set: AppEmoteSet) => {
+        // merge with provider, override section if necessary
         setEmotes(curEmotes => {
-            if(!isDefined(set)) return curEmotes;
+            if(!isDefined(set.Emotes)) return curEmotes;
+            
+            // copy existing provider map or create new one if not present
+            const curProviderMap = curEmotes.get(set.Provider);
+            const providerMap = isDefined(curProviderMap)
+                                ? new Map(curProviderMap)
+                                : new Map<string, AppEmoteSet>();
 
-            const newEmotes: TChatroomEmotes = {};
-            Object.assign(newEmotes, curEmotes);
+            providerMap.set(set.Section, set);
+            
 
-            // always make the set a new map to avoid accumulation between channels
-            newEmotes[setName] = new Map();
-
-            for(const [name, emote] of Object.entries(set)) {
-                if(!isDefined(emote)) continue;
-                newEmotes[setName].set(name, emote);
-            }
+            const newEmotes: TChatroomEmotes = new Map(curEmotes);
+            newEmotes.set(set.Provider, providerMap);
 
             return newEmotes;
         })
@@ -208,6 +210,7 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
         const abortController = new AbortController();
 
         setChatMessages([]);
+        setEmotes(new Map());
 
         ConnectToChatroom(channel)
             .then(d => {
@@ -229,8 +232,9 @@ export default function useChat({ channel, user, emoteRecord, maxMessages = 200 
         if(broadcasterId.length === 0) return;
 
         // TODO: make optional?
-        EnableSevenTV(broadcasterId);
-        GetChannelEmotes(broadcasterId);
+        RequestSevenTVEmotes(broadcasterId).catch(broadcastError);
+        RequestBTTVEmotes(broadcasterId).catch(broadcastError);
+        RequestTwitchEmotes(broadcasterId).catch(broadcastError);
 
         const listenersOff = listenersOn(broadcasterId);
         

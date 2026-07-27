@@ -1,10 +1,13 @@
 package seventv
 
 import (
-	"chatter-wails/internal/api/seventv"
+	"chatter-wails/internal/api/seventvApi"
 	"chatter-wails/shared"
 	"chatter-wails/shared/cache"
+	"chatter-wails/shared/types"
 	"context"
+	"errors"
+	"sync"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
@@ -23,22 +26,69 @@ func NewSevenTVService(app *application.App) *SevenTVService{
 	}
 }
 
-func (stv *SevenTVService) EnableSevenTV(broadcasterId string) error {
-	if set, exists := cache.GetEmoteSet(cache.STV_KEY, broadcasterId); exists {
-		shared.EmitNewSet(stv.app, set, broadcasterId)
-		return nil
+func (stv *SevenTVService) RequestSevenTVEmotes(broadcasterId string) error {
+	var wg sync.WaitGroup
+	errChan := make(chan error)
+
+	wg.Go(func(){
+		errChan <- stv.RequestSevenTVChannelEmotes(broadcasterId)
+	})
+	wg.Go(func(){
+		errChan <- stv.RequestSevenTVGlobalEmotes()
+	})
+
+	wg.Wait()
+	close(errChan)
+
+
+	var err error
+	for e := range errChan {
+		err = errors.Join(err, e)
 	}
 
-	userRes, err := seventv.GetSevenTVUser("twitch", broadcasterId)
+	return err
+}
+
+func (stv *SevenTVService) GetSevenTVChannelEmotes(broadcasterId string) (*types.AppEmoteSet, error) {
+	if set, exists := cache.GetEmoteSet(cache.STV_KEY, broadcasterId); exists {
+		return set, nil
+	}
+
+	userRes, err := seventvApi.GetSevenTVUser("twitch", broadcasterId)
+	if err != nil {
+		return nil, err
+	}
+
+	set := seventvApi.GetAppEmotesFromSevenTVUserRes(userRes)
+	cache.SetEmoteSet(cache.STV_KEY, broadcasterId, set)
+
+	return set, nil
+}
+
+func (stv *SevenTVService) RequestSevenTVChannelEmotes(broadcasterId string) error {
+	set, err := stv.GetSevenTVChannelEmotes(broadcasterId)
 	if err != nil {
 		return err
 	}
 
-	set := seventv.GetAppEmotesFromSevenTVUserRes(userRes)
-	cache.SetEmoteSet(cache.STV_KEY, broadcasterId, set)
-	shared.EmitNewSet(stv.app, set, broadcasterId)
+	shared.EmitNewSet(stv.app, set, true, broadcasterId)
 
 	// TODO: add emote set udpate listeners
 
 	return nil
+}
+
+func (stv *SevenTVService) GetSevenTVGlobalEmotes() (*types.AppEmoteSet, error) {
+	panic("not implemented")
+}
+
+func (stv *SevenTVService) RequestSevenTVGlobalEmotes() error {
+	return nil
+	// set, err := stv.GetSevenTVGlobalEmotes()
+	// if err != nil {
+	// 	return err
+	// }
+	//
+	// shared.EmitNewSet(stv.app, set, false, "")
+	// return nil
 }

@@ -5,6 +5,26 @@
 // @ts-ignore: Unused imports
 import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wailsio/runtime";
 
-export function EnableSevenTV(broadcasterId: string): $CancellablePromise<void> {
-    return $Call.ByID(3375483442, broadcasterId);
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as types$0 from "../../shared/types/models.js";
+
+export function GetSevenTVChannelEmotes(broadcasterId: string): $CancellablePromise<types$0.AppEmoteSet | null> {
+    return $Call.ByID(3276678143, broadcasterId);
+}
+
+export function GetSevenTVGlobalEmotes(): $CancellablePromise<types$0.AppEmoteSet | null> {
+    return $Call.ByID(1440221541);
+}
+
+export function RequestSevenTVChannelEmotes(broadcasterId: string): $CancellablePromise<void> {
+    return $Call.ByID(1531740110, broadcasterId);
+}
+
+export function RequestSevenTVEmotes(broadcasterId: string): $CancellablePromise<void> {
+    return $Call.ByID(3075503305, broadcasterId);
+}
+
+export function RequestSevenTVGlobalEmotes(): $CancellablePromise<void> {
+    return $Call.ByID(848393602);
 }
