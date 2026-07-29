@@ -75,7 +75,9 @@ export default function EmoteMenu({
                 <div className="scroller-y grow">
                     {sets.map(set =>
                         set.Emotes && Object.keys(set.Emotes).length > 0 &&
-                            <div>
+                            <div
+                            key={set.Id}
+                            >
                                 <h3
                                     className="bg-linear-150 from-bg-08/50 to-bg-09/30 p-2"
                                     ref={(el) => {
@@ -85,7 +87,6 @@ export default function EmoteMenu({
                                 >{set.Section}</h3>
                                 <div
                                     className='grow grid grid-cols-[repeat(auto-fill,40px)] auto-rows-min items-start justify-between gap-1'
-                                    key={set.Id}
                                 >
                                     {
                                         Object.values(set.Emotes).filter(isDefined).map(emote =>
