@@ -11,6 +11,7 @@ import { ESChatMessage, StreamData } from "@wailsjs/chatter-wails/services/event
 import { assertDefined, isDefined } from "@/util/assert";
 import { GlobalContext } from "@/contexts/global-context";
 import { RequestBTTVEmotes } from "@wailsjs/chatter-wails/services/bttv/bttvservice";
+import { RequestFFZEmotes } from "@wailsjs/chatter-wails/services/ffz/ffzservice";
 
 export type TBanTypeInfo = 
     | {
@@ -234,6 +235,7 @@ export default function useChat({ channel, user, maxMessages = 200 }: {
         // TODO: make optional?
         RequestSevenTVEmotes(broadcasterId).catch(broadcastError);
         RequestBTTVEmotes(broadcasterId).catch(broadcastError);
+        RequestFFZEmotes(broadcasterId).catch(broadcastError);
         RequestTwitchEmotes(broadcasterId).catch(broadcastError);
 
         const listenersOff = listenersOn(broadcasterId);

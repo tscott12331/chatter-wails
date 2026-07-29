@@ -43,6 +43,7 @@ func main() {
 	authService := application.NewService(appServiceRaw.authService)
 	seventvService := application.NewService(appServiceRaw.seventvService)
 	bttvService := application.NewService(appServiceRaw.bttvService)
+	ffzService := application.NewService(appServiceRaw.ffzService)
 
 	app.RegisterService(appService)
 	app.RegisterService(esService)
@@ -51,6 +52,7 @@ func main() {
 	app.RegisterService(authService)
 	app.RegisterService(seventvService)
 	app.RegisterService(bttvService)
+	app.RegisterService(ffzService)
 
 
 	app.Window.NewWithOptions(application.WebviewWindowOptions{

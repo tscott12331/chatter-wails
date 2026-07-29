@@ -243,6 +243,7 @@ func getSevenTVEmoteSrcSet(emote *SevenTVEmote) string {
 
 	fmt.Fprintf(&sb, "%s/%s %s", base, files[0].Name, "1x")
 
+	// TODO: look into potential repeeat of src?
 	for i, f := range emote.Data.Host.Files {
 		fmt.Fprintf(&sb, ", %s/%s %dx", base, f.Name, i)
 	}
