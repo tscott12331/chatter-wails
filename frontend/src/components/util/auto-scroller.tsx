@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { isDefined } from '@/util/assert';
+import React, { isValidElement, ReactElement, useEffect, useRef, useState } from 'react';
 
 export interface IJumpToRecentPopupProps extends React.HTMLAttributes<HTMLDivElement>{
     newItems: number;
@@ -16,76 +17,64 @@ export default function AutoScroller({
     children,
     ...rest
 }: IAutoScrollerProps) {
-    const [shouldShowPopup, setShouldShowPopup] = useState<boolean>(false);
+    const [atBottom, setAtBottom] = useState<boolean>(true);
     const [newItems, setNewItems] = useState<number>(0);
-
-    /*
-    Children gets updated in useEffect every time
-    popup is opened.
-    Keeping track of the previous last child prevents
-    us incrementing the newItems count when the last item
-    doesn't change
-    */
-    const [prevChild, setPrevChild] = useState<Element|null>(null);
+    const anchorRef = useRef<HTMLDivElement|null>(null);
+    const prevLastChild = useRef<ReactElement|null>(null);
 
     const scrollerRef = useRef<HTMLDivElement>(null);
 
 
     const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
-        scrollerRef.current?.scroll({
-            behavior,
-            top: scrollerRef.current.scrollHeight
-        })
+        anchorRef.current?.scrollIntoView({behavior})
     }
 
-    const handleItemScroll = (e: React.UIEvent<HTMLDivElement>) => {
-        if(scrollerRef.current) {
-            const scrollHeight = e.currentTarget.scrollHeight;
-            const scrollTop = e.currentTarget.scrollTop;
-            const wrapperHeight = e.currentTarget.offsetHeight;
+    const shouldAutoScroll = (element: HTMLElement) => {
+        const { scrollHeight, scrollTop, clientHeight } = element;
+        const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
 
-            const passedThresh = scrollHeight - (scrollTop + wrapperHeight) >= scrollThresh;
-            setShouldShowPopup(passedThresh);
-            if(!shouldShowPopup) {
-                setNewItems(0);
-            }
-        }
+        return distanceFromBottom <= scrollThresh;
+    }
+
+    const handleScroll = () => {
+        if(!scrollerRef.current) return;
+
+        setAtBottom(shouldAutoScroll(scrollerRef.current));
     }
 
     useEffect(() => {
-        if(!scrollerRef.current) return;
-        if(Array.isArray(children) && children.length > 0) {
-            const scrollHeight = scrollerRef.current.scrollHeight;
-            const scrollTop = scrollerRef.current.scrollTop;
-            const wrapperHeight = scrollerRef.current.offsetHeight;
-            const lastChild = scrollerRef.current.children.item(children.length-1);
-            if(!lastChild || lastChild === prevChild) return;
-            setPrevChild(lastChild);
+        if(!Array.isArray(children)) return;
 
-            const itemHeight = lastChild.clientHeight;
+        if(atBottom) {
+            scrollToBottom('instant');
+            setNewItems(0);
+            prevLastChild.current = children.at(-1);
+        } else if(newItems <= 10 && isDefined(prevLastChild.current)) {
+            const msgKey = prevLastChild.current.key;
+            let offset = 0;
+            for(; offset <= 10; offset++) {
+                const child = children.at(children.length-offset-1);
+                if(isValidElement(child) && msgKey === child.key) {
+                    break;
+                }
+            }
 
-            if((scrollHeight - itemHeight) - (scrollTop + wrapperHeight) < scrollThresh) {
-                  setShouldShowPopup(false);
-                  scrollToBottom('instant');
-                  setNewItems(0);
-              } else {
-                  setShouldShowPopup(true);
-                  setNewItems((items) => items + 1);
-              }
+            setNewItems(offset);
         }
-
     }, [children]);
+
     return (
         <>
             <div
             className='w-full h-full flex flex-col scroller-y z-200'
             ref={scrollerRef}
-            onScroll={handleItemScroll}
+            onScroll={handleScroll}
             {...rest}
             >
                 {children}
+            <div className="h-0 w-0" ref={anchorRef}></div>
             </div>
-            <div className={`w-full absolute flex justify-center items-center ${shouldShowPopup ? 'visible' : 'invisible'}`}
+            <div className={`w-full absolute flex justify-center items-center ${atBottom ? 'invisible' : 'visible'}`}
                 style={{
                     top: `calc(${scrollerRef.current?.offsetHeight.toString().concat('px') ?? '100%'} * 0.925)`
                 }}
