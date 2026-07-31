@@ -8,6 +8,7 @@ import { DisconnectFromChatroom } from '@wailsjs/chatter-wails/appservice'
 import { Events } from "@wailsio/runtime";
 import { SharedChatParticipant } from '@wailsjs/chatter-wails/services/eventsub';
 import { GlobalContext } from '@/contexts/global-context';
+import SearchIcon from '../svg/search-icon';
 export type TTab = {
     tabRoute: string;
     tabName: string;
@@ -223,6 +224,12 @@ export default function TabManager({
                 onClick={() => setIsAddingTab(true)}
             >
                 <PlusIcon />
+            </div>
+            <div
+                className={'shrink-0 flex justify-center items-center w-7 h-7 p-2 [&_svg]:fill-text-1 hover:[&_svg]:fill-text-2 hover:[&_svg]:brightness-90 cursor-pointer' + (isAddingTab ? ' hidden' : '')}
+                onClick={() => navigate('/search')}
+            >
+                <SearchIcon />
             </div>
         </div>
     )
