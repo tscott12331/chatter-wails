@@ -73,6 +73,12 @@ var (
 		Host: "api.twitch.tv",
 		Path: "/helix/shared_chat/session",
 	}
+
+	SEARCH_ENDPOINT = url.URL{
+		Scheme: "https",
+		Host: "api.twitch.tv",
+		Path: "/helix/search",
+	}
 )
 
 var apiSubscriptionHeaders = api.ApiHeaders;
@@ -86,6 +92,8 @@ var apiBadgesHeaders = api.ApiHeaders;
 var apiEmotesHeaders = api.ApiHeaders;
 
 var apiStreamsHeaders = api.ApiHeaders;
+
+var apiSearchHeaders = api.ApiHeaders;
 
 func apiValidateHeaders(access_token string) *http.Header {
     return &http.Header{
@@ -507,6 +515,39 @@ func GetSharedChatSession(
 	return api.ApiGet[ApiGetSharedChatSessionRes](
 		SHARED_CHAT_SESSION_ENDPOINT,
 		apiStreamsHeaders(access_token),
+		params,
+	)
+}
+
+
+
+type SearchedChannel struct{
+	Broadcaster_language string			`json:"broadcaster_language"`
+	Broadcaster_login string			`json:"broadcaster_login"`
+	Display_name string			`json:"display_name"`
+	Game_id string			`json:"game_id"`
+	Game_name string			`json:"game_name"`
+	Id string			`json:"id"`
+	Is_live bool			`json:"is_live"`
+	Tags []string			`json:"tags"`
+	Thumbnail_url string			`json:"thumbnail_url"`
+	Title string			`json:"title"`
+	Started_at string			`json:"started_at"`
+}
+
+type ApiSearchChannelsRes struct{
+	Data []SearchedChannel
+	Pagination ApiPagination
+}
+
+
+func GetSearchChannels(
+	access_token string,
+	params map[string][]string,
+	) (*api.ApiResponse[ApiGetSharedChatSessionRes], error) {
+	return api.ApiGet[ApiGetSharedChatSessionRes](
+		*SEARCH_ENDPOINT.JoinPath("/channels"),
+		apiSearchHeaders(access_token),
 		params,
 	)
 }
