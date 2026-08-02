@@ -17,15 +17,40 @@ export interface ApiBadgeSetVersions {
     "click_url"?: string | null;
 }
 
+export interface ApiGetStreamsRes {
+    "data": ApiStream[] | null;
+    "pagination": ApiPagination;
+}
+
 export interface ApiMessageDropReason {
     "code": string;
     "message": string;
+}
+
+export interface ApiPagination {
+    "cursor": string;
 }
 
 export interface ApiPostMessagesData {
     "message_id": string;
     "is_sent": boolean;
     "drop_reason"?: ApiMessageDropReason | null;
+}
+
+export interface ApiStream {
+    "id": string;
+    "user_id": string;
+    "user_login": string;
+    "user_name": string;
+    "game_id": string;
+    "game_name": string;
+    "type": string;
+    "title": string;
+    "Tags": string[] | null;
+    "viewer_count": number;
+    "started_at": string;
+    "language": string;
+    "thumbnail_url": string;
 }
 
 export interface ApiSubscription {

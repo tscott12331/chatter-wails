@@ -7,6 +7,9 @@ import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wails
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as nativeApi$0 from "../../internal/api/nativeApi/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as types$0 from "../../shared/types/models.js";
 
 export function GetTwitchChannelEmotes(broadcaster_id: string): $CancellablePromise<types$0.AppEmoteSet | null> {
@@ -35,4 +38,11 @@ export function RequestTwitchGlobalEmotes(): $CancellablePromise<void> {
 
 export function RequestTwitchUserEmotes(): $CancellablePromise<void> {
     return $Call.ByID(552065171);
+}
+
+/**
+ * TODO: add more params for filters & pagination
+ */
+export function SearchTwitchStreams(query: string): $CancellablePromise<nativeApi$0.ApiGetStreamsRes | null> {
+    return $Call.ByID(785134547, query);
 }

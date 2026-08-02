@@ -544,8 +544,8 @@ type ApiSearchChannelsRes struct{
 func GetSearchChannels(
 	access_token string,
 	params map[string][]string,
-	) (*api.ApiResponse[ApiGetSharedChatSessionRes], error) {
-	return api.ApiGet[ApiGetSharedChatSessionRes](
+	) (*api.ApiResponse[ApiSearchChannelsRes], error) {
+	return api.ApiGet[ApiSearchChannelsRes](
 		*SEARCH_ENDPOINT.JoinPath("/channels"),
 		apiSearchHeaders(access_token),
 		params,
