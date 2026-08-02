@@ -3,12 +3,10 @@ import Tab from './tab';
 import HomeIcon from '../svg/home-icon';
 import PlusIcon from '../svg/plus-icon';
 import { useNavigate } from 'react-router-dom';
-import { rotateArr } from '@util/arr';
-import { DisconnectFromChatroom } from '@wailsjs/chatter-wails/appservice'
 import { Events } from "@wailsio/runtime";
 import { SharedChatParticipant } from '@wailsjs/chatter-wails/services/eventsub';
-import { GlobalContext } from '@/contexts/global-context';
 import SearchIcon from '../svg/search-icon';
+import { TabContext } from '@/contexts/tab-context';
 export type TTab = {
     tabRoute: string;
     tabName: string;
@@ -21,19 +19,13 @@ interface ITabManagerProps {
 export default function TabManager({
 
 }: ITabManagerProps) {
-    const HOME_TAB: TTab = {
-        tabRoute: '/',
-        tabName: 'home',
-    };
-
-    const [tabs, setTabs] = useState<TTab[]>([HOME_TAB]);
-    const [currentTabRoute, setCurrentTabRoute] = useState<string>('/');
     const tabsRef = useRef<Record<string, {current: HTMLDivElement|null}>>({})
 
     const [isAddingTab, setIsAddingTab] = useState<boolean>(false);
     const [newTabText, setNewTabText] = useState<string>("");
+    const [currentTabRoute, setCurrentTabRoute] = useState<string>('/');
 
-    const { broadcastError } = useContext(GlobalContext);
+    const { home, tabs, addTab, removeTab, editTab, rotateTabs } = useContext(TabContext)
 
     const navigate = useNavigate();
 
@@ -43,45 +35,33 @@ export default function TabManager({
         navigate(tab.tabRoute);
     }
 
-    const handleTabRemove = (tab: TTab) => {
-        if(tab.tabRoute.toLowerCase() == HOME_TAB.tabRoute.toLowerCase()) return; // can't remove home tab :)
-
-        if(tab.tabRoute.toLowerCase() === currentTabRoute.toLowerCase()) {
-            setCurrentTabRoute(HOME_TAB.tabRoute);
-            navigate(HOME_TAB.tabRoute);
-        }
-
-        DisconnectFromChatroom(tab.tabRoute.split('/chatroom/')[1]).catch(broadcastError);
-
-        setTabs((curTabs) => curTabs.filter(t => t.tabRoute !== tab.tabRoute));
-        delete tabsRef.current[tab.tabRoute];
-    }
-
     const handleAddTab = (tab: TTab) => {
         if(tabs.find(t => t.tabRoute.toLowerCase() === tab.tabRoute.toLowerCase())) {
             return handleTabSelect(tab)
         }
 
-        setTabs((curTabs) => [...curTabs, tab]);
+        addTab(tab);
+    }
+
+    const handleTabRemove = (tab: TTab) => {
+        if(tab.tabRoute.toLowerCase() === currentTabRoute.toLowerCase()) {
+            setCurrentTabRoute(home.tabRoute);
+            navigate(home.tabRoute);
+        }
+
+        removeTab(tab);
+        delete tabsRef.current[tab.tabRoute];
     }
 
     const addParticipantsToTabName = (channel: string, participants: Record<string, SharedChatParticipant|null|undefined>) => {
         const eventRoute = `/chatroom/${channel.toLowerCase()}`;
-        setTabs(tabs => {
-            const tabToChangeIndex = tabs.findIndex(t => t.tabRoute.toLowerCase() === eventRoute);
-            if(tabToChangeIndex === -1) return tabs;
-
-
-            const changed: TTab = {
-                ...tabs[tabToChangeIndex],
-                tabName: Object.values(participants)
-                            .map(p => p?.name ?? "unknown")
-                            .reduce((p, c) => `${p}, ${c}`),
-            };
-
-            const newTabs = [...tabs.slice(0, tabToChangeIndex), changed, ...tabs.slice(tabToChangeIndex+1)];
-            return newTabs;
-        });
+        const tabToChangeIndex = tabs.findIndex(t => t.tabRoute.toLowerCase() === eventRoute);
+        editTab(tabToChangeIndex, (tab) => ({
+            ...tab,
+            tabName: Object.values(participants)
+                        .map(p => p?.name ?? "unknown")
+                        .reduce((p, c) => `${p}, ${c}`),
+        }));
     }
 
     const handleSharedChatBegin = (event: Events.WailsEvent<"common:shared-chat-begin">) => {
@@ -96,18 +76,11 @@ export default function TabManager({
 
     const handleSharedChatEnd = (event: Events.WailsEvent<"common:shared-chat-end">) => {
         const eventRoute = `/chatroom/${event.data.channel.toLowerCase()}`;
-        setTabs(tabs => {
-            const tabToChangeIndex = tabs.findIndex(t => t.tabRoute.toLowerCase() === eventRoute);
-            if(tabToChangeIndex === -1) return tabs;
-
-            const changed: TTab = {
-                ...tabs[tabToChangeIndex],
-                tabName: eventRoute.split('/chatroom/')[1],
-            };
-
-            const newTabs = [...tabs.slice(0, tabToChangeIndex), changed, ...tabs.slice(tabToChangeIndex+1)];
-            return newTabs;
-        })
+        const tabToChangeIndex = tabs.findIndex(t => t.tabRoute.toLowerCase() === eventRoute);
+        editTab(tabToChangeIndex, (tab) => ({
+            ...tab,
+            tabName: eventRoute.split('/chatroom/')[1],
+        }));
     }
 
     const handleAddTabKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -163,15 +136,7 @@ export default function TabManager({
             dir = 'left';
         }
 
-        if(leftIndex == rightIndex) return;
-
-        const preRotateSegement = [...tabs.slice(leftIndex, rightIndex + 1)];
-        const rotatedSegement = rotateArr(preRotateSegement, dir)
-        const newTabs = [...tabs.slice(0, leftIndex),
-                 ...rotatedSegement,
-                 ...tabs.slice(rightIndex + 1)
-                ];
-        setTabs(newTabs);
+        rotateTabs(leftIndex, rightIndex, dir);
     }
 
     const listenersOn = () => {
@@ -191,8 +156,8 @@ export default function TabManager({
         <div className={'flex max-w-full items-center w-full h-9 gap-1 border-b p-1 border-outline-2 bg-bg-09'}
         >
             <div className={'shrink-0 flex items-center justify-center w-7 h-7 border border-outline-1 rounded-sm p-1 [&_svg]:fill-text-1 data-[selected=true]:bg-bg-5 hover:bg-bg-8 cursor-pointer'}
-                onClick={() => handleTabSelect(HOME_TAB)}
-                data-selected={currentTabRoute === HOME_TAB.tabRoute ? 'true' : 'false'}
+                onClick={() => handleTabSelect(home)}
+                data-selected={currentTabRoute === home.tabRoute ? 'true' : 'false'}
             >
                 <HomeIcon />
             </div>
