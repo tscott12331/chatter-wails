@@ -225,8 +225,8 @@ func (es *EmoteService) RequestTwitchChannelEmotes(broadcasterId string) error {
 
 const THUMB_W_TMPL = "{width}"
 const THUMB_H_TMPL = "{height}"
-const THUMB_W = "160"
-const THUMB_H = "90"
+const THUMB_W = "320"
+const THUMB_H = "180"
 
 // TODO: add more params for filters & pagination
 func (es *EmoteService) SearchTwitchStreams(query string) (*nativeApi.ApiGetStreamsRes, error) {
@@ -241,6 +241,7 @@ func (es *EmoteService) SearchTwitchStreams(query string) (*nativeApi.ApiGetStre
 			return nil, err
 		}
 
+		fillStreamThumbnailTemplates(res.Body.Data)
 		return &res.Body, nil
 	}
 
@@ -263,11 +264,19 @@ func (es *EmoteService) SearchTwitchStreams(query string) (*nativeApi.ApiGetStre
 		return nil, err
 	}
 
-	for i := range res.Body.Data {
-		stream := &res.Body.Data[i]
-		stream.Thumbnail_url = strings.Replace(stream.Thumbnail_url, THUMB_W_TMPL, THUMB_W, 1)
-		stream.Thumbnail_url = strings.Replace(stream.Thumbnail_url, THUMB_H_TMPL, THUMB_H, 1)
-	}
+	fillStreamThumbnailTemplates(res.Body.Data)
 
 	return &res.Body, nil
+}
+
+func fillThumbnailTemplate(thumbnailUrl string) string {
+	thumbnailUrl = strings.Replace(thumbnailUrl, THUMB_W_TMPL, THUMB_W, 1)
+	thumbnailUrl = strings.Replace(thumbnailUrl, THUMB_H_TMPL, THUMB_H, 1)
+	return thumbnailUrl
+}
+
+func fillStreamThumbnailTemplates(streams []nativeApi.ApiStream) {
+	for i := range streams {
+		streams[i].Thumbnail_url = fillThumbnailTemplate(streams[i].Thumbnail_url)
+	}
 }

@@ -31,22 +31,22 @@ export default function SearchPage() {
     }
 
     return (
-        <div className="h-full p-5 flex flex-col items-center gap-5 scroller-y *:max-w-[min(672px,100%)]">
-            <div className="w-full h-[max(15%,100px)] flex flex-col justify-evenly items-center gap-5">
-                <h1 className="text-5xl sm:text-6xl md:text-7xl text-center basis-0">Browse Channels</h1>
-                <div className="w-full p-1 flex bg-input-bg outline outline-input-outline">
+        <div className="h-full p-5 flex flex-col items-center gap-5 scroller-y *:w-[min(672px,100%)] relative isolate">
+            <div className="w-full h-[max(15%,100px)] flex flex-col justify-evenly items-center gap-5 sticky top-[min(-7.5%,-50px)] z-1">
+                <h1 className="font-extrabold text-5xl sm:text-6xl md:text-7xl text-center tracking-tight">Browse Channels</h1>
+                <div className="w-full p-1 flex items-center bg-input-bg/70 backdrop-blur-sm outline outline-input-outline rounded-md">
                     <input 
-                        className="h-5 grow border-0! focus:bg-input-bg!"
+                        className="h-5 grow border-0! bg-transparent!"
                         placeholder="search"
                         id="query"
                         onChange={handleSearchInput}
                     />
-                    <button className="w-5 h-5 border-0! hover:scale-125 transition-transform cursor-pointer">
+                    <button className="w-6.25 h-6.25 bg-transparent! hover:bg-input-bg-3! border-0! scale-80 hover:scale-100 will-change-[scale] transition-[transform_background] cursor-pointer">
                         <SearchIcon className="fill-text-1" />
                     </button>
                 </div>
             </div>
-            <div className="flex flex-col gap-5 items-center shrink-0 *:max-w-full">
+            <div className="flex flex-col gap-5 items-center shrink-0 -z-1">
                 {searchData?.data?.map(stream => 
                     <SearchResultCard 
                         thumbnailSrc={stream.thumbnail_url}
