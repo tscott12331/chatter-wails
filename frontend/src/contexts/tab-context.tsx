@@ -1,14 +1,20 @@
-import { TTab } from "@/components/tabs/tab-manager";
 import { createContext, useContext, useMemo, useState } from "react";
 import { GlobalContext } from "./global-context";
 import { DisconnectFromChatroom } from "@wailsjs/chatter-wails/appservice";
 import { rotateArr } from "@/util/arr";
 
+export type TTab = {
+    readonly tabRoute: string;
+    readonly tabName: string;
+}
+
 interface ITabContext {
     home: TTab;
     tabs: TTab[];
+    curTab: TTab;
     addTab: (tab: TTab) => void;
     removeTab: (tab: TTab) => void;
+    selectTab: (tab: TTab) => void;
     editTab: (index: number, changeFn: (tab: TTab) => TTab) => void;
     rotateTabs: (leftIndex: number, rightIndex: number, dir: 'left'|'right') => void;
 }
@@ -21,8 +27,10 @@ const HOME_TAB: TTab = {
 export const TabContext = createContext<ITabContext>({
     home: HOME_TAB,
     tabs: [],
+    curTab: HOME_TAB,
     addTab(_tab) {},
     removeTab(_tab) {},
+    selectTab(_tab) {},
     editTab(_index, _changeFn) {},
     rotateTabs(_leftIndex, _rightIndex, _dir) {},
 });
@@ -34,9 +42,13 @@ export function TabContextProvider({
     const { broadcastError } = useContext(GlobalContext);
 
     const [tabs, setTabs] = useState<TTab[]>([HOME_TAB]);
+    const [curTab, setCurTab] = useState<TTab>(HOME_TAB);
 
     const removeTab = (tab: TTab) => {
         if(tab.tabRoute.toLowerCase() == HOME_TAB.tabRoute.toLowerCase()) return; // can't remove home tab :)
+        if(tab.tabRoute.toLowerCase() === curTab.tabRoute.toLowerCase()) {
+            setCurTab(HOME_TAB);
+        }
 
         DisconnectFromChatroom(tab.tabRoute.split('/chatroom/')[1]).catch(broadcastError);
 
@@ -44,7 +56,15 @@ export function TabContextProvider({
     }
 
     const addTab = (tab: TTab) => {
-        setTabs((curTabs) => [...curTabs, tab]);
+        if(!tabs.find(t => t.tabRoute.toLowerCase() === tab.tabRoute.toLowerCase())) {
+            setTabs((curTabs) => [...curTabs, tab]);
+        }
+    }
+
+    const selectTab = (tab: TTab) => {
+        if(tabs.find(t => t.tabRoute.toLowerCase() === tab.tabRoute.toLowerCase())) {
+            setCurTab(tab);
+        }
     }
 
     const editTab = (index: number, changeFn: (tab: TTab) => TTab) => {
@@ -76,11 +96,13 @@ export function TabContextProvider({
     const ctxValue = useMemo<ITabContext>(() => ({
         home: HOME_TAB,
         tabs,
+        curTab,
         addTab,
         removeTab,
+        selectTab,
         editTab,
         rotateTabs,
-    }), [tabs])
+    }), [tabs, curTab])
 
     return (
         <TabContext.Provider value={ctxValue}>

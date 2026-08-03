@@ -6,11 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { Events } from "@wailsio/runtime";
 import { SharedChatParticipant } from '@wailsjs/chatter-wails/services/eventsub';
 import SearchIcon from '../svg/search-icon';
-import { TabContext } from '@/contexts/tab-context';
-export type TTab = {
-    tabRoute: string;
-    tabName: string;
-}
+import { TabContext, TTab } from '@/contexts/tab-context';
 
 interface ITabManagerProps {
 
@@ -23,32 +19,20 @@ export default function TabManager({
 
     const [isAddingTab, setIsAddingTab] = useState<boolean>(false);
     const [newTabText, setNewTabText] = useState<string>("");
-    const [currentTabRoute, setCurrentTabRoute] = useState<string>('/');
 
-    const { home, tabs, addTab, removeTab, editTab, rotateTabs } = useContext(TabContext)
+    const { home, tabs, curTab, selectTab, addTab, removeTab, editTab, rotateTabs } = useContext(TabContext)
 
     const navigate = useNavigate();
 
     const handleTabSelect = (tab: TTab) => {
-        setCurrentTabRoute(tab.tabRoute);
-
-        navigate(tab.tabRoute);
+        selectTab(tab);
     }
 
     const handleAddTab = (tab: TTab) => {
-        if(tabs.find(t => t.tabRoute.toLowerCase() === tab.tabRoute.toLowerCase())) {
-            return handleTabSelect(tab)
-        }
-
         addTab(tab);
     }
 
     const handleTabRemove = (tab: TTab) => {
-        if(tab.tabRoute.toLowerCase() === currentTabRoute.toLowerCase()) {
-            setCurrentTabRoute(home.tabRoute);
-            navigate(home.tabRoute);
-        }
-
         removeTab(tab);
         delete tabsRef.current[tab.tabRoute];
     }
@@ -147,7 +131,11 @@ export default function TabManager({
     }
 
     useEffect(() => {
-        if(location.hash.slice(1) !== currentTabRoute) navigate(currentTabRoute);
+        navigate(curTab.tabRoute);
+    }, [curTab])
+
+    useEffect(() => {
+        // if(location.hash.slice(1) !== currentTabRoute) navigate(currentTabRoute);
 
         return listenersOn();
     }, []);
@@ -157,7 +145,7 @@ export default function TabManager({
         >
             <div className={'shrink-0 flex items-center justify-center w-7 h-7 border border-outline-1 rounded-sm p-1 [&_svg]:fill-text-1 data-[selected=true]:bg-bg-5 hover:bg-bg-8 cursor-pointer'}
                 onClick={() => handleTabSelect(home)}
-                data-selected={currentTabRoute === home.tabRoute ? 'true' : 'false'}
+                data-selected={curTab.tabRoute.toLowerCase() === home.tabRoute.toLowerCase() ? 'true' : 'false'}
             >
                 <HomeIcon />
             </div>
@@ -167,7 +155,7 @@ export default function TabManager({
                 index={i+1}
                 key={tab.tabRoute}
                 ref={tabsRef.current[tab.tabRoute] ??= { current: null }}
-                selected={tab.tabRoute === currentTabRoute}
+                selected={tab.tabRoute.toLowerCase() === curTab.tabRoute.toLowerCase()}
                 onTabSelect={handleTabSelect}
                 onTabRemove={handleTabRemove}
                 onTabPlace={() => handleTabPlace(i+1)}

@@ -1,4 +1,4 @@
-import { TTab } from './tab-manager';
+import { TTab } from '@/contexts/tab-context';
 import PlusIcon from '../svg/plus-icon';
 import { useEffect, useState } from 'react';
 
