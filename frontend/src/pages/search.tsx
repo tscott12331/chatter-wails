@@ -43,7 +43,7 @@ export default function SearchPage() {
 
     return (
         <div className="h-full p-5 flex flex-col items-center gap-5 scroller-y *:w-[min(672px,100%)] relative isolate">
-            <div className="w-full h-[max(15%,100px)] flex flex-col justify-evenly items-center gap-5 sticky top-[min(-7.5%,-50px)] z-1">
+            <div className="w-full h-[max(15%,100px)] sticky -top-28 xs:-top-16 sm:-top-20 md:-top-24 flex flex-col justify-evenly items-center gap-5 z-1">
                 <h1 className="font-extrabold text-5xl sm:text-6xl md:text-7xl text-center tracking-tight">Browse Channels</h1>
                 <div className="w-full p-1 flex items-center bg-input-bg/70 backdrop-blur-sm outline outline-input-outline rounded-md">
                     <input 
