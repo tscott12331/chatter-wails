@@ -4,8 +4,11 @@
 export type {
     ApiBadgeSet,
     ApiBadgeSetVersions,
+    ApiGetStreamsRes,
     ApiMessageDropReason,
+    ApiPagination,
     ApiPostMessagesData,
+    ApiStream,
     ApiSubscription,
     ApiSubscriptionTransport
 } from "./models.js";

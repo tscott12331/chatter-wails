@@ -1,10 +1,9 @@
-import { TTab } from './tab-manager';
+import { TTab } from '@/contexts/tab-context';
 import PlusIcon from '../svg/plus-icon';
 import { useEffect, useState } from 'react';
 
 interface ITabProps {
     tab: TTab;
-    index: number;
     selected: boolean;
     onTabSelect: (tab: TTab) => void;
     onTabRemove: (tab: TTab) => void;

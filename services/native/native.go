@@ -9,6 +9,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"strings"
 	"sync"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -217,4 +218,65 @@ func (es *EmoteService) RequestTwitchChannelEmotes(broadcasterId string) error {
 
 	shared.EmitNewSet(es.app, set, true, broadcasterId)
 	return nil
+}
+
+
+
+
+const THUMB_W_TMPL = "{width}"
+const THUMB_H_TMPL = "{height}"
+const THUMB_W = "320"
+const THUMB_H = "180"
+
+// TODO: add more params for filters & pagination
+func (es *EmoteService) SearchTwitchStreams(query string) (*nativeApi.ApiGetStreamsRes, error) {
+	appUser := shared.GetUser()
+	if appUser == nil {
+		return nil, errors.New("Cannot search streams without being logged in")
+	}
+
+	if len(query) == 0 {
+		res, err := nativeApi.GetStreams(appUser.Access_token, map[string][]string{})
+		if err != nil {
+			return nil, err
+		}
+
+		fillStreamThumbnailTemplates(res.Body.Data)
+		return &res.Body, nil
+	}
+
+	searchRes, err := nativeApi.GetSearchChannels(appUser.Access_token, map[string][]string{
+		"query": {query},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	channels := make([]string, len(searchRes.Body.Data))
+	for i, searchedChannel := range searchRes.Body.Data {
+		channels[i] = searchedChannel.Broadcaster_login
+	}
+
+	res, err := nativeApi.GetStreams(appUser.Access_token, map[string][]string{
+		"user_login": channels,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	fillStreamThumbnailTemplates(res.Body.Data)
+
+	return &res.Body, nil
+}
+
+func fillThumbnailTemplate(thumbnailUrl string) string {
+	thumbnailUrl = strings.Replace(thumbnailUrl, THUMB_W_TMPL, THUMB_W, 1)
+	thumbnailUrl = strings.Replace(thumbnailUrl, THUMB_H_TMPL, THUMB_H, 1)
+	return thumbnailUrl
+}
+
+func fillStreamThumbnailTemplates(streams []nativeApi.ApiStream) {
+	for i := range streams {
+		streams[i].Thumbnail_url = fillThumbnailTemplate(streams[i].Thumbnail_url)
+	}
 }

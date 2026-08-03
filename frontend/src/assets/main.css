@@ -1,7 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 @import "tailwindcss";
 
 :root {
-    font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+    font-family: Inter, sans-serif;
 
     color-scheme: light dark;
 
@@ -97,6 +98,8 @@
     --color-text-1: var(--c-text-1);
     --color-text-2: var(--c-text-2);
     --color-text-3: var(--c-text-3);
+
+    --breakpoint-xs: 26.75rem;
 
 
     --animate-fade-in-out-right: fade-in-out-right 3s ease-in-out;
