@@ -15,47 +15,75 @@ export default function SearchPage() {
 
     const { addTab } = useContext(TabContext);
 
-    const search = (query: string) => {
+    const search = (query: string, abortSignal?: AbortSignal) => {
+        const promise = SearchTwitchStreams(query)
+            .then((d) => {
+                setSearchData(d);
+            });
+        if(abortSignal) {
+            promise.cancelOn(abortSignal);
+        }
+    }
+
+    const cancelSearch = () => {
         if(isDefined(searchAbortController.current)) {
             searchAbortController.current.abort();
         }
         clearTimeout(inputChangeTimeoutId.current);
+    }
+
+    const immediateSearch = (query: string) => {
+        cancelSearch();
+        searchAbortController.current = new AbortController();
+        search(query, searchAbortController.current.signal)
+    }
+
+    const searchAfterDelay = (query: string) => {
+        cancelSearch();
 
         searchAbortController.current = new AbortController();
 
         inputChangeTimeoutId.current = setTimeout(() => {
-            SearchTwitchStreams(query)
-                .then((d) => {
-                    console.log(d);
-                    setSearchData(d);
-                })
-                .cancelOn(searchAbortController.current!.signal);
-        }, inputChangeSearchDelay)
+            search(query, searchAbortController.current?.signal);
+        }, inputChangeSearchDelay);
     }
 
     const handleSearchInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-        search(e.target.value);
+        searchAfterDelay(e.target.value);
+    }
+
+    const handleSubmit = (formData: FormData) => {
+        const query = formData.get('query') as string;
+        if(!query) return;
+
+        immediateSearch(query);
     }
 
     useEffect(() => {
-        search("");
-    }, [])
+        immediateSearch("");
+    }, []);
 
     return (
         <div className="h-full p-5 flex flex-col items-center gap-5 scroller-y *:w-[min(672px,100%)] relative isolate">
             <div className="w-full h-[max(15%,100px)] sticky -top-28 xs:-top-16 sm:-top-20 md:-top-24 flex flex-col justify-evenly items-center gap-5 z-1">
                 <h1 className="font-extrabold text-5xl sm:text-6xl md:text-7xl text-center tracking-tight">Browse Channels</h1>
-                <div className="w-full p-1 flex items-center bg-input-bg/70 backdrop-blur-sm outline outline-input-outline rounded-md">
+                <form 
+                    className="w-full p-1 flex items-center bg-input-bg/70 backdrop-blur-sm outline outline-input-outline rounded-md"
+                    action={handleSubmit}
+                >
                     <input 
                         className="h-5 grow border-0! bg-transparent!"
                         placeholder="search"
-                        id="query"
+                        name="query"
                         onChange={handleSearchInput}
                     />
-                    <button className="w-6.25 h-6.25 bg-transparent! hover:bg-input-bg-3! border-0! scale-80 hover:scale-100 will-change-[scale] transition-[transform_background] cursor-pointer">
+                    <button 
+                        className="w-6.25 h-6.25 bg-transparent! hover:bg-input-bg-3! border-0! scale-80 hover:scale-100 will-change-[scale] transition-[transform_background] cursor-pointer"
+                        type="submit"
+                    >
                         <SearchIcon className="fill-text-1" />
                     </button>
-                </div>
+                </form>
             </div>
             <div className="flex flex-col gap-5 items-center shrink-0 -z-1">
                 {searchData?.data?.map(stream => 
