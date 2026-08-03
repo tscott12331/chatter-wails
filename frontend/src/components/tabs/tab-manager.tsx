@@ -135,15 +135,15 @@ export default function TabManager({
     }, []);
 
     return (
-        <div className={'flex max-w-full items-center w-full h-9 gap-1 border-b p-1 border-outline-2 bg-bg-09 *:data-[selected=true]:bg-bg-5'}
+        <div className={'flex max-w-full items-center w-full h-9 gap-1 border-b p-1 border-chatter-border-strong bg-chatter-surface'}
         >
-            <div className={'shrink-0 flex items-center justify-center w-7 h-7 border border-outline-1 rounded-sm p-1 [&_svg]:fill-text-1 hover:bg-bg-8 cursor-pointer'}
+            <div className={'shrink-0 flex items-center justify-center w-7 h-7 border border-chatter-border rounded-sm p-1 [&_svg]:fill-chatter-text-primary hover:bg-chatter-surface-elevated hover:border-chatter-border-strong cursor-pointer'}
                 onClick={() => handleTabSelect(home)}
                 data-selected={curTab.tabRoute === home.tabRoute ? 'true' : 'false'}
             >
                 <HomeIcon />
             </div>
-            <div className={'shrink-0 flex items-center justify-center w-7 h-7 border border-outline-1 rounded-sm p-1.5 [&_svg]:fill-text-1 hover:bg-bg-8 cursor-pointer'}
+            <div className={'shrink-0 flex items-center justify-center w-7 h-7 border border-chatter-border rounded-sm p-1.5 [&_svg]:fill-chatter-text-primary hover:bg-chatter-surface-elevated hover:border-chatter-border-strong cursor-pointer'}
                 onClick={() => handleTabSelect(searchTab)}
                 data-selected={curTab.tabRoute === searchTab.tabRoute ? 'true' : 'false'}
             >
@@ -160,7 +160,7 @@ export default function TabManager({
                 onTabPlace={() => handleTabPlace(i+FIXED_TAB_COUNT)}
             />
                      )}
-            <div className={(isAddingTab ? '' : ' hidden') + ' flex justify-start items-center border border-text-1 rounded-sm text-sm p-1 h-7 bg-bg-09 max-w-50 basis-25'}
+            <div className={(isAddingTab ? '' : ' hidden') + ' flex justify-start items-center border border-chatter-accent rounded-sm text-sm p-1 h-7 bg-chatter-surface max-w-50 basis-25'}
             >
                 <input
                     className="max-w-50 min-w-25 h-full bg-transparent! border-none!"
@@ -172,7 +172,7 @@ export default function TabManager({
                 />
             </div>
             <div
-                className={'shrink-0 flex justify-center items-center w-7 h-7 p-2 [&_svg]:fill-text-1 hover:[&_svg]:fill-text-2 hover:[&_svg]:brightness-90 cursor-pointer' + (isAddingTab ? ' hidden' : '')}
+                className={'shrink-0 flex justify-center items-center w-7 h-7 p-2 [&_svg]:fill-chatter-text-primary hover:[&_svg]:fill-chatter-text-secondary hover:[&_svg]:brightness-90 cursor-pointer' + (isAddingTab ? ' hidden' : '')}
                 onClick={() => setIsAddingTab(true)}
             >
                 <PlusIcon />

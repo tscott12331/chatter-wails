@@ -16,7 +16,7 @@ export default function ReplyPopup({
     showUserPopup,
 }: IReplyPopupProps) {
     return (
-        <div className='flex flex-col bg-bg-1 p-1.5 border border-outline-1 gap-1'>
+        <div className='flex flex-col bg-chatter-surface-elevated p-1.5 border border-chatter-border gap-1'>
             <div className='flex justify-between items-center h-6 [&_svg]:h-4/5 [&_svg]:rotate-45 [&_svg]:fill-red-500 [&_svg]:hover:fill-red-700'>
                 <i>replying to:</i>
                 <PlusIcon

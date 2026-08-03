@@ -48,13 +48,13 @@ export default function Tooltip({
 
     const displayText = (text: string|string[]) => {
         return Array.isArray(text)
-            ? text.map((t, i) => <span key={t+i} className={`block ${i !== 0 ? 'text-xs text-text-2' : 'mb-1'}`}>{t}</span>)
+            ? text.map((t, i) => <span key={t+i} className={`block ${i !== 0 ? 'text-xs text-chatter-text-secondary' : 'mb-1'}`}>{t}</span>)
             : <span>{text}</span>
     }
 
     return (
         <div
-            className="absolute flex flex-col justify-center items-center z-10000 p-1 bg-bg-2/80 backdrop-blur-xs outline outline-outline-2/80 border border-outline-1 text-sm text-center text-text-1 wrap-break-word -translate-x-1/2 -translate-y-full rounded-sm shadow-[0_0_1px_1px] shadow-bg-9/50 italic"
+            className="absolute flex flex-col justify-center items-center z-10000 p-1 bg-chatter-surface-elevated/90 backdrop-blur-xs outline outline-chatter-border-strong/80 border border-chatter-border text-sm text-center text-chatter-text-primary wrap-break-word -translate-x-1/2 -translate-y-full rounded-sm shadow-[0_0_1px_1px] shadow-chatter-border-strong/50 italic"
             style={{
                 ...determinePosition(data),
             }}
@@ -74,7 +74,7 @@ export default function Tooltip({
                 maxWidth: `${tooltipMaxImageWidth}px`,
             }}
         />
-        <div className="w-full border border-bg-9/50 mt-1.5 mb-0.5"></div>
+        <div className="w-full border border-chatter-border-strong/50 mt-1.5 mb-0.5"></div>
         <p 
             style={{
                 maxWidth: `${tooltipMaxImageWidth}px`,

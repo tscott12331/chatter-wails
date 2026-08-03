@@ -303,7 +303,7 @@ export default function ChatControls({
 
 
     return (
-        <div className='flex flex-col p-1 basis-[max-content] bg-bg-09 relative z-4500'>
+        <div className='flex flex-col p-1 basis-[max-content] bg-chatter-surface relative z-4500'>
             {carouselData && 
                 <div className="absolute -top-8 flex justify-center items-center w-full">
                     <EmoteCarousel data={carouselData} />

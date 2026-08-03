@@ -57,14 +57,14 @@ export default function EmoteMenu({
 
     return (
         <div 
-            className={`${!open && 'invisible opacity-0'} flex flex-col w-[calc(100%-30px)] h-75 border border-outline-1 rounded-xs m-3.5 absolute left-0 bottom-full bg-bg-2/80 backdrop-blur-xs p-1 z-600 *:select-none transition-all duration-75 ease-in-out transition-discrete`}
+            className={`${!open && 'invisible opacity-0'} flex flex-col w-[calc(100%-30px)] h-75 border border-chatter-border rounded-xs m-3.5 absolute left-0 bottom-full bg-chatter-surface-elevated/90 backdrop-blur-xs p-1 z-600 *:select-none transition-all duration-75 ease-in-out transition-discrete`}
             ref={ref}
         >
-            <div className="h-10 shrink-0 flex justify-around items-center gap-5 pb-1 ps-1 border-b border-b-outline-1">
+            <div className="h-10 shrink-0 flex justify-around items-center gap-5 pb-1 ps-1 border-b border-b-chatter-border">
                 {providers.map((t, i) => 
                     <button 
                         key={t}
-                        className={`${i == tab ? 'bg-bg-3/50!' : 'bg-input-bg/50!'} hover:bg-input-bg-3/50! cursor-pointer text-center grow rounded-xl border border-outline-2 px-2 transition-colors`}
+                        className={`${i == tab ? 'bg-chatter-accent/15! border-chatter-accent!' : 'bg-chatter-surface-inset/50! border-chatter-border!'} hover:bg-chatter-surface/70! cursor-pointer text-center grow rounded-xl border px-2 transition-colors`}
                         onClick={() => setTab(i)}
                     >
                         {t}
@@ -79,7 +79,7 @@ export default function EmoteMenu({
                             key={set.Id}
                             >
                                 <h3
-                                    className="bg-linear-150 from-bg-08/50 to-bg-09/30 p-2"
+                                    className="bg-linear-150 from-chatter-bg/50 to-chatter-surface/30 p-2"
                                     ref={(el) => {
                                         if(!el) return;
                                         sectionsRef.current[set.Section] = el;
@@ -91,7 +91,7 @@ export default function EmoteMenu({
                                     {
                                         Object.values(set.Emotes).filter(isDefined).map(emote =>
                                             <div
-                                                className='flex justify-center items-center cursor-pointer w-10 h-10 p-0.5 rounded-xs opacity-90 hover:bg-bg-5 transition-all duration-150'
+                                                className='flex justify-center items-center cursor-pointer w-10 h-10 p-0.5 rounded-xs opacity-90 hover:bg-chatter-surface transition-all duration-150'
                                                 onClick={() => handleEmoteSelect(emote)}
                                                 onMouseEnter={e => tooltipOnEmote(emote, e.currentTarget)}
                                                 onMouseLeave={() => tooltipOffEmote(emote)}
@@ -116,7 +116,7 @@ export default function EmoteMenu({
                         return <a
                             key={set.Id}
                             onClick={() => sectionsRef.current[set.Section]?.scrollIntoView()}
-                            className='flex justify-center items-center cursor-pointer w-10 h-10 p-0.5 rounded-xs opacity-90 hover:bg-bg-5 transition-all duration-150'
+                            className='flex justify-center items-center cursor-pointer w-10 h-10 p-0.5 rounded-xs opacity-90 hover:bg-chatter-surface transition-all duration-150'
                             onMouseEnter={e => tooltipOnPartial({
                                 type: "text",
                                 text: set.Section,

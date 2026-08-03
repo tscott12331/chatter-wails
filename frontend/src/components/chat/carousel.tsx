@@ -26,11 +26,11 @@ export default function EmoteCarousel({
     const { tooltipOnEmote, tooltipOffEmote } = useContext(TooltipContext);
 
     return (
-        <div className="relative max-w-50 flex gap-1 justify-around p-2 bg-bg-2/50 outline outline-outline-2/50 shadow-md shadow-outline-2/50 backdrop-blur-xs">
-            <span className="text-xl text-shadow-sm text-shadow-outline-1 text-outline-2 content-center absolute h-full top-0 -left-2">{"<"}</span>
+        <div className="relative max-w-50 flex gap-1 justify-around p-2 bg-chatter-surface-elevated/80 outline outline-chatter-border-strong/50 shadow-md shadow-chatter-border-strong/50 backdrop-blur-xs">
+            <span className="text-xl text-shadow-sm text-shadow-chatter-border text-chatter-text-tertiary content-center absolute h-full top-0 -left-2">{"<"}</span>
             {trio.map((e,i) => 
                 <div 
-                    className={`w-10 h-10 flex justify-center items-center ${i === highlightIndex && "bg-bg-5"}`}
+                    className={`w-10 h-10 flex justify-center items-center ${i === highlightIndex && "bg-chatter-accent/15 outline outline-chatter-accent"}`}
                     onMouseEnter={me =>tooltipOnEmote(e, me.currentTarget)}
                     onMouseLeave={() => tooltipOffEmote(e)}
                     key={i}
@@ -42,7 +42,7 @@ export default function EmoteCarousel({
                     />
                 </div>
             )}
-            <span className="text-xl text-shadow-sm text-shadow-outline-1 text-outline-2 content-center absolute h-full top-0 -right-2">{">"}</span>
+            <span className="text-xl text-shadow-sm text-shadow-chatter-border text-chatter-text-tertiary content-center absolute h-full top-0 -right-2">{">"}</span>
         </div>
     )
 }

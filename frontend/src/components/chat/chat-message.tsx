@@ -126,10 +126,10 @@ export default function ChatMessage({
     }
 
     return (
-        <div className={`p-1.5 relative hover:bg-bg-1 hover:[&_.chat-controls]:visible ${message.deleted && 'line-through hover:no-underline'}`}>
+        <div className={`p-1.5 relative hover:bg-chatter-surface hover:[&_.chat-controls]:visible ${message.deleted && 'line-through hover:no-underline'}`}>
             {message.reply &&
             <p 
-                className='w-full text-text-3 text-sm ellipsis'
+                className='w-full text-chatter-text-tertiary text-sm ellipsis'
                 onMouseEnter={e =>
                     tooltipOnPartial({
                         type: "text",
@@ -158,7 +158,7 @@ export default function ChatMessage({
                 className='chat-controls absolute -top-1 right-5 invisible flex justify-end items-center'
             >
                 {showChatReplyButton &&
-                <div className="w-6 h-6 p-1 rounded-xs bg-bg-3/60 backdrop-blur-xs contrast-100 hover:outline hover:outline-outline-2 hover:contrast-200 hover:brightness-120 [&_svg]:fill-text-1 [&_svg]:contrast-200 cursor-pointer"
+                <div className="w-6 h-6 p-1 rounded-xs bg-chatter-surface-elevated/80 backdrop-blur-xs contrast-100 hover:outline hover:outline-chatter-border-strong hover:contrast-200 hover:brightness-120 [&_svg]:fill-chatter-text-primary [&_svg]:contrast-200 cursor-pointer"
                     onClick={() => onChatReplyClick(message)}
                 >
                     <ReplyIcon />
@@ -167,9 +167,9 @@ export default function ChatMessage({
             </div>
             {(message.banInfo.isBanned || message.deleted) &&
             <>
-            <div className="absolute inset-0 bg-bg-09/30 pointer-events-none">
+            <div className="absolute inset-0 bg-chatter-bg/30 pointer-events-none">
             </div>
-            <p className="text-right text-text-3 pe-2">
+            <p className="text-right text-chatter-text-tertiary pe-2">
                 {
                 message.banInfo.isBanned
                 ? message.banInfo.banTypeInfo.isPermanent

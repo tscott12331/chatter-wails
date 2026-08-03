@@ -13,7 +13,7 @@ export default function App() {
 
 
     return (
-        <div className="h-full overflow-hidden">
+        <div className="h-full overflow-hidden bg-chatter-bg text-chatter-text-primary">
             <WindowControls />
             {user &&
                 <TabManager />
