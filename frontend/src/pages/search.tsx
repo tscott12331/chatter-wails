@@ -1,7 +1,7 @@
 import SearchIcon from "@/components/svg/search-icon";
 import { SearchTwitchStreams } from "@wailsjs/chatter-wails/services/native/emoteservice";
 import { ApiGetStreamsRes } from "@wailsjs/chatter-wails/internal/api/nativeApi";
-import { useContext, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { isDefined } from "@/util/assert";
 import SearchResultCard from "@/components/search/search-result-card";
 import { createTab, TabContext } from "@/contexts/tab-context";
@@ -15,7 +15,7 @@ export default function SearchPage() {
 
     const { addTab } = useContext(TabContext);
 
-    const handleSearchInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const search = (query: string) => {
         if(isDefined(searchAbortController.current)) {
             searchAbortController.current.abort();
         }
@@ -24,7 +24,7 @@ export default function SearchPage() {
         searchAbortController.current = new AbortController();
 
         inputChangeTimeoutId.current = setTimeout(() => {
-            SearchTwitchStreams(e.target.value)
+            SearchTwitchStreams(query)
                 .then((d) => {
                     console.log(d);
                     setSearchData(d);
@@ -32,6 +32,14 @@ export default function SearchPage() {
                 .cancelOn(searchAbortController.current!.signal);
         }, inputChangeSearchDelay)
     }
+
+    const handleSearchInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+        search(e.target.value);
+    }
+
+    useEffect(() => {
+        search("");
+    }, [])
 
     return (
         <div className="h-full p-5 flex flex-col items-center gap-5 scroller-y *:w-[min(672px,100%)] relative isolate">
