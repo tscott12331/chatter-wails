@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 
 interface ITabProps {
     tab: TTab;
-    index: number;
     selected: boolean;
     onTabSelect: (tab: TTab) => void;
     onTabRemove: (tab: TTab) => void;

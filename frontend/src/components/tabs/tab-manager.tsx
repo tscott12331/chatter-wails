@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { Events } from "@wailsio/runtime";
 import { SharedChatParticipant } from '@wailsjs/chatter-wails/services/eventsub';
 import SearchIcon from '../svg/search-icon';
-import { createTab, createTabRoute, TabContext, TTab } from '@/contexts/tab-context';
+import { createTab, createTabRoute, FIXED_TAB_COUNT, TabContext, TTab } from '@/contexts/tab-context';
 
 interface ITabManagerProps {
 
@@ -20,7 +20,7 @@ export default function TabManager({
     const [isAddingTab, setIsAddingTab] = useState<boolean>(false);
     const [newTabText, setNewTabText] = useState<string>("");
 
-    const { home, tabs, curTab, selectTab, addTab, removeTab, editTab, rotateTabs } = useContext(TabContext)
+    const { homeTab: home, searchTab, tabs, curTab, selectTab, addTab, removeTab, editTab, rotateTabs } = useContext(TabContext)
 
     const navigate = useNavigate();
 
@@ -88,8 +88,8 @@ export default function TabManager({
         if(!movedTabElement) return;
         const movedTabRect = movedTabElement.getBoundingClientRect()
 
-        let furthestPassedIndex = 0;
-        for(let i = 1; i < tabs.length; i++) {
+        let furthestPassedIndex = FIXED_TAB_COUNT-1;
+        for(let i = FIXED_TAB_COUNT; i < tabs.length; i++) {
             const tab = tabs[i];
             const tabElement = tabsRef.current[tab.tabRoute];
             if(!tabElement.current) continue;
@@ -135,24 +135,29 @@ export default function TabManager({
     }, []);
 
     return (
-        <div className={'flex max-w-full items-center w-full h-9 gap-1 border-b p-1 border-outline-2 bg-bg-09'}
+        <div className={'flex max-w-full items-center w-full h-9 gap-1 border-b p-1 border-outline-2 bg-bg-09 *:data-[selected=true]:bg-bg-5'}
         >
-            <div className={'shrink-0 flex items-center justify-center w-7 h-7 border border-outline-1 rounded-sm p-1 [&_svg]:fill-text-1 data-[selected=true]:bg-bg-5 hover:bg-bg-8 cursor-pointer'}
+            <div className={'shrink-0 flex items-center justify-center w-7 h-7 border border-outline-1 rounded-sm p-1 [&_svg]:fill-text-1 hover:bg-bg-8 cursor-pointer'}
                 onClick={() => handleTabSelect(home)}
                 data-selected={curTab.tabRoute === home.tabRoute ? 'true' : 'false'}
             >
                 <HomeIcon />
             </div>
-            {tabs.slice(1).map((tab, i) =>
+            <div className={'shrink-0 flex items-center justify-center w-7 h-7 border border-outline-1 rounded-sm p-1.5 [&_svg]:fill-text-1 hover:bg-bg-8 cursor-pointer'}
+                onClick={() => handleTabSelect(searchTab)}
+                data-selected={curTab.tabRoute === searchTab.tabRoute ? 'true' : 'false'}
+            >
+                <SearchIcon />
+            </div>
+            {tabs.slice(FIXED_TAB_COUNT).map((tab, i) =>
             <Tab
                 tab={tab}
-                index={i+1}
                 key={tab.tabRoute}
                 ref={tabsRef.current[tab.tabRoute] ??= { current: null }}
                 selected={tab.tabRoute === curTab.tabRoute}
                 onTabSelect={handleTabSelect}
                 onTabRemove={handleTabRemove}
-                onTabPlace={() => handleTabPlace(i+1)}
+                onTabPlace={() => handleTabPlace(i+FIXED_TAB_COUNT)}
             />
                      )}
             <div className={(isAddingTab ? '' : ' hidden') + ' flex justify-start items-center border border-text-1 rounded-sm text-sm p-1 h-7 bg-bg-09 max-w-50 basis-25'}
@@ -171,12 +176,6 @@ export default function TabManager({
                 onClick={() => setIsAddingTab(true)}
             >
                 <PlusIcon />
-            </div>
-            <div
-                className={'shrink-0 flex justify-center items-center w-7 h-7 p-2 [&_svg]:fill-text-1 hover:[&_svg]:fill-text-2 hover:[&_svg]:brightness-90 cursor-pointer' + (isAddingTab ? ' hidden' : '')}
-                onClick={() => navigate('/search')}
-            >
-                <SearchIcon />
             </div>
         </div>
     )

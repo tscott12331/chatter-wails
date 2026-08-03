@@ -20,7 +20,8 @@ export const createTab = (channel: string): TTab => {
 }
 
 interface ITabContext {
-    home: TTab;
+    homeTab: TTab;
+    searchTab: TTab;
     tabs: TTab[];
     curTab: TTab;
     addTab: (tab: TTab) => void;
@@ -35,8 +36,16 @@ const HOME_TAB: TTab = {
     tabName: 'home',
 };
 
+const SEARCH_TAB: TTab = {
+    tabRoute: '/search',
+    tabName: 'search',
+};
+
+export const FIXED_TAB_COUNT = 2;
+
 export const TabContext = createContext<ITabContext>({
-    home: HOME_TAB,
+    homeTab: HOME_TAB,
+    searchTab: SEARCH_TAB,
     tabs: [],
     curTab: HOME_TAB,
     addTab(_tab) {},
@@ -52,7 +61,7 @@ export function TabContextProvider({
 
     const { broadcastError } = useContext(GlobalContext);
 
-    const [tabs, setTabs] = useState<TTab[]>([HOME_TAB]);
+    const [tabs, setTabs] = useState<TTab[]>([HOME_TAB, SEARCH_TAB]);
     const [curTab, setCurTab] = useState<TTab>(HOME_TAB);
 
     const removeTab = (tab: TTab) => {
@@ -105,7 +114,8 @@ export function TabContextProvider({
     }
 
     const ctxValue = useMemo<ITabContext>(() => ({
-        home: HOME_TAB,
+        homeTab: HOME_TAB,
+        searchTab: SEARCH_TAB,
         tabs,
         curTab,
         addTab,
