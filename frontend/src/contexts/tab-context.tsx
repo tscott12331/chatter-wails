@@ -8,6 +8,17 @@ export type TTab = {
     readonly tabName: string;
 }
 
+export const createTabRoute = (channel: string): string => {
+    return `/chatroom/${channel.toLowerCase()}`;
+}
+
+export const createTab = (channel: string): TTab => {
+    return {
+        tabName: channel,
+        tabRoute: createTabRoute(channel),
+    };
+}
+
 interface ITabContext {
     home: TTab;
     tabs: TTab[];
@@ -45,8 +56,8 @@ export function TabContextProvider({
     const [curTab, setCurTab] = useState<TTab>(HOME_TAB);
 
     const removeTab = (tab: TTab) => {
-        if(tab.tabRoute.toLowerCase() == HOME_TAB.tabRoute.toLowerCase()) return; // can't remove home tab :)
-        if(tab.tabRoute.toLowerCase() === curTab.tabRoute.toLowerCase()) {
+        if(tab.tabRoute == HOME_TAB.tabRoute) return; // can't remove home tab :)
+        if(tab.tabRoute === curTab.tabRoute) {
             setCurTab(HOME_TAB);
         }
 
@@ -56,13 +67,13 @@ export function TabContextProvider({
     }
 
     const addTab = (tab: TTab) => {
-        if(!tabs.find(t => t.tabRoute.toLowerCase() === tab.tabRoute.toLowerCase())) {
+        if(!tabs.find(t => t.tabRoute === tab.tabRoute)) {
             setTabs((curTabs) => [...curTabs, tab]);
         }
     }
 
     const selectTab = (tab: TTab) => {
-        if(tabs.find(t => t.tabRoute.toLowerCase() === tab.tabRoute.toLowerCase())) {
+        if(tabs.find(t => t.tabRoute === tab.tabRoute)) {
             setCurTab(tab);
         }
     }

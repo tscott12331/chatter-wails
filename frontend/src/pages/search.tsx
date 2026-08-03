@@ -1,9 +1,10 @@
 import SearchIcon from "@/components/svg/search-icon";
 import { SearchTwitchStreams } from "@wailsjs/chatter-wails/services/native/emoteservice";
 import { ApiGetStreamsRes } from "@wailsjs/chatter-wails/internal/api/nativeApi";
-import { useRef, useState } from "react";
+import { useContext, useRef, useState } from "react";
 import { isDefined } from "@/util/assert";
 import SearchResultCard from "@/components/search/search-result-card";
+import { createTab, TabContext } from "@/contexts/tab-context";
 
 export default function SearchPage() {
     const inputChangeSearchDelay = 500; // ms
@@ -11,6 +12,8 @@ export default function SearchPage() {
     const inputChangeTimeoutId = useRef<number|undefined>(undefined);
     const searchAbortController = useRef<AbortController|null>(null);
     const [searchData, setSearchData] = useState<ApiGetStreamsRes|null>(null);
+
+    const { addTab } = useContext(TabContext);
 
     const handleSearchInput = (e: React.ChangeEvent<HTMLInputElement>) => {
         if(isDefined(searchAbortController.current)) {
@@ -55,6 +58,8 @@ export default function SearchPage() {
                         category={stream.game_name}
                         viewcount={stream.viewer_count}
                         key={stream.id}
+
+                        onClick={() => addTab(createTab(stream.user_name))}
                     />
                 )}
             </div>

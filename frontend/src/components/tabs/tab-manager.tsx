@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { Events } from "@wailsio/runtime";
 import { SharedChatParticipant } from '@wailsjs/chatter-wails/services/eventsub';
 import SearchIcon from '../svg/search-icon';
-import { TabContext, TTab } from '@/contexts/tab-context';
+import { createTab, createTabRoute, TabContext, TTab } from '@/contexts/tab-context';
 
 interface ITabManagerProps {
 
@@ -38,8 +38,8 @@ export default function TabManager({
     }
 
     const addParticipantsToTabName = (channel: string, participants: Record<string, SharedChatParticipant|null|undefined>) => {
-        const eventRoute = `/chatroom/${channel.toLowerCase()}`;
-        const tabToChangeIndex = tabs.findIndex(t => t.tabRoute.toLowerCase() === eventRoute);
+        const eventRoute = createTabRoute(channel);
+        const tabToChangeIndex = tabs.findIndex(t => t.tabRoute === eventRoute);
         editTab(tabToChangeIndex, (tab) => ({
             ...tab,
             tabName: Object.values(participants)
@@ -59,11 +59,11 @@ export default function TabManager({
     }
 
     const handleSharedChatEnd = (event: Events.WailsEvent<"common:shared-chat-end">) => {
-        const eventRoute = `/chatroom/${event.data.channel.toLowerCase()}`;
-        const tabToChangeIndex = tabs.findIndex(t => t.tabRoute.toLowerCase() === eventRoute);
+        const eventRoute = createTabRoute(event.data.channel);
+        const tabToChangeIndex = tabs.findIndex(t => t.tabRoute === eventRoute);
         editTab(tabToChangeIndex, (tab) => ({
             ...tab,
-            tabName: eventRoute.split('/chatroom/')[1],
+            tabName: event.data.channel,
         }));
     }
 
@@ -72,11 +72,7 @@ export default function TabManager({
             const tabName = newTabText.trim();
             if(!tabName.includes(' ') && tabName.length >= 3
                && tabName.length <= 25) {
-                   const tabRoute = `/chatroom/${tabName.toLowerCase()}`;
-                   const newTab: TTab = {
-                        tabRoute,
-                        tabName: tabName,
-                   };
+                   const newTab = createTab(tabName);
 
                    handleAddTab(newTab);
                    setIsAddingTab(false);
@@ -135,8 +131,6 @@ export default function TabManager({
     }, [curTab])
 
     useEffect(() => {
-        // if(location.hash.slice(1) !== currentTabRoute) navigate(currentTabRoute);
-
         return listenersOn();
     }, []);
 
@@ -145,7 +139,7 @@ export default function TabManager({
         >
             <div className={'shrink-0 flex items-center justify-center w-7 h-7 border border-outline-1 rounded-sm p-1 [&_svg]:fill-text-1 data-[selected=true]:bg-bg-5 hover:bg-bg-8 cursor-pointer'}
                 onClick={() => handleTabSelect(home)}
-                data-selected={curTab.tabRoute.toLowerCase() === home.tabRoute.toLowerCase() ? 'true' : 'false'}
+                data-selected={curTab.tabRoute === home.tabRoute ? 'true' : 'false'}
             >
                 <HomeIcon />
             </div>
@@ -155,7 +149,7 @@ export default function TabManager({
                 index={i+1}
                 key={tab.tabRoute}
                 ref={tabsRef.current[tab.tabRoute] ??= { current: null }}
-                selected={tab.tabRoute.toLowerCase() === curTab.tabRoute.toLowerCase()}
+                selected={tab.tabRoute === curTab.tabRoute}
                 onTabSelect={handleTabSelect}
                 onTabRemove={handleTabRemove}
                 onTabPlace={() => handleTabPlace(i+1)}
