@@ -1,12 +1,12 @@
 import { useContext, useEffect, useRef, useState } from 'react';
 import Tab from './tab';
-import HomeIcon from '../svg/home-icon';
 import PlusIcon from '../svg/plus-icon';
 import { useNavigate } from 'react-router-dom';
 import { Events } from "@wailsio/runtime";
 import { SharedChatParticipant } from '@wailsjs/chatter-wails/services/eventsub';
 import SearchIcon from '../svg/search-icon';
 import { createTab, createTabRoute, FIXED_TAB_COUNT, TabContext, TTab } from '@/contexts/tab-context';
+import GelIcon from '../svg/gel-icon';
 
 interface ITabManagerProps {
 
@@ -141,7 +141,7 @@ export default function TabManager({
                 onClick={() => handleTabSelect(home)}
                 data-selected={curTab.tabRoute === home.tabRoute ? 'true' : 'false'}
             >
-                <HomeIcon />
+                <GelIcon />
             </div>
             <div className={'shrink-0 flex items-center justify-center w-7 h-7 border border-chatter-border rounded-sm p-1.5 [&_svg]:fill-chatter-text-primary hover:bg-chatter-surface-elevated hover:border-chatter-border-strong cursor-pointer'}
                 onClick={() => handleTabSelect(searchTab)}
