@@ -107,7 +107,7 @@ export default function EmoteMenu({
                             </div>
                     )}
                 </div>
-                <div className="scroller-y w-10 flex flex-col gap-2 items-center py-2">
+                <div className="scroller-y w-11 border-l border-chatter-border flex flex-col gap-2 items-center py-2 ps-1">
                     {sets.map(set => {
                         if(!isDefined(set.Emotes)) return;
                         const first = Object.values(set.Emotes)[0];
