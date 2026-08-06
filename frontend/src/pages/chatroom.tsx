@@ -79,7 +79,7 @@ export default function Chatroom({
     const getChatterColor = (username: string): string => {
         const chatterMessage = chatMessages.find(m => m.username === username);
 
-        return chatterMessage?.color ?? "var(--c-text-2)";
+        return chatterMessage?.color ?? "var(--color-chatter-text-secondary)";
     }
 
     const showUserPopup = async (username: string|undefined, mouseX: number, mouseY: number) => {

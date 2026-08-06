@@ -8,6 +8,7 @@ import ReplyPopup from "./reply-popup";
 import { AppEmote, AppEmoteMap, AppEmoteSet } from "@wailsjs/chatter-wails/shared/types";
 import { IAppChatMessage } from "@/hooks/chat";
 import { isDefined } from "@/util/assert";
+import SendIcon from "../svg/send-icon";
 
 interface IChatControlsProps {
     isReplying: boolean;
@@ -303,7 +304,7 @@ export default function ChatControls({
 
 
     return (
-        <div className='flex flex-col p-1 basis-[max-content] bg-bg-09 relative z-4500'>
+        <div className='flex flex-col p-1 basis-[max-content] bg-chatter-surface relative z-4500'>
             {carouselData && 
                 <div className="absolute -top-8 flex justify-center items-center w-full">
                     <EmoteCarousel data={carouselData} />
@@ -337,15 +338,17 @@ export default function ChatControls({
                 ></div>
                 <div className='flex items-center justify-end gap-1.5 w-full'>
                     <button
-                        className='relative flex justify-center items-center w-8 bg-none'
+                        className='relative flex justify-center items-center w-8 bg-none [&_svg]:fill-chatter-text-primary cursor-pointer'
                         onClick={handleEmoteButtonClick}
                     >
                         <EmoteIcon />
                     </button>
                     <button
-                        className="h-8"
+                        className="relative flex justify-center items-center w-8 bg-none [&_svg]:fill-chatter-text-primary cursor-pointer"
                         onClick={handleSendMessage}
-                    >send</button>
+                    >
+                        <SendIcon />
+                    </button>
                 </div>
             </div>
         </div>

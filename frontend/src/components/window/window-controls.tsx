@@ -11,11 +11,14 @@ export default function WindowControls() {
     }
 
     return (
-        <div className="titlebar relative h-2 bg-bg-1 border-b border-b-outline-1 hover:*:h-8 hover:*:opacity-100 z-5000">
-            <div className="absolute opacity-0 bg-inherit inset-0 w-full flex justify-end items-center text-center text-lg transition-[height_opacity]">
-                <button onClick={Window.Minimise} className="w-8 h-8 rounded-none! border-none!">-</button>
-                <button onClick={handleMaxMinimise} className="w-8 h-8 rounded-none! border-none!">□</button>
-                <button onClick={Window.Close} className="w-8 h-8 rounded-none! border-none! hover:bg-red-500!">x</button>
+        <div className="titlebar relative h-2 bg-chatter-surface border-b border-b-chatter-border hover:*:h-8 hover:*:opacity-100 z-5000">
+            <div className="absolute opacity-0 bg-inherit border-b border-b-chatter-border inset-0 w-full flex justify-between items-center text-center text-lg transition-[height_opacity] select-none">
+                <h3 className="text-sm p-2 font-bold text-chatter-text-tertiary">gel</h3>
+                <div>
+                    <button onClick={Window.Minimise} className="w-8 h-8 rounded-none! border-none!">-</button>
+                    <button onClick={handleMaxMinimise} className="w-8 h-8 rounded-none! border-none!">□</button>
+                    <button onClick={Window.Close} className="w-8 h-8 rounded-none! border-none! hover:bg-red-500!">x</button>
+                </div>
             </div>
         </div>
     )

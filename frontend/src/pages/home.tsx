@@ -46,7 +46,7 @@ export default function HomePage({
             <div className={'flex flex-col items-center gap-4'}>
                 <h1 className="w-1/2 text-center">
                     <a 
-                    className="underline text-blue-200 cursor-pointer"
+                    className="underline text-chatter-accent-bright cursor-pointer focus-visible:outline focus-visible:outline-chatter-accent"
                     onClick={() => Browser.OpenURL(authURL)}
                     >
                         Connect to twitch</a> to get your access token

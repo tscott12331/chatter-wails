@@ -18,7 +18,7 @@ export default function JumpToRecentPopup({
 
     return (
         <div
-        className='flex justify-center items-center p-1.5 bg-bg-3/50 backdrop-blur-xs rounded-xs cursor-pointer'
+        className='flex justify-center items-center p-1.5 bg-chatter-surface-elevated/80 backdrop-blur-xs rounded-xs cursor-pointer hover:bg-chatter-border'
         {...rest}
         >
             <p>{generatePopupText(newItems)}</p>

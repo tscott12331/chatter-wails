@@ -62,14 +62,14 @@ export default function UserPopup({
     }, []);
 
     return (
-        <div className='absolute w-75 h-100 bg-bg-09/80 backdrop-blur-xs drop-shadow-[0_0_3px] drop-shadow-bg-1 outline outline-outline-2/30 rounded-sm z-5000'
+        <div className='absolute w-75 h-100 bg-chatter-surface-elevated/90 backdrop-blur-xs drop-shadow-[0_0_3px] drop-shadow-chatter-border outline outline-chatter-border-strong/30 rounded-sm z-5000'
             style={{
                 left: `${pos.x}px`,
                 top: `${pos.y}px`,
             }}
         >
             <section
-                className={'flex flex-col h-[15%] border-b border-b-outline-2/30 cursor-move p-1'}
+                className={'flex flex-col h-[15%] border-b border-b-chatter-border-strong/30 cursor-move p-1'}
                 onMouseDown={handleMouseDown}
             >
                 <div className={'flex justify-end h-1/4 [&_svg]:h-full [&_svg]:rotate-45 [&_svg]:fill-red-500 [&_svg]:cursor-pointer [&_svg]:hover:fill-red-700'}>

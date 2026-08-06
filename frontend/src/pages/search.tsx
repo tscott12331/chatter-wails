@@ -68,7 +68,7 @@ export default function SearchPage() {
             <div className="w-full shrink-0 h-37.5 sticky -top-28 xs:-top-24 sm:-top-25 md:-top-26 flex flex-col justify-evenly items-center gap-5 z-1">
                 <h1 className="font-extrabold text-5xl sm:text-6xl md:text-7xl text-center tracking-tight">Browse Channels</h1>
                 <form 
-                    className="w-full p-1 flex items-center bg-input-bg/70 backdrop-blur-sm outline outline-input-outline rounded-md"
+                    className="w-full p-1 flex items-center bg-chatter-surface/70 backdrop-blur-sm outline outline-chatter-border rounded-md focus-within:outline-chatter-accent"
                     action={handleSubmit}
                 >
                     <input 
@@ -78,10 +78,10 @@ export default function SearchPage() {
                         onChange={handleSearchInput}
                     />
                     <button 
-                        className="w-6.25 h-6.25 bg-transparent! hover:bg-input-bg-3! border-0! scale-80 hover:scale-100 will-change-[scale] transition-[transform_background] cursor-pointer"
+                        className="w-6.25 h-6.25 bg-transparent! hover:bg-chatter-surface-elevated! border-0! scale-80 hover:scale-100 will-change-[scale] transition-[transform_background] cursor-pointer"
                         type="submit"
                     >
-                        <SearchIcon className="fill-text-1" />
+                        <SearchIcon className="fill-chatter-text-primary" />
                     </button>
                 </form>
             </div>

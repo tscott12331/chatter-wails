@@ -13,7 +13,7 @@ interface IAutoScrollerProps extends React.HTMLAttributes<HTMLDivElement> {
 
 export default function AutoScroller({
     jumpToRecentPopup,
-    scrollThresh=200,
+    scrollThresh=100,
     children,
     ...rest
 }: IAutoScrollerProps) {
