@@ -29,8 +29,16 @@ type ApiResponse[T any] struct{
 }
 
 var CLIENT_ID string
+var found bool
 
 func ApiHeaders(access_token string) *http.Header {
+	if !found {
+		application.Get().Dialog.Error().
+				SetTitle("App is unauthorized").
+				SetMessage("Please open an issue at https://github.com/tscott12331/gel/issues").
+				Show()
+	}
+
     return &http.Header{
         "Authorization": {"Bearer " + access_token},
         "Client-Id": {CLIENT_ID},
@@ -40,16 +48,7 @@ func ApiHeaders(access_token string) *http.Header {
 func init() {
 	godotenv.Load()
 
-	var found bool
 	CLIENT_ID, found = os.LookupEnv("VITE_CLIENT_ID")
-
-	if !found {
-		application.Get().Dialog.Error().
-				SetTitle("App is unauthorized").
-				SetMessage("Please open an issue at https://github.com/tscott12331/gel/issues").
-				Show()
-			
-	}
 }
 
 
