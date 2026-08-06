@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 type StatusError[T any] struct {
@@ -39,7 +40,16 @@ func ApiHeaders(access_token string) *http.Header {
 func init() {
 	godotenv.Load()
 
-	CLIENT_ID, _ = os.LookupEnv("VITE_CLIENT_ID")
+	var found bool
+	CLIENT_ID, found = os.LookupEnv("VITE_CLIENT_ID")
+
+	if !found {
+		application.Get().Dialog.Error().
+				SetTitle("App is unauthorized").
+				SetMessage("Please open an issue at https://github.com/tscott12331/gel/issues").
+				Show()
+			
+	}
 }
 
 

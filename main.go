@@ -37,8 +37,9 @@ func main() {
 			application.Get().Dialog.Error().
 				SetTitle("Gel crashed").
 				SetMessage(fmt.Sprintf("%+v\n\nStack Trace:\n%s",
-										panicDetails.Error,
-										panicDetails.FullStackTrace))
+					panicDetails.Error,
+					panicDetails.FullStackTrace)).
+				Show()
 		},
 	})
 
