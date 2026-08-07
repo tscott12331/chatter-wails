@@ -75,7 +75,6 @@ export default function UserPopup({
                 <div className={'flex justify-end h-1/4 [&_svg]:h-full [&_svg]:rotate-45 [&_svg]:fill-red-500 [&_svg]:cursor-pointer [&_svg]:hover:fill-red-700'}>
                     <PlusIcon
                         onClick={onPopupClose}
-                        className="size-full"
                     />
                 </div>
                 <h3
