@@ -137,13 +137,13 @@ export default function TabManager({
     return (
         <div className={'flex max-w-full items-center w-full h-9 gap-1 border-b p-1 border-chatter-border-strong bg-chatter-surface'}
         >
-            <div className={'shrink-0 flex items-center justify-center w-7 h-7 border border-chatter-border rounded-sm p-1 [&_svg]:fill-chatter-text-primary hover:bg-chatter-surface-elevated hover:border-chatter-border-strong cursor-pointer'}
+            <div className={`shrink-0 flex items-center justify-center w-7 h-7 border rounded-sm p-1 [&_svg]:fill-chatter-text-primary hover:bg-chatter-surface-elevated hover:border-chatter-border-strong ${curTab.tabRoute === home.tabRoute ? 'bg-chatter-accent/15 border-chatter-accent' : 'border-chatter-border'} cursor-pointer`}
                 onClick={() => handleTabSelect(home)}
                 data-selected={curTab.tabRoute === home.tabRoute ? 'true' : 'false'}
             >
                 <GelIcon />
             </div>
-            <div className={'shrink-0 flex items-center justify-center w-7 h-7 border border-chatter-border rounded-sm p-1.5 [&_svg]:fill-chatter-text-primary hover:bg-chatter-surface-elevated hover:border-chatter-border-strong cursor-pointer'}
+            <div className={`shrink-0 flex items-center justify-center w-7 h-7 border rounded-sm p-1.5 [&_svg]:fill-chatter-text-primary hover:bg-chatter-surface-elevated hover:border-chatter-border-strong  ${curTab.tabRoute === searchTab.tabRoute ? 'bg-chatter-accent/15 border-chatter-accent' : 'border-chatter-border'} cursor-pointer`}
                 onClick={() => handleTabSelect(searchTab)}
                 data-selected={curTab.tabRoute === searchTab.tabRoute ? 'true' : 'false'}
             >
