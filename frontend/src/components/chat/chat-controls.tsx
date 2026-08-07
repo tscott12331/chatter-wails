@@ -341,13 +341,13 @@ export default function ChatControls({
                         className='relative flex justify-center items-center w-8 bg-none [&_svg]:fill-chatter-text-primary cursor-pointer'
                         onClick={handleEmoteButtonClick}
                     >
-                        <EmoteIcon />
+                        <EmoteIcon className="size-full" />
                     </button>
                     <button
                         className="relative flex justify-center items-center w-8 bg-none [&_svg]:fill-chatter-text-primary cursor-pointer"
                         onClick={handleSendMessage}
                     >
-                        <SendIcon />
+                        <SendIcon className="size-full" />
                     </button>
                 </div>
             </div>

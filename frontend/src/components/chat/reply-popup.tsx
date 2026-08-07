@@ -21,6 +21,7 @@ export default function ReplyPopup({
                 <i>replying to:</i>
                 <PlusIcon
                     onClick={onCloseClicked}
+                    className="size-full"
                 />
             </div>
             <div>

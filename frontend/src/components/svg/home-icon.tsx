@@ -1,6 +1,6 @@
-import { SVGProps } from "react";
+import { ComponentPropsWithoutRef } from "react";
 
-const HomeIcon = (props: SVGProps<SVGSVGElement>) => (
+const HomeIcon = (props: ComponentPropsWithoutRef<'svg'>) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     shapeRendering="geometricPrecision"
