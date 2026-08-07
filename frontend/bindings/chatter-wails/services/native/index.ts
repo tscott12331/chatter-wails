@@ -5,3 +5,7 @@ import * as EmoteService from "./emoteservice.js";
 export {
     EmoteService
 };
+
+export type {
+    PaginateData
+} from "./models.js";
