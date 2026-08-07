@@ -77,7 +77,7 @@ export default function Tab({
             onMouseDown={(e) => e.stopPropagation()}
             onMouseUp={(e) => e.stopPropagation()}
             >
-                <PlusIcon />
+                <PlusIcon className="size-full" />
             </div>
         </div>
     )

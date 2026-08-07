@@ -161,7 +161,7 @@ export default function ChatMessage({
                 <div className="w-6 h-6 p-1 rounded-xs bg-chatter-surface-elevated/80 backdrop-blur-xs contrast-100 hover:outline hover:outline-chatter-border-strong hover:contrast-200 hover:brightness-120 [&_svg]:fill-chatter-text-primary [&_svg]:contrast-200 cursor-pointer"
                     onClick={() => onChatReplyClick(message)}
                 >
-                    <ReplyIcon />
+                    <ReplyIcon className="size-full" />
                 </div>
                 }
             </div>

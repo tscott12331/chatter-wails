@@ -141,13 +141,13 @@ export default function TabManager({
                 onClick={() => handleTabSelect(home)}
                 data-selected={curTab.tabRoute === home.tabRoute ? 'true' : 'false'}
             >
-                <GelIcon />
+                <GelIcon className="size-full" />
             </div>
             <div className={'shrink-0 flex items-center justify-center w-7 h-7 border border-chatter-border rounded-sm p-1.5 [&_svg]:fill-chatter-text-primary hover:bg-chatter-surface-elevated hover:border-chatter-border-strong cursor-pointer'}
                 onClick={() => handleTabSelect(searchTab)}
                 data-selected={curTab.tabRoute === searchTab.tabRoute ? 'true' : 'false'}
             >
-                <SearchIcon />
+                <SearchIcon className="size-full" />
             </div>
             {tabs.slice(FIXED_TAB_COUNT).map((tab, i) =>
             <Tab
@@ -175,7 +175,7 @@ export default function TabManager({
                 className={'shrink-0 flex justify-center items-center w-7 h-7 p-2 [&_svg]:fill-chatter-text-primary hover:[&_svg]:fill-chatter-text-secondary hover:[&_svg]:brightness-90 cursor-pointer' + (isAddingTab ? ' hidden' : '')}
                 onClick={() => setIsAddingTab(true)}
             >
-                <PlusIcon />
+                <PlusIcon className="size-full" />
             </div>
         </div>
     )
