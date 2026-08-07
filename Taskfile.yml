@@ -1,10 +1,11 @@
 version: '3'
 
 vars:
-  APP_NAME: "chatter-wails"
+  APP_NAME: "gel"
   BIN_DIR: "bin"
   PACKAGE_MANAGER: '{{.PACKAGE_MANAGER | default "npm"}}'
   VITE_PORT: '{{.WAILS_VITE_PORT | default 9245}}'
+  GLOBAL_LDFLAGS: '-X chatter-wails/internal/api.ClientId={{.VITE_CLIENT_ID}}'
 
 includes:
   common: ./build/Taskfile.yml

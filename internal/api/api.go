@@ -9,9 +9,9 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+
 	"time"
 
-	"github.com/caarlos0/env/v11"
 	"github.com/joho/godotenv"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
@@ -29,13 +29,13 @@ type ApiResponse[T any] struct{
 	Body T
 }
 
-type Config struct{
-	ClientId string			`env:"VITE_CLIENT_ID,required"`
-}
+// type Config struct{
+// 	ClientId string			`env:"VITE_CLIENT_ID,required"`
+// }
 
 func ApiHeaders(access_token string) *http.Header {
 	// defer dialog until application is initialized
-	if !hasCfg {
+	if len(ClientId) == 0 {
 		application.Get().Dialog.Error().
 			SetTitle("App is unauthorized").
 			SetMessage("Please open an issue at https://github.com/tscott12331/gel/issues").
@@ -44,31 +44,23 @@ func ApiHeaders(access_token string) *http.Header {
 
 	return &http.Header{
 		"Authorization": {"Bearer " + access_token},
-		"Client-Id": {cfg.ClientId},
+		"Client-Id": {ClientId},
 	}
 }
 
-var cfg Config
-var hasCfg bool
+var ClientId string
+
 func init() {
-	var err error
-	cfg, err = env.ParseAs[Config]()
-	if err != nil {
-		log.Printf("ERROR: %+v\n", err)
-		hasCfg = tryEnvFilePopulate()
-	} else {
-		hasCfg = true
+	if len(ClientId) == 0 {
+		// fallback for development
+		godotenv.Load()
+		var found bool
+		ClientId, found = os.LookupEnv("VITE_CLIENT_ID")
+		if !found {
+			log.Printf("ERROR: could not find VITE_CLIENT_ID")
+		}
 	}
 }
-
-func tryEnvFilePopulate() bool {
-	godotenv.Load()
-	var exists bool
-	cfg.ClientId, exists = os.LookupEnv("VITE_CLIENT_ID")
-
-	return exists
-}
-
 
 func ApiFetch[T any](
 	method string,
