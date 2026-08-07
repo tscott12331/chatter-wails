@@ -57,13 +57,13 @@ jobs:
 
       - name: Rename Binary
         if: matrix.os == 'windows-latest'
-        run: mv bin/chatter-wails.exe bin/windows-chatter.exe
+        run: mv bin/gel.exe bin/windows-gel.exe
       - name: Rename Binary
         if: matrix.os == 'macos-latest'
-        run: mv bin/chatter-wails bin/macos-chatter
+        run: mv bin/gel bin/macos-gel
       - name: Rename Binary
         if: matrix.os == 'ubuntu-latest'
-        run: mv bin/chatter-wails bin/ubuntu-chatter
+        run: mv bin/gel bin/ubuntu-gel
 
       - name: Release
         uses: softprops/action-gh-release@v3

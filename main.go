@@ -4,6 +4,7 @@ import (
 	"chatter-wails/services/eventsub"
 	"chatter-wails/shared/types"
 	"embed"
+	"fmt"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
@@ -31,6 +32,14 @@ func main() {
 		Name: "Chatter",
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),
+		},
+		PanicHandler: func(panicDetails *application.PanicDetails) {
+			application.Get().Dialog.Error().
+				SetTitle("Gel crashed").
+				SetMessage(fmt.Sprintf("%+v\n\nStack Trace:\n%s",
+					panicDetails.Error,
+					panicDetails.FullStackTrace)).
+				Show()
 		},
 	})
 
