@@ -1,6 +1,5 @@
 import { TChatroomEmotes } from "@/api/emote"
 import { useContext, useEffect, useRef, useState } from "react";
-import { preload } from "react-dom";
 import { AppEmote, AppEmoteSet } from "@wailsjs/chatter-wails/shared/types";
 import { TooltipContext } from "@/contexts/tooltip-context";
 import { isDefined } from "@/util/assert";
@@ -29,21 +28,6 @@ export default function EmoteMenu({
     useEffect(() => {
         setProviders([...emotes.keys()]);
 
-        const providerMaps = emotes.values();
-        const flatEmotes = Array.from(providerMaps.flatMap(sectionMap =>
-            sectionMap.values().flatMap(set =>
-                set.Emotes
-                    ? Object.values(set.Emotes).filter(isDefined)
-                    : []
-            )
-        ));
-
-        for(const emote of flatEmotes) {
-            const srcSet = emote.darkSrcSet.length > 0 ? emote.darkSrcSet : emote.lightSrcSet;
-            for(const image of srcSet.split(', ')) {
-                preload(image, { as: "image", imageSrcSet: srcSet });
-            }
-        }
     }, [emotes]);
 
     useEffect(() => {
