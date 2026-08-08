@@ -1,11 +1,11 @@
 import { useContext } from 'react'
 import { GlobalContext } from './contexts/global-context'
-import TabManager from './components/tabs/tab-manager';
+import TabManager, { TAB_MANAGER_HEIGHT } from './components/tabs/tab-manager';
 import Router from './router';
 import { TooltipContext } from './contexts/tooltip-context';
 import ToastManager from './components/util/toast/toast-manager';
 import Tooltip from './components/util/tooltip';
-import WindowControls from './components/window/window-controls';
+import WindowControls, { WINDOW_CONTROLS_HEIGHT } from './components/window/window-controls';
 
 export default function App() {
     const { user, toast } = useContext(GlobalContext);
@@ -18,7 +18,13 @@ export default function App() {
             {user &&
                 <TabManager />
             }
-            <div className="h-[calc(100%-44px)] flex flex-col">
+            <div 
+                className="sticky"
+                style={{
+                    height: `calc(100% - ${WINDOW_CONTROLS_HEIGHT + TAB_MANAGER_HEIGHT}px)`,
+                    top: `${WINDOW_CONTROLS_HEIGHT+TAB_MANAGER_HEIGHT}px`,
+                }}
+            >
                 <Router/>
                 <ToastManager toast={toast}/>
                 {currentTooltip && <Tooltip data={currentTooltip}/>}
