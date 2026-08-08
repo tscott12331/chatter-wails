@@ -57,7 +57,7 @@ export default function EmoteMenu({
 
     return (
         <div 
-            className={`${!open && 'invisible opacity-0'} flex flex-col w-[calc(100%-30px)] h-75 border border-chatter-border rounded-xs m-3.5 absolute left-0 bottom-full bg-chatter-surface-elevated/90 backdrop-blur-xs p-1 z-600 *:select-none transition-all duration-75 ease-in-out transition-discrete`}
+            className={`${open ? 'visible opacity-100 translate-y-0 scale-100' : 'invisible opacity-0 translate-y-1/5 scale-80'} flex flex-col w-[calc(100%-30px)] h-75 border border-chatter-border rounded-xs m-3.5 absolute left-0 bottom-full bg-chatter-surface-elevated/90 backdrop-blur-xs p-1 z-600 *:select-none transition-[opacity_visibility_translate] duration-150 ease-in-out`}
             ref={ref}
         >
             <div className="h-10 shrink-0 flex justify-around items-center gap-5 pb-1 ps-1 border-b border-b-chatter-border">
