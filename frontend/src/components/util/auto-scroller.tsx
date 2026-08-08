@@ -74,7 +74,7 @@ export default function AutoScroller({
                 {children}
             <div className="h-0 w-0" ref={anchorRef}></div>
             </div>
-            <div className={`w-full absolute flex justify-center items-center ${atBottom ? 'invisible' : 'visible'}`}
+            <div className={`w-full absolute flex justify-center items-center ${atBottom ? 'opacity-0 pointer-events-none' : 'opacity-100'} transition-opacity duration-150`}
                 style={{
                     top: `calc(${scrollerRef.current?.offsetHeight.toString().concat('px') ?? '100%'} * 0.925)`
                 }}
