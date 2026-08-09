@@ -98,7 +98,9 @@ export default function EmoteMenu({
                                                 key={emote.id}
                                             >
                                                 <img
+                                                    className="[content-visibility:auto] [contain-intrinsic-size:40px_40px]"
                                                     srcSet={emote.darkSrcSet.length > 0 ? emote.darkSrcSet : emote.lightSrcSet}
+                                                    loading="lazy"
                                                 />
                                             </div>
                                         )
