@@ -7,6 +7,9 @@ import { SharedChatParticipant } from '@wailsjs/chatter-wails/services/eventsub'
 import SearchIcon from '../svg/search-icon';
 import { createTab, createTabRoute, FIXED_TAB_COUNT, TabContext, TTab } from '@/contexts/tab-context';
 import GelIcon from '../svg/gel-icon';
+import { WINDOW_CONTROLS_HEIGHT } from '../window/window-controls';
+
+export const TAB_MANAGER_HEIGHT = 36;
 
 interface ITabManagerProps {
 
@@ -135,15 +138,19 @@ export default function TabManager({
     }, []);
 
     return (
-        <div className={'flex max-w-full items-center w-full h-9 gap-1 border-b p-1 border-chatter-border-strong bg-chatter-surface'}
+        <div className={`sticky flex max-w-full items-center w-full gap-1 border-b p-1 border-chatter-border-strong bg-chatter-surface`}
+            style={{
+                height: `${TAB_MANAGER_HEIGHT}px`,
+                top: `${WINDOW_CONTROLS_HEIGHT}px`,
+            }}
         >
-            <div className={'shrink-0 flex items-center justify-center w-7 h-7 border border-chatter-border rounded-sm p-1 [&_svg]:fill-chatter-text-primary hover:bg-chatter-surface-elevated hover:border-chatter-border-strong cursor-pointer'}
+            <div className={`shrink-0 flex items-center justify-center w-7 h-7 border rounded-sm p-1 [&_svg]:fill-chatter-text-primary hover:bg-chatter-surface-elevated hover:border-chatter-border-strong ${curTab.tabRoute === home.tabRoute ? 'bg-chatter-accent/15 border-chatter-accent' : 'border-chatter-border'} cursor-pointer`}
                 onClick={() => handleTabSelect(home)}
                 data-selected={curTab.tabRoute === home.tabRoute ? 'true' : 'false'}
             >
                 <GelIcon className="size-full" />
             </div>
-            <div className={'shrink-0 flex items-center justify-center w-7 h-7 border border-chatter-border rounded-sm p-1.5 [&_svg]:fill-chatter-text-primary hover:bg-chatter-surface-elevated hover:border-chatter-border-strong cursor-pointer'}
+            <div className={`shrink-0 flex items-center justify-center w-7 h-7 border rounded-sm p-1.5 [&_svg]:fill-chatter-text-primary hover:bg-chatter-surface-elevated hover:border-chatter-border-strong  ${curTab.tabRoute === searchTab.tabRoute ? 'bg-chatter-accent/15 border-chatter-accent' : 'border-chatter-border'} cursor-pointer`}
                 onClick={() => handleTabSelect(searchTab)}
                 data-selected={curTab.tabRoute === searchTab.tabRoute ? 'true' : 'false'}
             >

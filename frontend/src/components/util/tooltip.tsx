@@ -19,8 +19,9 @@ interface ITooltipProps {
     data: TTooltipData;
 }
 
-const tooltipMaxImageWidth = 100;
-const tooltipMaxTextWidth = 500;
+const TOOLTIP_MAX_IMG_W = 100;
+const TOOLTIP_MAX_TXT_W = 500;
+const TOOLTIP_UPWARD_OFF = 50;
 
 export default function Tooltip({
     data,
@@ -30,8 +31,8 @@ export default function Tooltip({
 
         const posStyles = {};
         const padding = (data.type == "text" 
-                        ? Math.min(tooltipMaxTextWidth, data.text.length*14)
-                        : tooltipMaxImageWidth) / 2;
+                        ? Math.min(TOOLTIP_MAX_TXT_W, data.text.length*14)
+                        : TOOLTIP_MAX_IMG_W) / 2;
 
         if(data.posX + padding > windowWidth) {
             posStyles['right'] = 0;
@@ -41,7 +42,7 @@ export default function Tooltip({
             posStyles['left'] = data.posX;
         }
 
-        posStyles['top'] = data.posY
+        posStyles['top'] = data.posY - TOOLTIP_UPWARD_OFF;
 
         return posStyles;
     }
@@ -63,7 +64,7 @@ export default function Tooltip({
         ? <p 
         className="text-left"
             style={{
-                maxWidth: `min(100%,${tooltipMaxTextWidth}px)`
+                maxWidth: `min(100%,${TOOLTIP_MAX_TXT_W}px)`
             }}
         >{displayText(data.text)}</p>
         : data.type === "image"
@@ -72,13 +73,13 @@ export default function Tooltip({
             className="h-10"
             srcSet={data.imageSrcSet}
             style={{
-                maxWidth: `${tooltipMaxImageWidth}px`,
+                maxWidth: `${TOOLTIP_MAX_IMG_W}px`,
             }}
         />
         <div className="w-full border border-chatter-border-strong/50 mt-1.5 mb-0.5"></div>
         <p 
             style={{
-                maxWidth: `${tooltipMaxImageWidth}px`,
+                maxWidth: `${TOOLTIP_MAX_IMG_W}px`,
             }}
         >{displayText(data.imageDesc)}</p>
         </>
