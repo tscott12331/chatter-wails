@@ -63,7 +63,7 @@ export default function ChatMessage({
                 return (
                     <div className="align-middle inline-grid place-items-center grid-cols-1 grid-rows-1" key={index}>
                         <img
-                            className="row-1 col-1"
+                            className="row-1 col-1 max-h-9"
                             srcSet={fragment.emote.darkSrcSet.length > 0 ? fragment.emote.darkSrcSet : fragment.emote.lightSrcSet}
                             alt={fragment.text}
                             onMouseEnter={e => fragment.emote && tooltipOnEmote(fragment.emote, e.currentTarget)}
@@ -107,7 +107,7 @@ export default function ChatMessage({
 
     const badgeToNode = (badge: IMessageBadge, index: number): React.ReactNode => {
         return <img 
-                    className="inline mr-1 max-w-4.5"
+                    className="inline mr-1 size-4"
                     srcSet={badge.srcSet}
                     onMouseEnter={e => tooltipOnPartial({
                             type: "image",
