@@ -127,7 +127,7 @@ export default function ChatMessage({
 
     return (
         // TODO: (maybe make content visibility stuff optional?)
-        <div className={`p-1.5 relative hover:bg-chatter-surface hover:[&_.chat-controls]:visible ${message.deleted && 'line-through hover:no-underline'} [content-visibility:auto] [contain-intrinsic-size:auto]`}>
+        <div className={`p-1.5 relative hover:bg-chatter-surface hover:[&_.chat-controls]:visible ${message.deleted && 'line-through hover:no-underline'} [content-visibility:auto] [contain-intrinsic-size:auto_36px]`}>
             {message.reply &&
             <p 
                 className='w-full text-chatter-text-tertiary text-sm ellipsis'
