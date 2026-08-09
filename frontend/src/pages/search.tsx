@@ -113,7 +113,7 @@ export default function SearchPage() {
                         className="w-6.25 h-6.25 bg-transparent! hover:bg-chatter-surface-elevated! border-0! scale-80 hover:scale-100 will-change-[scale] transition-[transform_background] cursor-pointer"
                         type="submit"
                     >
-                        <SearchIcon className="fill-chatter-text-primary" />
+                        <SearchIcon className="fill-chatter-text-primary size-full" />
                     </button>
                 </form>
             </div>

@@ -69,6 +69,7 @@ export default function Tooltip({
         : data.type === "image"
         ? <>
         <img 
+            className="h-10"
             srcSet={data.imageSrcSet}
             style={{
                 maxWidth: `${tooltipMaxImageWidth}px`,

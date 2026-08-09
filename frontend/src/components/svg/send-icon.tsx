@@ -1,4 +1,6 @@
-export default function SendIcon(props) {
+import { ComponentPropsWithoutRef } from "react";
+
+export default function SendIcon(props: ComponentPropsWithoutRef<'svg'>) {
     return (
         <svg
             xmlns="http://www.w3.org/2000/svg"

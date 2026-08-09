@@ -63,7 +63,7 @@ export default function ChatMessage({
                 return (
                     <div className="align-middle inline-grid place-items-center grid-cols-1 grid-rows-1" key={index}>
                         <img
-                            className="row-1 col-1"
+                            className="row-1 col-1 max-h-9"
                             srcSet={fragment.emote.darkSrcSet.length > 0 ? fragment.emote.darkSrcSet : fragment.emote.lightSrcSet}
                             alt={fragment.text}
                             onMouseEnter={e => fragment.emote && tooltipOnEmote(fragment.emote, e.currentTarget)}
@@ -107,7 +107,7 @@ export default function ChatMessage({
 
     const badgeToNode = (badge: IMessageBadge, index: number): React.ReactNode => {
         return <img 
-                    className="inline mr-1 max-w-4.5"
+                    className="inline mr-1 size-4"
                     srcSet={badge.srcSet}
                     onMouseEnter={e => tooltipOnPartial({
                             type: "image",
@@ -126,7 +126,8 @@ export default function ChatMessage({
     }
 
     return (
-        <div className={`p-1.5 relative hover:bg-chatter-surface hover:[&_.chat-controls]:visible ${message.deleted && 'line-through hover:no-underline'}`}>
+        // TODO: (maybe make content visibility stuff optional?)
+        <div className={`p-1.5 relative hover:bg-chatter-surface hover:[&_.chat-controls]:visible ${message.deleted && 'line-through hover:no-underline'} [content-visibility:auto] [contain-intrinsic-size:auto_36px]`}>
             {message.reply &&
             <p 
                 className='w-full text-chatter-text-tertiary text-sm ellipsis'
@@ -161,7 +162,7 @@ export default function ChatMessage({
                 <div className="w-6 h-6 p-1 rounded-xs bg-chatter-surface-elevated/80 backdrop-blur-xs contrast-100 hover:outline hover:outline-chatter-border-strong hover:contrast-200 hover:brightness-120 [&_svg]:fill-chatter-text-primary [&_svg]:contrast-200 cursor-pointer"
                     onClick={() => onChatReplyClick(message)}
                 >
-                    <ReplyIcon />
+                    <ReplyIcon className="size-full" />
                 </div>
                 }
             </div>
