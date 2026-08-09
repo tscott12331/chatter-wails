@@ -228,15 +228,30 @@ const THUMB_H_TMPL = "{height}"
 const THUMB_W = "320"
 const THUMB_H = "180"
 
+
+type PaginateData struct{
+	Cursor string
+	IsBefore bool
+}
+
 // TODO: add more params for filters & pagination
-func (es *EmoteService) SearchTwitchStreams(query string) (*nativeApi.ApiGetStreamsRes, error) {
+func (es *EmoteService) SearchTwitchStreams(query string, paginate *PaginateData) (*nativeApi.ApiGetStreamsRes, error) {
 	appUser := shared.GetUser()
 	if appUser == nil {
 		return nil, errors.New("Cannot search streams without being logged in")
 	}
 
+	getStreamsHeaders := map[string][]string{}
+	if paginate != nil {
+		if paginate.IsBefore {
+			getStreamsHeaders["before"] = []string{paginate.Cursor}
+		} else {
+			getStreamsHeaders["after"] = []string{paginate.Cursor}
+		}
+	}
+
 	if len(query) == 0 {
-		res, err := nativeApi.GetStreams(appUser.Access_token, map[string][]string{})
+		res, err := nativeApi.GetStreams(appUser.Access_token, getStreamsHeaders)
 		if err != nil {
 			return nil, err
 		}
@@ -257,9 +272,9 @@ func (es *EmoteService) SearchTwitchStreams(query string) (*nativeApi.ApiGetStre
 		channels[i] = searchedChannel.Broadcaster_login
 	}
 
-	res, err := nativeApi.GetStreams(appUser.Access_token, map[string][]string{
-		"user_login": channels,
-	})
+	getStreamsHeaders["user_login"] = channels
+
+	res, err := nativeApi.GetStreams(appUser.Access_token, getStreamsHeaders)
 	if err != nil {
 		return nil, err
 	}
