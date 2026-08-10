@@ -63,7 +63,10 @@ export default function ChatMessage({
                 if(!fragment.emote) return fragment.text;
 
                 return (
-                    <span className="inline-block align-middle h-[2em] [content-visibility:auto] [contain-intrinsic-size:auto_2em]">
+                    <span 
+                        className="inline-block align-middle h-[2em] [content-visibility:auto] [contain-intrinsic-size:auto_2em]"
+                        key={index}
+                    >
                         <Emote 
                             emote={fragment.emote} 
                             tooltipOnPartial={tooltipOnPartial}

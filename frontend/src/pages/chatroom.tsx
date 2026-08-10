@@ -70,14 +70,14 @@ export default function Chatroom({
         setReplyingToMessage(undefined);
     }, []);
 
-    const handleSendMessage = useCallback(async (message: string) => {
+    const handleSendMessage = async (message: string) => {
         const res = await sendChatMessage(message, replyingToMessage?.id);
         if(res) {
             handleChatReplyClose();
         }
 
         return res;
-    }, [replyingToMessage]);
+    };
 
     const getChatterColor = useCallback((username: string): string => {
         const chatterMessage = chatMessages.find(m => m.username === username);
