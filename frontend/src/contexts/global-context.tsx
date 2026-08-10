@@ -1,4 +1,4 @@
-import { createContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useEffect, useMemo, useState } from "react";
 
 import { Login } from "@wailsjs/chatter-wails/services/auth/authservice";
 import { GetGlobalBadgeSets } from "@wailsjs/chatter-wails/services/badge/badgeservice";
@@ -8,6 +8,7 @@ import { AppUser } from "@wailsjs/chatter-wails/shared/types";
 import { IToast } from "@/components/util/toast/toast";
 import { assertDefined } from "@/util/assert";
 import { CancelError } from "@wailsio/runtime";
+import ToastManager from "@/components/util/toast/toast-manager";
 
 
 interface IGlobalContext {
@@ -34,7 +35,7 @@ export function GlobalContextProvider({
     const [toast, setToast] = useState<IToast|undefined>(undefined);
 
 
-    const submitAccessToken = async (accessToken: string) => {
+    const submitAccessToken = useCallback(async (accessToken: string) => {
         try {
             const appUser = await Login(accessToken);
 
@@ -50,7 +51,7 @@ export function GlobalContextProvider({
             broadcastError(err)
             return false;
         }
-    }
+    }, []);
 
     const tryLoginSavedToken = () => {
         try {
@@ -77,18 +78,18 @@ export function GlobalContextProvider({
         DeleteAllSubscriptions().catch(broadcastError);
     }
 
-    const broadcastToast = (toast: IToast) => {
+    const broadcastToast = useCallback((toast: IToast) => {
         setToast(toast);
-    }
+    }, []);
 
-    const broadcastError = (err: any) => {
+    const broadcastError = useCallback((err: any) => {
         if(err instanceof CancelError) return;
 
         broadcastToast({
             message: `${err}`,
             type: 'error',
         });
-    }
+    }, []);
 
     useEffect(() => {
         tryLoginSavedToken();
@@ -106,6 +107,7 @@ export function GlobalContextProvider({
     return (
         <GlobalContext.Provider value={globalContextValue}>
             {children}
+            <ToastManager toast={toast}/>
         </GlobalContext.Provider>
     )
 }

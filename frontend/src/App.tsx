@@ -2,11 +2,10 @@ import { useContext } from 'react'
 import { GlobalContext } from './contexts/global-context'
 import TabManager, { TAB_MANAGER_HEIGHT } from './components/tabs/tab-manager';
 import Router from './router';
-import ToastManager from './components/util/toast/toast-manager';
 import WindowControls, { WINDOW_CONTROLS_HEIGHT } from './components/window/window-controls';
 
 export default function App() {
-    const { user, toast } = useContext(GlobalContext);
+    const { user } = useContext(GlobalContext);
 
 
     return (
@@ -23,7 +22,6 @@ export default function App() {
                 }}
             >
                 <Router/>
-                <ToastManager toast={toast}/>
             </div>
         </div>
     )
