@@ -1,4 +1,4 @@
-import { TChatroomEmotes } from "@/api/emote"
+import { IChatroomEmotes } from "@/api/emote"
 import { useContext, useEffect, useRef, useState } from "react";
 import { AppEmote, AppEmoteSet } from "@wailsjs/chatter-wails/shared/types";
 import { TooltipContext } from "@/contexts/tooltip-context";
@@ -6,7 +6,7 @@ import { isDefined } from "@/util/assert";
 import Emote from "./emote";
 
 interface IEmoteMenuProps {
-    emotes: TChatroomEmotes;
+    emotes: IChatroomEmotes;
     open: boolean;
     handleEmoteSelect: (emote: AppEmote) => void;
     ref?: React.Ref<HTMLDivElement>;
@@ -27,18 +27,18 @@ export default function EmoteMenu({
     const { tooltipOnPartial, tooltipOff } = useContext(TooltipContext);
 
     useEffect(() => {
-        setProviders([...emotes.keys()]);
+        setProviders([...emotes.providers.keys()]);
 
-    }, [emotes]);
+    }, [emotes._hash]);
 
     useEffect(() => {
-        const sectionMap = emotes.get(providers[tab]);
+        const sectionMap = emotes.providers.get(providers[tab]);
         sectionsRef.current = {};
         if(sectionMap) {
             setSets([...sectionMap.values()]);
         }
 
-    }, [emotes, providers, tab]);
+    }, [emotes._hash, providers, tab]);
 
     return (
         <div 

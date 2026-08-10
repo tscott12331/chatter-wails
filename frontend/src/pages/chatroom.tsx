@@ -1,6 +1,6 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import ChatMessage from '@components/chat/chat-message';
-import { useContext, useState } from 'react';
+import { useCallback, useContext, useEffect, useState } from 'react';
 import AutoScroller from '@components/util/auto-scroller';
 import JumpToRecentPopup from '@components/chat/jump-to-recent-popup';
 import UserPopup, { IPopupUser } from '@components/chat/user-popup';
@@ -40,49 +40,52 @@ export default function Chatroom({
     const [initUserPopupPos, setInitUserPopupPos] = useState<{x:number, y:number}>({x: 0, y: 0});
 
 
-    const lastMessage = chatMessages.at(-1);
-    const lastPopupMessage = curPopupUser?.messages.at(-1);
-    if(curPopupUser && lastMessage
-       && curPopupUser.username === lastMessage.username
-      && (lastMessage.id !== lastPopupMessage?.id)) {
-        setCurPopupUser(cur => {
-            if(!cur) return cur;
-            const numExtraMessages = curPopupUser.messages.length - MAX_MESSAGES;
-            return {
-                username: cur.username,
-                messages: numExtraMessages >= 0
-                    ? [...cur.messages.slice(numExtraMessages + 1), lastMessage]
-                    : [...cur.messages, lastMessage],
-            }
-        })
-    }
+    useEffect(() => {
+        const lastMessage = chatMessages.at(-1);
+        const lastPopupMessage = curPopupUser?.messages.at(-1);
+        if(curPopupUser && lastMessage
+            && curPopupUser.username === lastMessage.username
+            && (lastMessage.id !== lastPopupMessage?.id)) {
+            setCurPopupUser(cur => {
+                if(!cur) return cur;
+                const numExtraMessages = curPopupUser.messages.length - MAX_MESSAGES;
+                return {
+                    username: cur.username,
+                    messages: numExtraMessages >= 0
+                        ? [...cur.messages.slice(numExtraMessages + 1), lastMessage]
+                        : [...cur.messages, lastMessage],
+                }
+            })
+        }
 
-    const handleChatReplyClick = (message: IAppChatMessage) => {
+    }, [chatMessages.length, curPopupUser]);
+
+    const handleChatReplyClick = useCallback((message: IAppChatMessage) => {
         setIsReplying(true);
         setReplyingToMessage(message);
-    }
+    }, []);
 
-    const handleChatReplyClose = () => {
+    const handleChatReplyClose = useCallback(() => {
         setIsReplying(false);
         setReplyingToMessage(undefined);
-    }
+    }, []);
 
-    const handleSendMessage = async (message: string) => {
+    const handleSendMessage = useCallback(async (message: string) => {
         const res = await sendChatMessage(message, replyingToMessage?.id);
         if(res) {
             handleChatReplyClose();
         }
 
         return res;
-    }
+    }, [replyingToMessage]);
 
-    const getChatterColor = (username: string): string => {
+    const getChatterColor = useCallback((username: string): string => {
         const chatterMessage = chatMessages.find(m => m.username === username);
 
         return chatterMessage?.color ?? "var(--color-chatter-text-secondary)";
-    }
+    }, [chatMessages]);
 
-    const showUserPopup = async (username: string|undefined, mouseX: number, mouseY: number) => {
+    const showUserPopup = useCallback(async (username: string|undefined, mouseX: number, mouseY: number) => {
         if(!username) return;
 
         const recentMessages = chatMessages.filter(m => m.username === username);
@@ -93,7 +96,7 @@ export default function Chatroom({
         setInitUserPopupPos({x: mouseX, y: mouseY});
 
         setShouldShowUserPopup(true);
-    }
+    }, [chatMessages]);
 
     return (
         <div
