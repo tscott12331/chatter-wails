@@ -63,11 +63,13 @@ export default function ChatMessage({
                 if(!fragment.emote) return fragment.text;
 
                 return (
-                    <Emote 
-                        emote={fragment.emote} 
-                        tooltipOnPartial={tooltipOnPartial}
-                        tooltipOff={tooltipOff}
-                    />
+                    <span className="inline-block max-h-lh [content-visibility:auto] [contain-intrinsic-size:auto_1lh]">
+                        <Emote 
+                            emote={fragment.emote} 
+                            tooltipOnPartial={tooltipOnPartial}
+                            tooltipOff={tooltipOff}
+                        />
+                    </span>
                 );
             case 'mention':
                 if(!fragment.mention) return fragment.text;

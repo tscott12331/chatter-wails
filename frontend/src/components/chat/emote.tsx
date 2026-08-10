@@ -21,7 +21,7 @@ const EmoteMemo = React.memo(({
 
         return (
             <img
-                className="row-1 col-1 max-h-9"
+                className="row-1 col-1 translate-z-0"
                 loading="lazy"
                 decoding="async"
                 srcSet={srcSet}
@@ -43,7 +43,7 @@ export default function Emote({
     // TODO: improve stacked emote tooltip
     return (
         <div 
-            className="align-middle inline-grid place-items-center grid-cols-1 grid-rows-1"
+            className="h-full align-middle inline-grid place-items-center grid-cols-1 grid-rows-1"
             onMouseEnter={(e) => {
                 tooltipOnPartial?.({
                     type: "image",
