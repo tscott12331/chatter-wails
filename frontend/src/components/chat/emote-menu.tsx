@@ -42,7 +42,7 @@ export default function EmoteMenu({
 
     return (
         <div 
-            className={`${open ? 'visible opacity-100 translate-y-0 scale-100' : 'invisible opacity-0 translate-y-1/5 scale-80'} flex flex-col w-[calc(100%-30px)] h-75 border border-chatter-border rounded-xs m-3.5 absolute left-0 bottom-full bg-chatter-surface-elevated/90 backdrop-blur-xs p-1 z-600 *:select-none transition-[opacity_visibility_translate] duration-150 ease-in-out`}
+            className={`${open ? 'visible opacity-100 translate-y-0 scale-100' : 'invisible opacity-0 translate-y-1/5 scale-80'} flex flex-col w-[min(calc(100%-30px),25rem)] h-75 border border-chatter-border rounded-xs m-3.5 absolute right-0 bottom-full bg-chatter-surface-elevated/90 backdrop-blur-xs p-1 z-600 *:select-none transition-[opacity_visibility_translate] duration-150 ease-in-out`}
             ref={ref}
         >
             <div className="h-10 shrink-0 flex justify-around items-center gap-5 pb-1 ps-1 border-b border-b-chatter-border">
@@ -71,12 +71,12 @@ export default function EmoteMenu({
                                     }}
                                 >{set.Section}</h3>
                                 <div
-                                    className='grow grid grid-cols-[repeat(auto-fill,40px)] auto-rows-min items-start justify-between gap-1'
+                                    className='grow grid grid-cols-[repeat(auto-fill,5rem)] auto-rows-min items-center justify-center gap-1'
                                 >
                                     {
                                         Object.values(set.Emotes).filter(isDefined).map(emote =>
                                             <div
-                                                className='flex justify-center items-center cursor-pointer w-10 h-10 p-0.5 rounded-xs opacity-90 hover:bg-chatter-surface transition-all duration-150 [content-visibility:auto] [contain-intrinsic-size:2.5rem_2.5rem]'
+                                                className='flex justify-center items-center cursor-pointer w-20 h-20 p-0.5 rounded-xs opacity-90 hover:bg-chatter-surface transition-all duration-150 [content-visibility:auto] [contain-intrinsic-size:5rem_5rem]'
                                                 onClick={() => handleEmoteSelect(emote)}
                                                 key={emote.id}
                                             >
