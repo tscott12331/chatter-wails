@@ -3,6 +3,7 @@ import { useContext, useEffect, useRef, useState } from "react";
 import { AppEmote, AppEmoteSet } from "@wailsjs/chatter-wails/shared/types";
 import { TooltipContext } from "@/contexts/tooltip-context";
 import { isDefined } from "@/util/assert";
+import Emote from "./emote";
 
 interface IEmoteMenuProps {
     emotes: TChatroomEmotes;
@@ -23,7 +24,7 @@ export default function EmoteMenu({
 
     const sectionsRef = useRef<Record<string, HTMLDivElement>>({});
 
-    const { tooltipOnEmote, tooltipOffEmote, tooltipOnPartial, tooltipOff } = useContext(TooltipContext);
+    const { tooltipOnPartial, tooltipOff } = useContext(TooltipContext);
 
     useEffect(() => {
         setProviders([...emotes.keys()]);
@@ -75,16 +76,13 @@ export default function EmoteMenu({
                                     {
                                         Object.values(set.Emotes).filter(isDefined).map(emote =>
                                             <div
-                                                className='flex justify-center items-center cursor-pointer w-10 h-10 p-0.5 rounded-xs opacity-90 hover:bg-chatter-surface transition-all duration-150'
+                                                className='flex justify-center items-center cursor-pointer w-10 h-10 p-0.5 rounded-xs opacity-90 hover:bg-chatter-surface transition-all duration-150 [content-visibility:auto] [contain-intrinsic-size:2.5rem_2.5rem]'
                                                 onClick={() => handleEmoteSelect(emote)}
-                                                onMouseEnter={e => tooltipOnEmote(emote, e.currentTarget)}
-                                                onMouseLeave={() => tooltipOffEmote(emote)}
                                                 key={emote.id}
                                             >
-                                                <img
-                                                    className="[content-visibility:auto] [contain-intrinsic-size:40px_40px]"
-                                                    srcSet={emote.darkSrcSet.length > 0 ? emote.darkSrcSet : emote.lightSrcSet}
-                                                    loading="lazy"
+                                                <Emote emote={emote} 
+                                                    tooltipOnPartial={tooltipOnPartial}
+                                                    tooltipOff={tooltipOff}
                                                 />
                                             </div>
                                         )
@@ -109,8 +107,8 @@ export default function EmoteMenu({
                             }, set.Id, e.currentTarget)}
                             onMouseLeave={() => tooltipOff(set.Id)}
                         >
-                            <img
-                                srcSet={first.darkSrcSet.length > 0 ? first.darkSrcSet : first.lightSrcSet}
+                            <Emote 
+                                emote={first}
                             />
                         </a>
                     })}
