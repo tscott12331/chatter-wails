@@ -21,7 +21,7 @@ interface ITooltipProps {
 
 const TOOLTIP_MAX_IMG_W = 100;
 const TOOLTIP_MAX_TXT_W = 500;
-const TOOLTIP_UPWARD_OFF = 50;
+const TOOLTIP_UPWARD_OFF = 5;
 
 export default function Tooltip({
     data,

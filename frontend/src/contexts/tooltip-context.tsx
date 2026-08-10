@@ -1,4 +1,4 @@
-import { TPartialTooltipData, TTooltipData } from "@/components/util/tooltip";
+import Tooltip, { TPartialTooltipData, TTooltipData } from "@/components/util/tooltip";
 import { AppEmote } from "@wailsjs/chatter-wails/shared/types";
 import { createContext, useCallback, useMemo, useState } from "react";
 
@@ -81,6 +81,7 @@ export function TooltipContextProvider({
     return (
         <TooltipContext.Provider value={contextValue}>
             {children}
+            {currentTooltip && <Tooltip data={currentTooltip} />}
         </TooltipContext.Provider>
     )
 }
