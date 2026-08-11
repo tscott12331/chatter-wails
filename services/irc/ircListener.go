@@ -77,6 +77,11 @@ func (irc *IRCListener) Connect(accessToken, userLogin string, commands, members
 }
 
 func (irc *IRCListener) SendMessage(message string) {
+	if irc.socket == nil {
+		log.Printf("ERROR: cannot send messages through irc before connection")
+		return
+	}
+
 	irc.socket.SendMessage([]byte(message))
 }
 
@@ -119,7 +124,7 @@ func (irc *IRCListener) handleSocketMessage(message []byte) {
 }
 
 func (irc *IRCListener) handlePing(message *IRCMessage) {
-	irc.socket.SendMessage(fmt.Appendf([]byte{}, "PONG :%s", message.Data))
+	irc.SendMessage(fmt.Sprintf("PONG :%s", message.Data))
 }
 
 func (irc *IRCListener) dispatchHandlers(message *IRCMessage) {
