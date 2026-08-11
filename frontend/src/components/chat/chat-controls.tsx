@@ -1,6 +1,6 @@
-import { TChatroomEmotes } from "@/api/emote";
+import { IChatroomEmotes } from "@/api/emote";
 import { getCursorPos, moveCursorTo, moveCursorToEnd } from "@/util/rte";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import EmoteIcon from "../svg/emote-icon";
 import EmoteCarousel, { IEmoteCarouselData } from "./carousel";
 import EmoteMenu from "./emote-menu";
@@ -13,7 +13,7 @@ import SendIcon from "../svg/send-icon";
 interface IChatControlsProps {
     isReplying: boolean;
     replyingToMessage: IAppChatMessage|undefined;
-    emotes: TChatroomEmotes;
+    emotes: IChatroomEmotes;
     getChatterColor: (username: string) => string;
     onSendMessage: (message: string) => Promise<boolean>;
     onShowUserPopup: (username: string|undefined, mouseX: number, mouseY: number) => void;
@@ -107,7 +107,7 @@ export default function ChatControls({
     function getEmoteMatches(potentialEmote: string): AppEmote[] {
         const matches: AppEmote[] = [];
         const flatEmotes = Array.from(
-            emotes.values().flatMap(setMap => 
+            emotes.providers.values().flatMap(setMap => 
                 setMap.values().flatMap(set => 
                     set.Emotes
                         ? Object.values(set.Emotes).filter(isDefined)
@@ -216,7 +216,7 @@ export default function ChatControls({
         return 0;
     }
 
-    function handleEmoteSelect(emote: AppEmote) {
+    const handleEmoteSelect = useCallback((emote: AppEmote) => {
         if(!messageInputRef.current) return;
 
         const childNodes = messageInputRef.current.childNodes;
@@ -236,14 +236,17 @@ export default function ChatControls({
 
         messageInputRef.current.focus();
         moveCursorToEnd(messageInputRef.current);
-    }
+    }, []);
 
-    const filteredEmoteList = useMemo<TChatroomEmotes>(() => {
-        const filtered: TChatroomEmotes = new Map();
+    const filteredEmoteList = useMemo<IChatroomEmotes>(() => {
+        const filtered: IChatroomEmotes = {
+            providers: new Map(),
+            _hash: emotes._hash,
+        };
 
         function filterProvider(provider: string, providerMap: Map<string, AppEmoteSet>) {
             const filteredProviderMap = new Map<string, AppEmoteSet>();
-            filtered.set(provider, filteredProviderMap);
+            filtered.providers.set(provider, filteredProviderMap);
             const idHash: Record<string, string> = {};
 
             for(const [sectionName, set] of providerMap.entries()) {
@@ -276,7 +279,7 @@ export default function ChatControls({
             }
         }
 
-        for(const [provider, providerMap] of emotes.entries()) {
+        for(const [provider, providerMap] of emotes.providers.entries()) {
             filterProvider(provider, providerMap);
         }
 

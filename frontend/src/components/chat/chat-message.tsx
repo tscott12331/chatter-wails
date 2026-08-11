@@ -4,6 +4,7 @@ import ReplyIcon from '@components/svg/reply-icon';
 import { AppEmote } from '@wailsjs/chatter-wails/shared/types';
 import { AppChatMessageFragment } from '@wailsjs/chatter-wails/services/eventsub';
 import React, { useContext } from 'react';
+import Emote from './emote';
 
 export interface IChatMessageFragment {
     type: 'text'|'cheermote'|'emote'|'mention';
@@ -54,33 +55,24 @@ export default function ChatMessage({
     getChatterColor,
     showUserPopup,
 }: ChatMessageProps) {
-    const { tooltipOnEmote, tooltipOnPartial, tooltipOff, tooltipOffEmote } = useContext(TooltipContext);
+    const { tooltipOnPartial, tooltipOff } = useContext(TooltipContext);
+
     const fragmentToNode = (fragment: AppChatMessageFragment, index: number): React.ReactNode => {
         switch(fragment.type) {
             case 'emote':
                 if(!fragment.emote) return fragment.text;
 
                 return (
-                    <div className="align-middle inline-grid place-items-center grid-cols-1 grid-rows-1" key={index}>
-                        <img
-                            className="row-1 col-1 max-h-9"
-                            srcSet={fragment.emote.darkSrcSet.length > 0 ? fragment.emote.darkSrcSet : fragment.emote.lightSrcSet}
-                            alt={fragment.text}
-                            onMouseEnter={e => fragment.emote && tooltipOnEmote(fragment.emote, e.currentTarget)}
-                            onMouseLeave={() => fragment.emote && tooltipOffEmote(fragment.emote)}
+                    <span 
+                        className="inline-block align-middle h-[2em] [content-visibility:auto] [contain-intrinsic-size:auto_2em]"
+                        key={index}
+                    >
+                        <Emote 
+                            emote={fragment.emote} 
+                            tooltipOnPartial={tooltipOnPartial}
+                            tooltipOff={tooltipOff}
                         />
-                        {
-                        fragment.emote.emoteStack?.map(e =>
-                            e &&
-                            <img
-                                className="row-1 col-1"
-                                srcSet={e.darkSrcSet.length > 0 ? e.darkSrcSet : e.lightSrcSet}
-                                key={e.id}
-                                alt={fragment.text}
-                            />
-                         )
-                        }
-                    </div>
+                    </span>
                 );
             case 'mention':
                 if(!fragment.mention) return fragment.text;
@@ -127,7 +119,7 @@ export default function ChatMessage({
 
     return (
         // TODO: (maybe make content visibility stuff optional?)
-        <div className={`p-1.5 relative hover:bg-chatter-surface hover:[&_.chat-controls]:visible ${message.deleted && 'line-through hover:no-underline'} [content-visibility:auto] [contain-intrinsic-size:auto_36px]`}>
+        <div className={`p-1.5 relative hover:bg-chatter-surface hover:[&_.chat-controls]:visible ${message.deleted && 'line-through hover:no-underline'}`}>
             {message.reply &&
             <p 
                 className='w-full text-chatter-text-tertiary text-sm ellipsis'

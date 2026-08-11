@@ -1,11 +1,11 @@
-import { TChatroomEmotes } from "@/api/emote";
+import { IChatroomEmotes } from "@/api/emote";
 
 import { ConnectToChatroom, SendChatMessage } from '@wailsjs/chatter-wails/appservice';
 import { RequestSevenTVEmotes } from "@wailsjs/chatter-wails/services/7tv/seventvservice";
 import { RequestTwitchEmotes } from "@wailsjs/chatter-wails/services/native/emoteservice";
 import { Events } from "@wailsio/runtime";
 
-import { useContext, useEffect, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { AppEmoteSet, AppUser } from "@wailsjs/chatter-wails/shared/types";
 import { ESChatMessage, StreamData } from "@wailsjs/chatter-wails/services/eventsub";
 import { assertDefined, isDefined } from "@/util/assert";
@@ -55,7 +55,7 @@ export default function useChat({ channel, user, maxMessages = 200 }: {
     const [chatMessages, setChatMessages] = useState<IAppChatMessage[]>([]);
     const messageBuffer = useRef<IMessageBuffer>({messages:[], deletions: new Set(), bans: new Map()});
 
-    const [emotes, setEmotes] = useState<TChatroomEmotes>(new Map());
+    const [emotes, setEmotes] = useState<IChatroomEmotes>({providers: new Map(), _hash: 0});
     const [streamData, setStreamData] = useState<StreamData>({channel: "", live: false, viewCount: 0, title: "", gameName: "" });
     const [broadcasterId, setBroadcasterId] = useState<string>("");
 
@@ -64,6 +64,7 @@ export default function useChat({ channel, user, maxMessages = 200 }: {
 
     const appendMessageBuffer = () => {
         const { messages, deletions, bans } = messageBuffer.current;
+        if(messages.length === 0 && deletions.size === 0 && bans.size === 0) return;
 
         // copy buffer data and clear immediately to avoid data loss on future batches
         const bufferedMessages = [...messages];
@@ -144,7 +145,7 @@ export default function useChat({ channel, user, maxMessages = 200 }: {
         addEmoteSet(event.data);
     }
 
-    const sendChatMessage = async (message: string, replyId: string|null|undefined) => {
+    const sendChatMessage = useCallback(async (message: string, replyId: string|null|undefined) => {
         if(!channel) return false;
         const trimmed = message.trim();
         if(trimmed.length === 0) return false;
@@ -156,7 +157,7 @@ export default function useChat({ channel, user, maxMessages = 200 }: {
             broadcastError(err);
             return false;
         }
-    }
+    }, [channel, broadcastError]);
     
     const addEmoteSet = (set: AppEmoteSet) => {
         // merge with provider, override section if necessary
@@ -164,7 +165,7 @@ export default function useChat({ channel, user, maxMessages = 200 }: {
             if(!isDefined(set.Emotes)) return curEmotes;
             
             // copy existing provider map or create new one if not present
-            const curProviderMap = curEmotes.get(set.Provider);
+            const curProviderMap = curEmotes.providers.get(set.Provider);
             const providerMap = isDefined(curProviderMap)
                                 ? new Map(curProviderMap)
                                 : new Map<string, AppEmoteSet>();
@@ -172,11 +173,14 @@ export default function useChat({ channel, user, maxMessages = 200 }: {
             providerMap.set(set.Section, set);
             
 
-            const newEmotes: TChatroomEmotes = new Map(curEmotes);
-            newEmotes.set(set.Provider, providerMap);
+            const newEmotes: IChatroomEmotes = {
+                providers: new Map(curEmotes.providers),
+                _hash: curEmotes._hash+1,
+            };
+            newEmotes.providers.set(set.Provider, providerMap);
 
             return newEmotes;
-        })
+        });
     }
 
     const emitChatOpenState = (channel: string, accessToken: string, open: boolean) => {
@@ -211,7 +215,7 @@ export default function useChat({ channel, user, maxMessages = 200 }: {
         const abortController = new AbortController();
 
         setChatMessages([]);
-        setEmotes(new Map());
+        setEmotes({providers: new Map(), _hash: 0});
 
         ConnectToChatroom(channel)
             .then(d => {

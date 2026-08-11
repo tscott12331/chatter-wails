@@ -1,6 +1,6 @@
-import { TPartialTooltipData, TTooltipData } from "@/components/util/tooltip";
+import Tooltip, { TPartialTooltipData, TTooltipData } from "@/components/util/tooltip";
 import { AppEmote } from "@wailsjs/chatter-wails/shared/types";
-import { createContext, useState } from "react";
+import { createContext, useCallback, useMemo, useState } from "react";
 
 interface ITooltipContext {
     currentTooltip?: TTooltipData;
@@ -26,23 +26,23 @@ export function TooltipContextProvider({
 }: { children: React.ReactNode }) {
     const [currentTooltip, setCurrentTooltip] = useState<TUniqueTooltip|undefined>();
 
-    const tooltipOn = (data: TTooltipData, id: string) => {
+    const tooltipOn = useCallback((data: TTooltipData, id: string) => {
         setCurrentTooltip({...data, id});
-    }
+    }, []);
 
-    const tooltipOff = (id: string) => {
+    const tooltipOff = useCallback((id: string) => {
         setCurrentTooltip(cur => {
             if(cur?.id !== id) return cur;
 
             return undefined;
         })
-    }
+    }, []);
 
-    const tooltipOffEmote = (emote: AppEmote) => {
+    const tooltipOffEmote = useCallback((emote: AppEmote) => {
         tooltipOff(emote.id);
-    }
+    }, [])
 
-    const tooltipOnEmote = (emote: AppEmote, element: HTMLElement) => {
+    const tooltipOnEmote = useCallback((emote: AppEmote, element: HTMLElement) => {
         const rect = element.getBoundingClientRect();
         const imageSubDesc = `${emote.provider}${
                                 emote.section.length > 0
@@ -56,27 +56,32 @@ export function TooltipContextProvider({
             posX: rect.x + rect.width/2,
             posY: rect.y,
         }, emote.id);
-    }
+    }, []);
 
-    const tooltipOnPartial = (data: TPartialTooltipData, id: string, element: HTMLElement) => {
+    const tooltipOnPartial = useCallback((data: TPartialTooltipData, id: string, element: HTMLElement) => {
         const rect = element.getBoundingClientRect();
         tooltipOn({
             ...data,
             posX: rect.x + rect.width/2,
             posY: rect.y,
         }, id);
-    }
+    }, []);
+
+    
+
+    const contextValue = useMemo<ITooltipContext>(() => ({
+        currentTooltip,
+        tooltipOn,
+        tooltipOff,
+        tooltipOnEmote,
+        tooltipOffEmote,
+        tooltipOnPartial,
+    }), [currentTooltip]);
 
     return (
-        <TooltipContext.Provider value={{
-            currentTooltip,
-            tooltipOn,
-            tooltipOff,
-            tooltipOnEmote,
-            tooltipOffEmote,
-            tooltipOnPartial,
-        }}>
+        <TooltipContext.Provider value={contextValue}>
             {children}
+            {currentTooltip && <Tooltip data={currentTooltip} />}
         </TooltipContext.Provider>
     )
 }
