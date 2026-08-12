@@ -297,7 +297,7 @@ func (c *Client) AddChatSubscription(data *ESSubscription[*ESChatSubscriptionDat
 	})
 }
 
-func (c *Client) ToggleChatSubscriptionFromChannelName(data *ChatOpenData) {
+func (c *Client) ToggleChatSubscriptionFromChannelName(data *types.ChatOpenData) {
 	c.ChatSubscriptions.Update(func(cs **ChatSubscriptions) {
 		sub, exists := (*cs).GetSubFromChannelName(data.Channel)
 		if !exists { return }
@@ -401,14 +401,8 @@ func NewEventSubService(app *application.App) *EventSubService {
 	return es
 }
 
-type ChatOpenData struct{
-	Channel string		`json:"channel"`
-	AccessToken string 	`json:"accessToken"`
-	Open bool			`json:"open"`
-}
-
 func (es *EventSubService) handleChatOpenEvent(event *application.CustomEvent) {
-	data, ok := event.Data.(ChatOpenData)
+	data, ok := event.Data.(types.ChatOpenData)
 	if !ok {
 		log.Printf("ERROR: failed to cast chat open data\nData: %+v\n", data)
 		return
@@ -455,7 +449,7 @@ func (es *EventSubService) Connect() {
 					var err error
 					es.app.Event.On("common:chat-open", es.handleChatOpenEvent)
 
-					es.Client.socket, err = util.NewSocket(esCtx, twitchESURL.String(), es.Client.handleESMessage)
+					es.Client.socket, err = util.NewSocket(esCtx, twitchESURL.String(), es.Client.handleESMessage, true)
 
 					es.Client.IrcListener.Connect(user.Access_token, user.Login, true, false, true)
 

@@ -34,17 +34,19 @@ type Socket struct {
 	ctx context.Context
 	conn *websocket.Conn
 	send chan []byte
+	shouldPing bool
 }
 
 type SocketMessageHandler func(messageBytes []byte)
 
-func NewSocket(ctx context.Context, connStr string, messageHandler SocketMessageHandler) (*Socket, error) {
+func NewSocket(ctx context.Context, connStr string, messageHandler SocketMessageHandler, shouldPing bool) (*Socket, error) {
 	
 	client, _, err := websocket.DefaultDialer.Dial(connStr, nil)
 	if err != nil {
 		return nil, err
 	}
 	// c.conn.SetReadLimit(maxMessageSize)
+
 	client.SetReadDeadline(time.Now().Add(pongWait))
 	client.SetPongHandler(func(string) error { 
 		client.SetReadDeadline(time.Now().Add(pongWait)); return nil
@@ -54,12 +56,17 @@ func NewSocket(ctx context.Context, connStr string, messageHandler SocketMessage
 		conn: client,
 		ctx: ctx,
 		send: make(chan []byte),
+		shouldPing: shouldPing,
 	}
 
 	go socket.readPump(messageHandler)
 	go socket.writePump()
 
 	return socket, nil
+}
+
+func (s *Socket) SetReadDeadline(deadline time.Time) error {
+	return s.conn.SetReadDeadline(deadline)
 }
 
 // readPump pumps messages from the websocket connection to the hub.
@@ -103,6 +110,10 @@ func (s *Socket) readPump(handler SocketMessageHandler) {
 func (s *Socket) writePump() {
 	log.Printf("[writePump]: Started write goroutine for socket\n\n")
 	ticker := time.NewTicker(pingPeriod)
+	if !s.shouldPing {
+		ticker.Stop()
+	}
+
 	defer func() {
 		log.Printf("[writePump]: Closing connection\n\n")
 		ticker.Stop()

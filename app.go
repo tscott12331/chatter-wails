@@ -32,13 +32,21 @@ type AppService struct {
 
 // NewAppService creates a new App application struct
 func NewAppService(app *application.App) *AppService {
+	seventvService, err := seventv.NewSevenTVService(app)
+	if err != nil {
+		application.Get().Dialog.Error().
+			SetTitle("Failed to connect to 7TV").
+			SetMessage("Please report to https://github.com/tscott12331/gel/issues").
+			Show()
+	}
+
 	return &AppService{
 		app: app,
 		esService: eventsub.NewEventSubService(app),
 		emoteService: native.NewEmoteService(app),
 		badgeService: badge.NewBadgeService(app),
 		authService: auth.NewAuthService(app),
-		seventvService: seventv.NewSevenTVService(app),
+		seventvService: seventvService,
 		bttvService: bttv.NewBTTVService(app),
 		ffzService: ffz.NewFFZService(app),
 	}

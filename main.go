@@ -17,7 +17,7 @@ func main() {
 	// TODO: rename events to be under chatter namespace
 	application.RegisterEvent[*eventsub.ESChatMessage]("common:chat-message")
 	application.RegisterEvent[eventsub.StreamData]("common:stream-data")
-	application.RegisterEvent[eventsub.ChatOpenData]("common:chat-open")
+	application.RegisterEvent[types.ChatOpenData]("common:chat-open")
 	application.RegisterEvent[*types.AppUser]("common:user-login")
 	application.RegisterEvent[eventsub.SharedChatBeginEventData]("common:shared-chat-begin")
 	application.RegisterEvent[eventsub.SharedChatUpdateEventData]("common:shared-chat-update")

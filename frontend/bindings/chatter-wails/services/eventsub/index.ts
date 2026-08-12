@@ -9,7 +9,6 @@ export {
 export type {
     AppChatMessageFragment,
     BanEventData,
-    ChatOpenData,
     ChatroomData,
     ClearMsgEventData,
     ESChatMessage,

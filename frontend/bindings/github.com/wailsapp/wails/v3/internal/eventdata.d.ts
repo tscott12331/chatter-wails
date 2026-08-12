@@ -18,7 +18,7 @@ declare module "@wailsio/runtime" {
             "chatter:emote:new-set": types$0.NewEmoteSetEvent;
             "common:ban": eventsub$0.BanEventData;
             "common:chat-message": eventsub$0.ESChatMessage | null;
-            "common:chat-open": eventsub$0.ChatOpenData;
+            "common:chat-open": types$0.ChatOpenData;
             "common:clear-msg": eventsub$0.ClearMsgEventData;
             "common:shared-chat-begin": eventsub$0.SharedChatBeginEventData;
             "common:shared-chat-end": eventsub$0.SharedChatEndEventData;

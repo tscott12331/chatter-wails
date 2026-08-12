@@ -40,6 +40,12 @@ export interface AppUser {
     "access_token": string;
 }
 
+export interface ChatOpenData {
+    "channel": string;
+    "accessToken": string;
+    "open": boolean;
+}
+
 export interface NewEmoteSetEvent {
     "BroadcasterId": string;
     "ChannelSpecific": boolean;

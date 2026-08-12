@@ -50,7 +50,7 @@ func NewIRCListener() *IRCListener {
 
 func (irc *IRCListener) Connect(accessToken, userLogin string, commands, membership, tags bool) error {
 	ctx := context.Background()
-	socket, err := util.NewSocket(ctx, IRC_ENDPOINT, irc.handleSocketMessage)
+	socket, err := util.NewSocket(ctx, IRC_ENDPOINT, irc.handleSocketMessage, true)
 	if err != nil {
 		return err
 	}

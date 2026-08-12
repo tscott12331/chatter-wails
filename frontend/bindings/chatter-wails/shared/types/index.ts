@@ -6,5 +6,6 @@ export type {
     AppEmoteMap,
     AppEmoteSet,
     AppUser,
+    ChatOpenData,
     NewEmoteSetEvent
 } from "./models.js";

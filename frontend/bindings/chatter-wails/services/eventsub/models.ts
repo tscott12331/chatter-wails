@@ -24,12 +24,6 @@ export interface BanEventData {
     "duration": number | null;
 }
 
-export interface ChatOpenData {
-    "channel": string;
-    "accessToken": string;
-    "open": boolean;
-}
-
 export interface ChatroomData {
     "subId": string;
     "broadcasterId": string;
