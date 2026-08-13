@@ -28,3 +28,8 @@ const EAPI_SUB_COSMETIC_CREATE = "cosmetic.create"
 const EAPI_SUB_COSMETIC_UPDATE = "cosmetic.update"
 const EAPI_SUB_COSMETIC_DELETE = "cosmetic.delete"
 const EAPI_SUB_COSMETIC_ALL = "cosmetic.*"
+
+const EAPI_SUB_EMOTE_SET_CREATE = "emote_set.create"
+const EAPI_SUB_EMOTE_SET_UPDATE = "emote_set.update"
+const EAPI_SUB_EMOTE_SET_DELETE = "emote_set.delete"
+const EAPI_SUB_EMOTE_SET_ALL = "emote_set.*"

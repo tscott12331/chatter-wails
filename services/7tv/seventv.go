@@ -70,6 +70,9 @@ func (stv *SevenTVService) RequestSevenTVEmotes(broadcasterId string) error {
 	wg.Go(func() {
 		errChan <- stv.listenChannelEvent(EAPI_SUB_COSMETIC_ALL, EAPI_PLATFORM_TWITCH, broadcasterId)
 	})
+	wg.Go(func() {
+		errChan <- stv.listenChannelEvent(EAPI_SUB_EMOTE_SET_ALL, EAPI_PLATFORM_TWITCH, broadcasterId)
+	})
 
 	wg.Wait()
 	close(errChan)
